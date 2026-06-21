@@ -9,7 +9,7 @@ const sections = [
   {
     id: 'no-legal-advice',
     title: '1. Not Legal Advice',
-    content: `The information provided on this website and through our legal services does not constitute legal advice. Maggi May Broussard offers legal support services exclusively to licensed attorneys and law firms. Nothing on this site should be construed as legal counsel, and no attorney-client relationship is created between Maggi May Broussard and any visitor to this website or end client of any law firm we support.`,
+    content: `The information provided on this website and through our legal services does not constitute legal advice. Broussard Legal Services offers legal support services exclusively to licensed attorneys and law firms. Nothing on this site should be construed as legal counsel, and no attorney-client relationship is created between Broussard Legal Services and any visitor to this website or end client of any law firm we support.`,
   },
   {
     id: 'services-scope',
@@ -42,7 +42,7 @@ const sections = [
   },
   {
     id: 'liability',title: '8. Limitation of Liability',
-    content: `To the maximum extent permitted by applicable law, Maggi May Broussard shall not be liable for any direct, indirect, incidental, consequential, special, or exemplary damages arising out of or in connection with your use of this website or our services, including but not limited to damages for loss of profits, goodwill, data, or other intangible losses, even if we have been advised of the possibility of such damages.`,
+    content: `To the maximum extent permitted by applicable law, Broussard Legal Services shall not be liable for any direct, indirect, incidental, consequential, special, or exemplary damages arising out of or in connection with your use of this website or our services, including but not limited to damages for loss of profits, goodwill, data, or other intangible losses, even if we have been advised of the possibility of such damages.`,
   },
   {
     id: 'changes',title: '9. Changes to This Disclaimer',
@@ -62,12 +62,12 @@ export default function DisclaimersPage() {
             '@context': 'https://schema.org',
             '@type': 'WebPage',
             name: 'Disclaimers',
-            description: 'Important disclaimers and limitations regarding legal services provided by Maggi May Broussard to law firms and attorneys.',
+            description: 'Important disclaimers and limitations regarding legal services provided by Broussard Legal Services to law firms and attorneys.',
             url: `${baseUrl}/disclaimers`,
             image: `${baseUrl}/assets/images/og-image.png`,
             publisher: {
               '@type': 'Organization',
-              name: 'Maggi May Broussard',
+              name: 'Broussard Legal Services',
               logo: {
                 '@type': 'ImageObject',
                 url: `${baseUrl}/assets/images/app_logo.png`,
@@ -85,10 +85,10 @@ export default function DisclaimersPage() {
             mainEntity: [
               {
                 '@type': 'Question',
-                name: 'Is Maggi May Broussard a licensed attorney?',
+                name: 'Is Broussard Legal Services operated by a licensed attorney?',
                 acceptedAnswer: {
                   '@type': 'Answer',
-                  text: 'No. Maggi May Broussard is a freelance paralegal, not a licensed attorney. All services are provided exclusively to licensed attorneys and law firms.',
+                  text: 'No. Broussard Legal Services is operated by a freelance paralegal, not a licensed attorney. All services are provided exclusively to licensed attorneys and law firms.',
                 },
               },
               {
@@ -126,7 +126,7 @@ export default function DisclaimersPage() {
             </svg>
           </div>
           <p className="text-sm text-foreground leading-relaxed">
-            <strong>Important Notice:</strong> Maggi May Broussard offers legal support services exclusively to licensed attorneys and law firms. Nothing on this website constitutes legal advice.
+            <strong>Important Notice:</strong> Broussard Legal Services offers legal support services exclusively to licensed attorneys and law firms. Nothing on this website constitutes legal advice.
           </p>
         </div>
       </div>

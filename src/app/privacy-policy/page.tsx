@@ -9,7 +9,7 @@ const sections = [
   {
     id: 'overview',
     title: '1. Overview',
-    content: `Maggi May Broussard ("we," "us," or "our") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard information when you visit our website or engage our legal services. Please read this policy carefully. If you disagree with its terms, please discontinue use of our site.`,
+    content: `Broussard Legal Services ("we," "us," or "our") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard information when you visit our website or engage our legal services. Please read this policy carefully. If you disagree with its terms, please discontinue use of our site.`,
   },
   {
     id: 'information-collected',
@@ -70,12 +70,12 @@ export default function PrivacyPolicyPage() {
             '@context': 'https://schema.org',
             '@type': 'WebPage',
             name: 'Privacy Policy',
-            description: 'Privacy policy explaining how Maggi May Broussard collects, uses, and protects personal information from clients and website visitors.',
+            description: 'Privacy policy explaining how Broussard Legal Services collects, uses, and protects personal information from clients and website visitors.',
             url: `${baseUrl}/privacy-policy`,
             image: `${baseUrl}/assets/images/og-image.png`,
             publisher: {
               '@type': 'Organization',
-              name: 'Maggi May Broussard',
+              name: 'Broussard Legal Services',
               logo: {
                 '@type': 'ImageObject',
                 url: `${baseUrl}/assets/images/app_logo.png`,

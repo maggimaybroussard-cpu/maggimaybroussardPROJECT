@@ -50,7 +50,7 @@ export default function ServicesPage() {
           __html: JSON.stringify({
             '@context': 'https://schema.org',
             '@type': 'LocalBusiness',
-            name: 'Maggi May Broussard — Contract Paralegal Services',
+            name: 'Broussard Legal Services — Contract Paralegal Services',
             description: 'Professional contract paralegal services for law firms nationwide.',
             url: baseUrl,
             image: `${baseUrl}/assets/images/og-image.png`,
@@ -76,7 +76,7 @@ export default function ServicesPage() {
             image: `${baseUrl}/assets/images/og-image.png`,
             publisher: {
               '@type': 'Organization',
-              name: 'Maggi May Broussard',
+              name: 'Broussard Legal Services',
               logo: {
                 '@type': 'ImageObject',
                 url: `${baseUrl}/assets/images/app_logo.png`,
@@ -95,7 +95,7 @@ export default function ServicesPage() {
             description: 'Remote contract paralegal services for law firms nationwide including litigation support, legal research, document drafting, case management, and discovery assistance.',
             provider: {
               '@type': 'Organization',
-              name: 'Maggi May Broussard',
+              name: 'Broussard Legal Services',
               url: baseUrl,
               logo: `${baseUrl}/assets/images/app_logo.png`,
             },
@@ -143,10 +143,10 @@ export default function ServicesPage() {
             mainEntity: [
               {
                 '@type': 'Question',
-                name: 'What legal services does Maggi May Broussard provide?',
+                name: 'What legal services does Broussard Legal Services provide?',
                 acceptedAnswer: {
                   '@type': 'Answer',
-                  text: 'Maggi May Broussard provides comprehensive contract paralegal services including litigation support, legal research, document drafting, case management, discovery assistance, and contract review for law firms nationwide.',
+                  text: 'Broussard Legal Services provides comprehensive contract paralegal services including litigation support, legal research, document drafting, case management, discovery assistance, and contract review for law firms nationwide.',
                 },
               },
               {
@@ -154,7 +154,7 @@ export default function ServicesPage() {
                 name: 'Is the service available nationwide?',
                 acceptedAnswer: {
                   '@type': 'Answer',
-                  text: 'Yes, Maggi May Broussard provides remote contract paralegal services to law firms and attorneys across the United States.',
+                  text: 'Yes, Broussard Legal Services provides remote contract paralegal services to law firms and attorneys across the United States.',
                 },
               },
               {

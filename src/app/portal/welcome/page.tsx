@@ -291,7 +291,7 @@ export default function PortalWelcomePage() {
             <Link href="/" className="inline-flex items-center gap-2.5 group shrink-0">
               <AppLogo size={28} className="transition-transform duration-300 group-hover:scale-105" />
               <span className="font-serif text-sm tracking-tight hidden sm:block" style={{ color: '#355E3B' }}>
-                Maggi May Broussard
+                Broussard Legal Services
               </span>
             </Link>
             <nav className="hidden md:flex items-center gap-1">

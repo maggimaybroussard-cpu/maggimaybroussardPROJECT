@@ -35,8 +35,8 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
   title: {
-    default: 'Maggi May Broussard — Contract Paralegal Services',
-    template: '%s | Maggi May Broussard',
+    default: 'Broussard Legal Services — Contract Paralegal Services',
+    template: '%s | Broussard Legal Services',
   },
   description: 'Professional contract paralegal services for law firms nationwide. Remote litigation support, legal research, document drafting, and case management assistance.',
   keywords: [
@@ -51,8 +51,8 @@ export const metadata: Metadata = {
     'law firm support',
     'Maggi May Broussard',
   ],
-  authors: [{ name: 'Maggi May Broussard', url: process.env.NEXT_PUBLIC_SITE_URL }],
-  creator: 'Maggi May Broussard',
+  authors: [{ name: 'Broussard Legal Services', url: process.env.NEXT_PUBLIC_SITE_URL }],
+  creator: 'Broussard Legal Services',
   publisher: 'Broussard Legal Services',
   robots: {
     index: true,
@@ -69,7 +69,7 @@ export const metadata: Metadata = {
     canonical: process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
   },
   openGraph: {
-    title: 'Maggi May Broussard — Contract Paralegal Services',
+    title: 'Broussard Legal Services — Contract Paralegal Services',
     description: 'Professional contract paralegal services for law firms nationwide. Remote litigation support, legal research, and document drafting.',
     url: process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
     siteName: 'Broussard Legal Services',
@@ -80,13 +80,13 @@ export const metadata: Metadata = {
         url: '/assets/images/og-image.png',
         width: 1200,
         height: 630,
-        alt: 'Maggi May Broussard — Professional Contract Paralegal Services',
+        alt: 'Broussard Legal Services — Professional Contract Paralegal Services',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Maggi May Broussard — Contract Paralegal Services',
+    title: 'Broussard Legal Services — Contract Paralegal Services',
     description: 'Professional contract paralegal services for law firms nationwide. Remote litigation support, legal research, and document drafting.',
     images: ['/assets/images/og-image.png'],
   },
@@ -178,7 +178,7 @@ export default function RootLayout({
             __html: JSON.stringify({
               '@context': 'https://schema.org',
               '@type': 'Organization',
-              name: 'Maggi May Broussard',
+              name: 'Broussard Legal Services',
               description: 'Professional contract paralegal services nationwide',
               url: baseUrl,
               logo: {
@@ -205,7 +205,7 @@ export default function RootLayout({
             __html: JSON.stringify({
               '@context': 'https://schema.org',
               '@type': 'LegalService',
-              name: 'Maggi May Broussard — Contract Paralegal Services',
+              name: 'Broussard Legal Services — Contract Paralegal Services',
               description: 'Remote contract paralegal services for law firms nationwide. Litigation support, legal research, document drafting, and case management.',
               url: baseUrl,
               image: `${baseUrl}/assets/images/app_logo.png`,

@@ -156,12 +156,12 @@ export default function Header() {
               )}
             </div>
 
-            <Link href="/" className="flex items-center gap-2.5" aria-label="Maggi May Broussard — Home">
+            <Link href="/" className="flex items-center gap-2.5" aria-label="Broussard Legal Services — Home">
               <span
                 className="font-serif text-lg tracking-tight transition-colors duration-300"
                 style={{ color: '#355E3B' }}
               >
-                Maggi May Broussard
+                Broussard Legal Services
               </span>
               <Image
                 src="/assets/images/initiallogo-1781843073214.png"

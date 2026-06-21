@@ -37,7 +37,7 @@ export default function PricingPage() {
             description: 'Flexible monthly retainer packages for contract paralegal services including litigation support, legal research, document drafting, and case management.',
             provider: {
               '@type': 'Organization',
-              name: 'Maggi May Broussard',
+              name: 'Broussard Legal Services',
               url: baseUrl,
               logo: `${baseUrl}/assets/images/app_logo.png`,
             },

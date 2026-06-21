@@ -153,12 +153,12 @@ export default function TestimonialsPage() {
             '@context': 'https://schema.org',
             '@type': 'WebPage',
             name: 'Client Testimonials',
-            description: 'Read reviews from attorneys and law firms who trust Maggi May Broussard for litigation support, legal research, document drafting, and case management.',
+            description: 'Read reviews from attorneys and law firms who trust Broussard Legal Services for litigation support, legal research, document drafting, and case management.',
             url: `${baseUrl}/testimonials`,
             image: `${baseUrl}/assets/images/og-image.png`,
             publisher: {
               '@type': 'Organization',
-              name: 'Maggi May Broussard',
+              name: 'Broussard Legal Services',
               logo: { '@type': 'ImageObject', url: `${baseUrl}/assets/images/app_logo.png` }
             },
             aggregateRating: {
@@ -177,7 +177,7 @@ export default function TestimonialsPage() {
           __html: JSON.stringify({
             '@context': 'https://schema.org',
             '@type': 'LocalBusiness',
-            name: 'Maggi May Broussard — Contract Paralegal Services',
+            name: 'Broussard Legal Services — Contract Paralegal Services',
             description: 'Remote contract paralegal services for law firms nationwide with 200+ cases supported and 5.0 rating.',
             url: baseUrl,
             image: `${baseUrl}/assets/images/app_logo.png`,
@@ -214,7 +214,7 @@ export default function TestimonialsPage() {
                 <span className="italic opacity-75">I've served</span>
               </h1>
               <p className="text-base md:text-lg text-primary-foreground/60 leading-relaxed max-w-xl">
-                Real feedback from attorneys and legal teams who trust Maggi May Broussard for their most demanding paralegal work.
+                Real feedback from attorneys and legal teams who trust Broussard Legal Services for their most demanding paralegal work.
               </p>
             </div>
 

@@ -76,8 +76,8 @@ serve(async (req) => {
       : `Your Consultation Starts in 1 Hour — ${eventTime}`;
 
     const previewText = is24hr
-      ? `Don't forget — your paralegal consultation with Maggi May Broussard is tomorrow at ${eventTime}.`
-      : `Your consultation with Maggi May Broussard starts in about 1 hour. Here's everything you need.`;
+      ? `Don't forget — your paralegal consultation with Broussard Legal Services is tomorrow at ${eventTime}.`
+      : `Your consultation with Broussard Legal Services starts in about 1 hour. Here's everything you need.`;
 
     const bodyHtml = `
 <!DOCTYPE html>
@@ -108,7 +108,7 @@ serve(async (req) => {
                         <p style="margin:0; font-size:10px; color:${brand.accent}; letter-spacing:0.18em; text-transform:uppercase; font-family: Georgia, serif; line-height:1.4;">Services</p>
                       </td>
                       <td style="padding-left: 14px; vertical-align: middle;">
-                        <h1 style="margin:0; font-size:24px; color:${brand.white}; font-family: Georgia, 'Times New Roman', serif; font-weight:normal; letter-spacing:0.01em; line-height:1.2;">Maggi May Broussard</h1>
+                        <h1 style="margin:0; font-size:24px; color:${brand.white}; font-family: Georgia, 'Times New Roman', serif; font-weight:normal; letter-spacing:0.01em; line-height:1.2;">Broussard Legal Services</h1>
                         <p style="margin:4px 0 0; font-size:12px; color:rgba(255,255,255,0.65); font-family: Georgia, serif; letter-spacing:0.06em;">Louisiana &amp; Nationwide</p>
                       </td>
                     </tr>
@@ -137,8 +137,8 @@ serve(async (req) => {
             <p style="margin:0 0 16px; font-size:15px; color:${brand.foreground}; line-height:1.8; font-family: Georgia, serif;">Dear ${recipientName},</p>
             <p style="margin:0 0 20px; font-size:15px; color:${brand.foreground}; line-height:1.8; font-family: Georgia, serif;">
               ${is24hr
-                ? "This is a friendly reminder that your consultation with Maggi May Broussard is scheduled for <strong>tomorrow</strong>. I look forward to speaking with you!"
-                : "Your consultation with Maggi May Broussard is starting in approximately <strong>1 hour</strong>. Please make sure you're ready to connect at the scheduled time."}
+                ? "This is a friendly reminder that your consultation with Broussard Legal Services is scheduled for <strong>tomorrow</strong>. I look forward to speaking with you!"
+                : "Your consultation with Broussard Legal Services is starting in approximately <strong>1 hour</strong>. Please make sure you're ready to connect at the scheduled time."}
             </p>
 
             <!-- Appointment Details Card -->
@@ -195,7 +195,7 @@ serve(async (req) => {
               <tr>
                 <td>
                   <p style="margin:0 0 4px; font-size:15px; color:${brand.foreground}; font-family: Georgia, serif;">See you ${is24hr ? "tomorrow" : "soon"},</p>
-                  <p style="margin:0 0 2px; font-size:16px; color:${brand.primary}; font-weight:bold; font-family: Georgia, serif;">Maggi May Broussard</p>
+                  <p style="margin:0 0 2px; font-size:16px; color:${brand.primary}; font-weight:bold; font-family: Georgia, serif;">Broussard Legal Services</p>
                   <p style="margin:0 0 6px; font-size:12px; color:${brand.muted}; font-family: Georgia, serif; letter-spacing:0.04em;">Licensed Paralegal · Louisiana &amp; Nationwide</p>
                   <a href="mailto:maggimaybroussard@gmail.com" style="color:${brand.accent}; font-size:13px; text-decoration:none; font-family: Georgia, serif;">maggimaybroussard@gmail.com</a>
                   &nbsp;<span style="color:${brand.border};">|</span>&nbsp;
@@ -209,7 +209,7 @@ serve(async (req) => {
         <!-- FOOTER -->
         <tr>
           <td style="background-color:${brand.secondary}; padding: 20px 36px; border-top: 1px solid ${brand.border};">
-            <p style="margin:0 0 6px; font-size:12px; color:${brand.primary}; font-weight:bold; font-family: Georgia, serif; letter-spacing:0.04em;">Maggi May Broussard Legal Services</p>
+            <p style="margin:0 0 6px; font-size:12px; color:${brand.primary}; font-weight:bold; font-family: Georgia, serif; letter-spacing:0.04em;">Broussard Legal Services</p>
             <p style="margin:0; font-size:11px; color:${brand.muted}; line-height:1.7;">
               You are receiving this reminder because you have a scheduled consultation. If you did not book this appointment, please reply to this email.
             </p>
@@ -255,8 +255,8 @@ serve(async (req) => {
           const firstName = recipientName?.split(" ")[0] ?? recipientName;
           const consultation = eventName ?? "Paralegal Consultation";
           const smsBody = is24hr
-            ? `Maggi May Broussard Legal Services\n\nHi ${firstName}, reminder: your ${consultation} is TOMORROW at ${eventTime} (${eventDate}).\n\nNeed to reschedule? Use your Calendly confirmation link.\n\nReply STOP to opt out.`
-            : `Maggi May Broussard Legal Services\n\nHi ${firstName}, your ${consultation} starts in 1 HOUR at ${eventTime}. Please make sure you're ready to connect.\n\nReply STOP to opt out.`;
+            ? `Broussard Legal Services\n\nHi ${firstName}, reminder: your ${consultation} is TOMORROW at ${eventTime} (${eventDate}).\n\nNeed to reschedule? Use your Calendly confirmation link.\n\nReply STOP to opt out.`
+            : `Broussard Legal Services\n\nHi ${firstName}, your ${consultation} starts in 1 HOUR at ${eventTime}. Please make sure you're ready to connect.\n\nReply STOP to opt out.`;
 
           const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`;
           const credentials = btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`);

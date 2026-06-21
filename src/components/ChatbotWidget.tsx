@@ -43,7 +43,7 @@ export default function ChatbotWidget() {
       setMessages([
         {
           from: 'bot',
-          text: "Hi! 👋 I'm here to help connect you with Maggi May Broussard's legal services. What type of legal support are you looking for?",
+          text: "Hi! 👋 I'm here to help connect you with Broussard Legal Services. What type of legal support are you looking for?",
         },
       ]);
       setStep('service');
@@ -190,7 +190,7 @@ export default function ChatbotWidget() {
         <div
           role="dialog"
           aria-modal="true"
-          aria-label="Chat with Maggi May Broussard Legal Services"
+          aria-label="Chat with Broussard Legal Services"
           className="fixed bottom-24 right-6 z-50 w-80 sm:w-96 bg-card border border-border rounded-2xl shadow-2xl flex flex-col overflow-hidden"
           style={{ maxHeight: '520px' }}
         >
@@ -202,7 +202,7 @@ export default function ChatbotWidget() {
               </svg>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-semibold text-sm leading-tight">Maggi May Broussard</p>
+              <p className="font-semibold text-sm leading-tight">Broussard Legal Services</p>
               <p className="text-xs text-white/70">Legal Services · Typically replies in 1 day</p>
             </div>
             <div className="w-2 h-2 rounded-full bg-green-400 shrink-0" title="Online" />

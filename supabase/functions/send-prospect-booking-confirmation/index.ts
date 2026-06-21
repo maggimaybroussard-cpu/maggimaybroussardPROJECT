@@ -70,7 +70,7 @@ serve(async (req) => {
                   <p style="margin:0;font-size:10px;color:${brand.accent};letter-spacing:0.18em;text-transform:uppercase;font-family:Georgia,serif;line-height:1.4;">Services</p>
                 </td>
                 <td style="padding-left:14px;vertical-align:middle;">
-                  <h1 style="margin:0;font-size:24px;color:${brand.white};font-family:Georgia,'Times New Roman',serif;font-weight:normal;letter-spacing:0.01em;line-height:1.2;">Maggi May Broussard</h1>
+                  <h1 style="margin:0;font-size:24px;color:${brand.white};font-family:Georgia,'Times New Roman',serif;font-weight:normal;letter-spacing:0.01em;line-height:1.2;">Broussard Legal Services</h1>
                   <p style="margin:4px 0 0;font-size:12px;color:rgba(255,255,255,0.65);font-family:Georgia,serif;letter-spacing:0.06em;">Louisiana &amp; Nationwide</p>
                 </td>
               </tr>
@@ -224,7 +224,7 @@ serve(async (req) => {
         <!-- Footer -->
         <tr>
           <td style="background-color:${brand.secondary};padding:20px 36px;border-top:1px solid ${brand.border};">
-            <p style="margin:0;font-size:11px;color:${brand.muted};font-family:Georgia,serif;">Maggi May Broussard Legal Services &nbsp;&middot;&nbsp; Louisiana &amp; Nationwide</p>
+            <p style="margin:0;font-size:11px;color:${brand.muted};font-family:Georgia,serif;">Broussard Legal Services &nbsp;&middot;&nbsp; Louisiana &amp; Nationwide</p>
             <p style="margin:6px 0 0;font-size:11px;color:${brand.muted};font-family:Georgia,serif;">
               <a href="${SITE_URL}" style="color:${brand.accent};text-decoration:none;">${SITE_URL.replace("https://", "")}</a>
               &nbsp;&middot;&nbsp;
