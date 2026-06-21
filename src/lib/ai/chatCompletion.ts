@@ -78,7 +78,7 @@ export async function getStreamingChatCompletion(
       } catch {
         // ignore JSON parse error
       }
-      if (response.status === 429) {
+      if (response.status === 429 || errorMessage.includes('429')) {
         errorMessage = 'The AI assistant is currently busy. Please wait a moment and try again.';
       } else if (response.status === 503 || response.status === 502) {
         errorMessage = 'The AI service is temporarily unavailable. Please try again shortly.';
