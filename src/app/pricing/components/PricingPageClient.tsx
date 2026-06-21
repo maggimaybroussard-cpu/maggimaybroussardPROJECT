@@ -212,6 +212,93 @@ const TRUST_ITEMS = [
   { icon: '🔄', label: 'Cancel Anytime' },
 ];
 
+const VALUE_PROPS = [
+  {
+    stat: '24hr',
+    label: 'Priority Turnaround',
+    desc: 'Standard & Full-Service clients receive deliverables within one business day — no chasing, no delays.',
+    accent: '#355E3B',
+  },
+  {
+    stat: '$0',
+    label: 'Hidden Fees',
+    desc: 'Your monthly invoice reflects exactly what you signed up for. Overage is always pre-approved before it applies.',
+    accent: '#C8965A',
+  },
+  {
+    stat: '30-day',
+    label: 'Cancel Policy',
+    desc: 'No long-term lock-in. Give 30 days\' written notice before your next billing cycle and you\'re done.',
+    accent: '#355E3B',
+  },
+  {
+    stat: '1 day',
+    label: 'Onboarding Speed',
+    desc: 'Portal credentials and your onboarding packet land in your inbox within one business day of signing.',
+    accent: '#C8965A',
+  },
+  {
+    stat: '100%',
+    label: 'Remote & Secure',
+    desc: 'All work delivered through an encrypted client portal. Documents, messages, and invoices — one secure place.',
+    accent: '#355E3B',
+  },
+  {
+    stat: 'Bar-ready',
+    label: 'Work Product',
+    desc: 'Every deliverable is formatted to your jurisdiction\'s court rules and ready for attorney review and filing.',
+    accent: '#C8965A',
+  },
+];
+
+const SERVICE_BUNDLES = [
+  {
+    name: 'Deposition Bundle',
+    price: '$350',
+    unit: 'per deposition',
+    desc: 'Full deposition support from prep through summary — ideal for firms without a retainer or needing surge capacity.',
+    includes: [
+      'Witness background research',
+      'Deposition outline & question bank',
+      'Real-time exhibit indexing',
+      'Condensed deposition summary',
+      'Key testimony highlights memo',
+    ],
+    tag: 'One-Time',
+    tagColor: '#C8965A',
+  },
+  {
+    name: 'Motion Package',
+    price: '$400–$700',
+    unit: 'per motion',
+    desc: 'Research-backed motion drafting with table of contents, authorities, and court-rule formatting included.',
+    includes: [
+      'Case law & statutory research',
+      'Motion drafting (MSJ, MTD, MIL)',
+      'Supporting memorandum of law',
+      'Table of contents & authorities',
+      'Cite-check & court-rule formatting',
+    ],
+    tag: 'One-Time',
+    tagColor: '#C8965A',
+  },
+  {
+    name: 'Discovery Sprint',
+    price: '$500',
+    unit: 'flat rate',
+    desc: 'A focused two-week engagement to get discovery organized, logged, and calendared for complex matters.',
+    includes: [
+      'Interrogatory & RFP/RFA tracking',
+      'Privilege log setup & maintenance',
+      'Bates stamping & document index',
+      'Discovery deadline calendar',
+      'Status report at close of sprint',
+    ],
+    tag: 'Project-Based',
+    tagColor: '#355E3B',
+  },
+];
+
 /* ─── FAQ Accordion ──────────────────────────────────────────────────── */
 function FAQAccordion({ faqs }: { faqs: FAQ[] }) {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
@@ -451,6 +538,45 @@ export default function PricingPageClient() {
         </div>
       </section>
 
+      {/* ── Value Props ── */}
+      <section className="py-20 md:py-24 px-5 md:px-10">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-14">
+            <span
+              className="inline-block px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-widest mb-4"
+              style={{ background: 'rgba(53,94,59,0.1)', color: '#355E3B', border: '1px solid rgba(53,94,59,0.2)' }}
+            >
+              Why Broussard Legal Services
+            </span>
+            <h2 className="font-serif text-3xl md:text-4xl text-foreground mb-4">What Sets This Apart</h2>
+            <p className="text-muted-foreground font-light max-w-xl mx-auto">
+              Concrete commitments — not marketing language. Here&apos;s exactly what you can expect when you engage a retainer.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {VALUE_PROPS.map((vp, i) => (
+              <div
+                key={i}
+                className="rounded-2xl p-7 border flex flex-col gap-3 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5"
+                style={{ background: 'var(--background)', borderColor: 'var(--border)' }}
+              >
+                <div
+                  className="text-3xl font-serif font-bold leading-none"
+                  style={{ color: vp.accent }}
+                >
+                  {vp.stat}
+                </div>
+                <div>
+                  <h3 className="font-semibold text-foreground text-base mb-1">{vp.label}</h3>
+                  <p className="text-sm text-muted-foreground font-light leading-relaxed">{vp.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ── What's Included ── */}
       <section
         className="py-20 md:py-24 px-5 md:px-10"
@@ -489,6 +615,81 @@ export default function PricingPageClient() {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* ── Service Bundles ── */}
+      <section className="py-20 md:py-24 px-5 md:px-10">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-14">
+            <span
+              className="inline-block px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-widest mb-4"
+              style={{ background: 'rgba(200,150,90,0.1)', color: '#C8965A', border: '1px solid rgba(200,150,90,0.2)' }}
+            >
+              Project-Based Work
+            </span>
+            <h2 className="font-serif text-3xl md:text-4xl text-foreground mb-4">Service Bundles</h2>
+            <p className="text-muted-foreground font-light max-w-xl mx-auto">
+              Not ready for a monthly retainer? These fixed-scope bundles let you engage for a single matter or surge period — no ongoing commitment required.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-6">
+            {SERVICE_BUNDLES.map((bundle) => (
+              <div
+                key={bundle.name}
+                className="rounded-2xl border overflow-hidden flex flex-col transition-all duration-200 hover:shadow-md hover:-translate-y-0.5"
+                style={{ background: 'var(--background)', borderColor: 'var(--border)' }}
+              >
+                <div className="h-1 w-full" style={{ background: bundle.tagColor }} />
+                <div className="p-6 flex flex-col flex-1">
+                  <div className="flex items-start justify-between gap-3 mb-4">
+                    <div>
+                      <span
+                        className="inline-block px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest mb-2"
+                        style={{ background: `${bundle.tagColor}18`, color: bundle.tagColor, border: `1px solid ${bundle.tagColor}30` }}
+                      >
+                        {bundle.tag}
+                      </span>
+                      <h3 className="font-serif text-xl font-bold text-foreground leading-snug">{bundle.name}</h3>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <div className="font-serif text-2xl font-bold" style={{ color: bundle.tagColor }}>{bundle.price}</div>
+                      <div className="text-[11px] text-muted-foreground font-light">{bundle.unit}</div>
+                    </div>
+                  </div>
+
+                  <p className="text-sm text-muted-foreground font-light leading-relaxed mb-5">{bundle.desc}</p>
+
+                  <ul className="space-y-2 mb-6 flex-1">
+                    {bundle.includes.map((item) => (
+                      <li key={item} className="flex items-start gap-2 text-sm text-muted-foreground font-light">
+                        <svg className="shrink-0 mt-0.5" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={bundle.tagColor} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+
+                  <Link
+                    href="/contact"
+                    className="w-full py-3 rounded-xl text-xs font-semibold uppercase tracking-widest text-center transition-all duration-200 hover:opacity-90"
+                    style={{ background: bundle.tagColor, color: '#fff' }}
+                  >
+                    Inquire About This Bundle
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <p className="text-center text-sm text-muted-foreground font-light mt-8">
+            Bundle pricing is fixed-scope. Custom project quotes available —{' '}
+            <Link href="/contact" className="font-semibold underline underline-offset-2 hover:opacity-80 transition-opacity" style={{ color: '#355E3B' }}>
+              contact us for a free scope review
+            </Link>.
+          </p>
         </div>
       </section>
 
