@@ -79,7 +79,9 @@ export async function getStreamingChatCompletion(
         // ignore JSON parse error
       }
       if (response.status === 429 || errorMessage.includes('429')) {
-        errorMessage = 'The AI assistant is currently busy. Please wait a moment and try again.';
+        const isQuotaExceeded = errorMessage.toLowerCase().includes('quota') || errorMessage.toLowerCase().includes('billing');
+        errorMessage = isQuotaExceeded
+          ? 'The AI assistant has reached its usage limit. Please contact support or try again later.' :'The AI assistant is currently busy. Please wait a moment and try again.';
       } else if (response.status === 503 || response.status === 502) {
         errorMessage = 'The AI service is temporarily unavailable. Please try again shortly.';
       }
@@ -114,8 +116,13 @@ export async function getStreamingChatCompletion(
               });
               // Provide friendly message for rate limit errors
               let errMsg = data.error || 'Streaming error';
-              if (errMsg.includes('429') || (data.details && data.details.includes('429'))) {
-                errMsg = 'The AI assistant is currently busy. Please wait a moment and try again.';
+              const combinedMsg = `${errMsg} ${data.details || ''}`.toLowerCase();
+              if (combinedMsg.includes('429') || combinedMsg.includes('ratelimit') || combinedMsg.includes('rate_limit')) {
+                if (combinedMsg.includes('quota') || combinedMsg.includes('billing') || combinedMsg.includes('exceeded')) {
+                  errMsg = 'The AI assistant has reached its usage limit. Please contact support or try again later.';
+                } else {
+                  errMsg = 'The AI assistant is currently busy. Please wait a moment and try again.';
+                }
               }
               onError(new Error(errMsg));
             }
