@@ -51,7 +51,16 @@ export default function ChatbotWidget() {
 
   // Show toast on error
   useEffect(() => {
-    if (error) toast.error('Something went wrong. Please try again.');
+    if (error) {
+      const msg = error.message || '';
+      if (msg.includes('busy') || msg.includes('429') || msg.includes('rate')) {
+        toast.error('The assistant is busy right now. Please wait a moment and try again.');
+      } else if (msg.includes('unavailable') || msg.includes('502') || msg.includes('503')) {
+        toast.error('The AI service is temporarily unavailable. Please try again shortly.');
+      } else {
+        toast.error('Something went wrong. Please try again.');
+      }
+    }
   }, [error]);
 
   // Initialize greeting when opened

@@ -71,8 +71,19 @@ export async function getStreamingChatCompletion(
     });
 
     if (!response.ok) {
-      const data = await response.json();
-      throw new Error(data.error || `HTTP error: ${response.status}`);
+      let errorMessage = `HTTP error: ${response.status}`;
+      try {
+        const data = await response.json();
+        errorMessage = data.error || errorMessage;
+      } catch {
+        // ignore JSON parse error
+      }
+      if (response.status === 429) {
+        errorMessage = 'The AI assistant is currently busy. Please wait a moment and try again.';
+      } else if (response.status === 503 || response.status === 502) {
+        errorMessage = 'The AI service is temporarily unavailable. Please try again shortly.';
+      }
+      throw new Error(errorMessage);
     }
 
     const reader = response.body?.getReader();
@@ -101,7 +112,12 @@ export async function getStreamingChatCompletion(
                 error: data.error,
                 details: data.details,
               });
-              onError(new Error(data.error));
+              // Provide friendly message for rate limit errors
+              let errMsg = data.error || 'Streaming error';
+              if (errMsg.includes('429') || (data.details && data.details.includes('429'))) {
+                errMsg = 'The AI assistant is currently busy. Please wait a moment and try again.';
+              }
+              onError(new Error(errMsg));
             }
           } catch {
             // Skip invalid JSON
