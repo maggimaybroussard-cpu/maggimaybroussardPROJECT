@@ -45,6 +45,9 @@ export default function LexiFloatingChat() {
 
   const { response, isLoading, error, sendMessage } = useChat('OPEN_AI', 'gpt-4o-mini', true);
 
+  // Track whether the previous render was loading (to detect completion)
+  const wasLoadingRef = useRef(false);
+
   useEffect(() => {
     if (error) toast.error('Lexi is temporarily unavailable. Please try again.');
   }, [error]);
@@ -68,6 +71,39 @@ export default function LexiFloatingChat() {
       setStreamingContent('');
     }
   }, [isLoading, response, streamingContent]);
+
+  // Sync conversation to Replit legal assistant after each assistant reply
+  useEffect(() => {
+    const justFinished = wasLoadingRef.current && !isLoading;
+    wasLoadingRef.current = isLoading;
+
+    if (!justFinished || !response) return;
+
+    // Build the full conversation including the just-completed assistant message
+    const fullHistory = messages.some((m) => m.role === 'assistant' && m.content === response)
+      ? messages
+      : [...messages, { role: 'assistant' as const, content: response }];
+
+    // Only sync if there's a real exchange (at least one user + one assistant message)
+    const hasUserMsg = fullHistory.some((m) => m.role === 'user');
+    const hasAssistantMsg = fullHistory.some((m) => m.role === 'assistant' && m.content !== fullHistory[0]?.content);
+    if (!hasUserMsg || !hasAssistantMsg) return;
+
+    const conversationHistory = fullHistory.map((m) => ({ role: m.role, content: m.content }));
+
+    fetch('/api/lexi/session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        clientName: 'Public Visitor',
+        caseRef: 'lexi-public-chat',
+        conversationHistory,
+        caseSummary: 'Public visitor conversation via Lexi floating chat',
+      }),
+    }).catch((err) => {
+      console.warn('Lexi session sync failed (non-critical):', err);
+    });
+  }, [isLoading, response, messages]);
 
   // Greeting on first open
   useEffect(() => {
