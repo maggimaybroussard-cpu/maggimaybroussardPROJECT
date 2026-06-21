@@ -1,0 +1,390 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #F9F0EC;
+  --foreground: #1B2A4A;
+  --primary: #1B2A4A;
+  --primary-foreground: #F5ECD7;
+  --secondary: #F9F0EC;
+  --secondary-foreground: #1B2A4A;
+  --accent: #B76E79;
+  --accent-foreground: #F5ECD7;
+  --muted: #F9F0EC;
+  --muted-foreground: #6B8C7A;
+  --card: #FFFFFF;
+  --card-foreground: #1B2A4A;
+  --border: #E8D5C4;
+  --input: #F9F0EC;
+  --ring: #B76E79;
+  --radius: 1rem;
+  --font-sans: 'Raleway', sans-serif;
+  --font-serif: 'Playfair Display', serif;
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+    border-color: var(--border);
+  }
+
+  /* Ensure keyboard focus is always visible (WCAG 2.4.7) */
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  /* Remove default outline only when using mouse (not keyboard) */
+  :focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, h4, h5, h6, p {
+    margin: 0;
+  }
+}
+
+@layer utilities {
+  .font-serif {
+    font-family: var(--font-serif);
+  }
+
+  .text-hero-display {
+    font-size: clamp(3rem, 7vw, 7.5rem);
+    line-height: 0.92;
+    letter-spacing: -0.03em;
+    font-family: var(--font-serif);
+    color: var(--primary-foreground);
+  }
+
+  .text-section-heading {
+    font-size: clamp(2.5rem, 5vw, 4.5rem);
+    line-height: 0.95;
+    letter-spacing: -0.025em;
+    font-family: var(--font-serif);
+  }
+
+  .text-card-heading {
+    font-size: clamp(1.5rem, 2.5vw, 2rem);
+    font-family: var(--font-serif);
+    line-height: 1.1;
+  }
+
+  .card-rounded {
+    border-radius: 2rem;
+  }
+
+  .card-rounded-sm {
+    border-radius: 1.25rem;
+  }
+
+  .glass-warm {
+    background: rgba(250, 247, 242, 0.88);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+
+  .nav-scrolled {
+    background: rgba(74, 55, 40, 0.92) !important;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(200, 150, 90, 0.2);
+  }
+
+  .nav-scrolled a,
+  .nav-scrolled span {
+    color: var(--primary-foreground) !important;
+  }
+
+  .nav-scrolled .nav-logo-text {
+    color: var(--primary-foreground) !important;
+  }
+
+  .service-card-hover {
+    transition: transform 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                box-shadow 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  .service-card-hover:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 24px 60px rgba(74, 55, 40, 0.12);
+  }
+
+  .img-grayscale-hover img {
+    filter: grayscale(100%);
+    transition: filter 0.7s cubic-bezier(0.4, 0, 0.2, 1),
+                transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .img-grayscale-hover:hover img {
+    filter: grayscale(0%);
+    transform: scale(1.04);
+  }
+
+  .stat-number {
+    font-family: var(--font-serif);
+    font-size: clamp(2.5rem, 4vw, 3.5rem);
+    line-height: 1;
+    color: var(--accent);
+    letter-spacing: -0.02em;
+  }
+
+  .divider-ornament {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    color: var(--accent);
+  }
+
+  .divider-ornament::before,
+  .divider-ornament::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--accent), transparent);
+  }
+
+  .animate-fade-in {
+    animation: fadeInUp 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  }
+
+  .animate-fade-in-delay-1 {
+    animation: fadeInUp 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.15s forwards;
+    opacity: 0;
+  }
+
+  .animate-fade-in-delay-2 {
+    animation: fadeInUp 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.3s forwards;
+    opacity: 0;
+  }
+
+  .animate-fade-in-delay-3 {
+    animation: fadeInUp 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.45s forwards;
+    opacity: 0;
+  }
+
+  .scroll-reveal {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .scroll-reveal-hidden {
+    opacity: 0;
+    transform: translateY(32px);
+    transition: opacity 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                transform 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  .scroll-reveal-hidden.revealed {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* CLS prevention: ensure images in fixed-size containers don't cause layout shifts */
+  .testimonial-portrait {
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* INP optimization: use content-visibility for below-fold sections */
+  .section-below-fold {
+    content-visibility: auto;
+    contain-intrinsic-size: 0 500px;
+  }
+
+  .grain-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.025;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+    background-size: 128px 128px;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Notion blog article content styles */
+.notion-content h1 {
+  font-family: var(--font-serif, Georgia, serif);
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-top: 2rem;
+  margin-bottom: 0.75rem;
+  line-height: 1.3;
+}
+.notion-content h2 {
+  font-family: var(--font-serif, Georgia, serif);
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-top: 2rem;
+  margin-bottom: 0.6rem;
+  line-height: 1.35;
+}
+.notion-content h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+.notion-content p {
+  font-size: 1rem;
+  line-height: 1.8;
+  color: #374151;
+  margin-bottom: 1.25rem;
+}
+.notion-content ul {
+  list-style-type: disc;
+  padding-left: 1.5rem;
+  margin-bottom: 1.25rem;
+}
+.notion-content ol {
+  list-style-type: decimal;
+  padding-left: 1.5rem;
+  margin-bottom: 1.25rem;
+}
+.notion-content li {
+  font-size: 1rem;
+  line-height: 1.75;
+  color: #374151;
+  margin-bottom: 0.4rem;
+}
+.notion-content blockquote {
+  border-left: 3px solid #C8965A;
+  padding: 0.75rem 1.25rem;
+  margin: 1.5rem 0;
+  background: #fdf8f0;
+  border-radius: 0 0.5rem 0.5rem 0;
+  font-style: italic;
+  color: #555;
+}
+.notion-content pre {
+  background: #1e1e1e;
+  color: #d4d4d4;
+  padding: 1.25rem;
+  border-radius: 0.75rem;
+  overflow-x: auto;
+  margin-bottom: 1.25rem;
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+.notion-content code {
+  background: #f3f4f6;
+  color: #355E3B;
+  padding: 0.15rem 0.4rem;
+  border-radius: 0.25rem;
+  font-size: 0.875em;
+}
+.notion-content pre code {
+  background: transparent;
+  color: inherit;
+  padding: 0;
+}
+.notion-content hr {
+  border: none;
+  border-top: 1px solid #e5e7eb;
+  margin: 2rem 0;
+}
+.notion-content a {
+  color: #355E3B;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.notion-content a:hover {
+  color: #C8965A;
+}
+.notion-content strong {
+  font-weight: 700;
+  color: #1a1a1a;
+}
+.notion-content figure {
+  margin: 1.5rem 0;
+}
+.notion-content figure img {
+  width: 100%;
+  border-radius: 0.75rem;
+  object-fit: cover;
+}
+.notion-content figcaption {
+  text-align: center;
+  font-size: 0.8rem;
+  color: #9ca3af;
+  margin-top: 0.5rem;
+}
+.notion-content .callout {
+  display: flex;
+  gap: 0.75rem;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 0.75rem;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.25rem;
+  align-items: flex-start;
+}
+.notion-content .callout span {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes subtlePulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+@keyframes scrollIndicator {
+  0% { transform: translateY(0); opacity: 1; }
+  100% { transform: translateY(8px); opacity: 0; }
+}
+
+.scroll-dot {
+  animation: scrollIndicator 1.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}

@@ -1,0 +1,68 @@
+{
+    "name": "Maggi May Broussard \u2014 Legal Services",
+    "short_name": "Broussard Legal",
+    "description": "Professional contract paralegal services for law firms nationwide. Remote litigation support, legal research, and document drafting.",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#FAF7F2",
+    "theme_color": "#4A3728",
+    "orientation": "portrait-primary",
+    "scope": "/",
+    "lang": "en-US",
+    "categories": [
+        "legal",
+        "business",
+        "productivity"
+    ],
+    "icons": [
+        {
+            "src": "/assets/images/app_logo.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/assets/images/app_logo.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ],
+    "screenshots": [
+        {
+            "src": "/assets/images/app_logo.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "form_factor": "wide",
+            "label": "Broussard Legal Services Dashboard"
+        }
+    ],
+    "shortcuts": [
+        {
+            "name": "Client Portal",
+            "short_name": "Portal",
+            "description": "Access your client portal",
+            "url": "/portal/login",
+            "icons": [
+                {
+                    "src": "/assets/images/app_logo.png",
+                    "sizes": "192x192"
+                }
+            ]
+        },
+        {
+            "name": "Book Consultation",
+            "short_name": "Book",
+            "description": "Schedule a consultation",
+            "url": "/book-consultation",
+            "icons": [
+                {
+                    "src": "/assets/images/app_logo.png",
+                    "sizes": "192x192"
+                }
+            ]
+        }
+    ],
+    "related_applications": [],
+    "prefer_related_applications": false
+}
