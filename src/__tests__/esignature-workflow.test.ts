@@ -15,6 +15,7 @@
 
 /// <reference types="jest" />
 import '@jest/globals';
+import { describe, it, expect, jest } from '@jest/globals';
 import { createClient } from '@/lib/supabase/client';
 
 // ─── Shared mock data ────────────────────────────────────────────────────────
