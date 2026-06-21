@@ -93,17 +93,23 @@ export async function POST(request: NextRequest) {
 
     if (error) throw error;
 
-    // Sync conversation to Broussard after saving to Supabase
+    // Sync conversation to Broussard — fire-and-forget, never blocks or throws
     if (data && Array.isArray(conversationHistory) && conversationHistory.length > 0) {
-      await pushConversationToBroussard({
-        id: data.id,
-        userId: userId,
-        title: (caseSummary?.trim() || `${clientName}${caseRef ? ` — ${caseRef}` : ''}`),
-        messages: conversationHistory.map((m: { role?: string; from?: string; content?: string; text?: string }) => ({
-          role: m.role ?? (m.from === 'bot' ? 'assistant' : 'user'),
-          content: m.content ?? m.text ?? '',
-        })),
-      });
+      void (async () => {
+        try {
+          await pushConversationToBroussard({
+            id: data.id,
+            userId: userId,
+            title: (caseSummary?.trim() || `${clientName}${caseRef ? ` — ${caseRef}` : ''}`),
+            messages: conversationHistory.map((m: { role?: string; from?: string; content?: string; text?: string }) => ({
+              role: m.role ?? (m.from === 'bot' ? 'assistant' : 'user'),
+              content: m.content ?? m.text ?? '',
+            })),
+          });
+        } catch (syncErr) {
+          console.warn('Broussard sync error (non-blocking):', syncErr);
+        }
+      })();
     }
 
     return NextResponse.json({ session: data });
