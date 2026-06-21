@@ -5,6 +5,7 @@ import { Suspense } from 'react';
 import '../styles/tailwind.css';
 import GoogleAnalytics from '@/components/GoogleAnalytics';
 import ChatbotWidget from '@/components/ChatbotWidget';
+import LexiFloatingChat from '@/components/LexiFloatingChat';
 import CookieBanner from '@/components/CookieBanner';
 import { AuthProvider } from '@/contexts/AuthContext';
 import PWAInstallPrompt from '@/components/PWAInstallPrompt';
@@ -254,6 +255,7 @@ export default function RootLayout({
         <Toaster position="top-right" toastOptions={{ duration: 4000 }} />
         <CookieBanner />
         <ChatbotWidget />
+        <LexiFloatingChat />
         <PWAInstallPrompt />
       </body>
     </html>
