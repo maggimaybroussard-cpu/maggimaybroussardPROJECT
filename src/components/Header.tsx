@@ -22,6 +22,7 @@ const navLinks = [
   { label: 'Pay Retainer', href: '/retainer-payment' },
   { label: '📅 Schedule', href: '/schedule' },
   { label: '📋 Book Now', href: '/prospect-booking' },
+  { label: '📅 Book Appointment', href: '/book-appointment' },
   { label: 'Contact', href: '/contact' },
   { label: '📁 Deliverable Hub', href: '/client-deliverable-hub' },
   { label: '📲 Install App', href: '/mobile-download' },
