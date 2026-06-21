@@ -19,6 +19,7 @@ export async function pushConversationToBroussard(conversation: {
   id: string | number;
   userId?: string | number;
   title: string;
+  summary?: string;
   messages: { role: string; content: string }[];
 }): Promise<BroussardSyncResult | undefined> {
   const url = process.env.BROUSSARD_API_URL;
@@ -32,13 +33,14 @@ export async function pushConversationToBroussard(conversation: {
   }
 
   try {
+    const { id, userId, title, summary, messages } = conversation;
     const res = await fetch(`${url}/api/assistant/conversation`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'x-internal-secret': key,
       },
-      body: JSON.stringify({ ...conversation, source: 'legal-assistant' }),
+      body: JSON.stringify({ id, userId, title, summary, messages }),
     });
 
     if (!res.ok) {
