@@ -67,6 +67,7 @@
     "react": "19.0.3",
     "react-dom": "19.0.3",
     "react-hot-toast": "^2.4.1",
+    "react-markdown": "10.1.0",
     "recharts": "^2.15.2",
     "stripe": "^16.0.0",
     "uqr": "0.1.3",
