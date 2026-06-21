@@ -11,9 +11,21 @@ const PROVIDER_FALLBACKS: Record<string, { provider: string; model: string }[]> 
   OPEN_AI: [
     { provider: 'GEMINI', model: 'gemini/gemini-2.5-flash' },
     { provider: 'ANTHROPIC', model: 'anthropic/claude-haiku-4-5' },
+    { provider: 'PERPLEXITY', model: 'perplexity/llama-3.1-sonar-small-128k-online' },
   ],
   GEMINI: [
     { provider: 'OPEN_AI', model: 'openai/gpt-4o-mini' },
+    { provider: 'ANTHROPIC', model: 'anthropic/claude-haiku-4-5' },
+    { provider: 'PERPLEXITY', model: 'perplexity/llama-3.1-sonar-small-128k-online' },
+  ],
+  ANTHROPIC: [
+    { provider: 'OPEN_AI', model: 'openai/gpt-4o-mini' },
+    { provider: 'GEMINI', model: 'gemini/gemini-2.5-flash' },
+    { provider: 'PERPLEXITY', model: 'perplexity/llama-3.1-sonar-small-128k-online' },
+  ],
+  PERPLEXITY: [
+    { provider: 'OPEN_AI', model: 'openai/gpt-4o-mini' },
+    { provider: 'GEMINI', model: 'gemini/gemini-2.5-flash' },
     { provider: 'ANTHROPIC', model: 'anthropic/claude-haiku-4-5' },
   ],
 };
