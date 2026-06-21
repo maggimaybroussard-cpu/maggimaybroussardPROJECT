@@ -4,17 +4,17 @@ const ENDPOINT = '/api/ai/chat-completion';
 
 // Default cost-efficient model
 const DEFAULT_PROVIDER = 'OPEN_AI';
-const DEFAULT_MODEL = 'gpt-4o-mini';
+const DEFAULT_MODEL = 'openai/gpt-4o-mini';
 
 // Fallback providers when primary hits rate limits or quota errors
 const PROVIDER_FALLBACKS: Record<string, { provider: string; model: string }[]> = {
   OPEN_AI: [
-    { provider: 'GEMINI', model: 'gemini-2.0-flash' },
-    { provider: 'ANTHROPIC', model: 'claude-haiku-4-5' },
+    { provider: 'GEMINI', model: 'gemini/gemini-2.5-flash' },
+    { provider: 'ANTHROPIC', model: 'anthropic/claude-haiku-4-5' },
   ],
   GEMINI: [
-    { provider: 'OPEN_AI', model: 'gpt-4o-mini' },
-    { provider: 'ANTHROPIC', model: 'claude-haiku-4-5' },
+    { provider: 'OPEN_AI', model: 'openai/gpt-4o-mini' },
+    { provider: 'ANTHROPIC', model: 'anthropic/claude-haiku-4-5' },
   ],
 };
 
@@ -53,7 +53,6 @@ export async function getChatCompletion(
     const msgs = providerOrMessages;
     const opts = (modelOrOptions as Record<string, unknown>) ?? {};
     const { model = DEFAULT_MODEL, ...rest } = opts;
-    // Apply a sensible default token cap to keep costs low
     const safeParams = { max_completion_tokens: 2000, ...rest };
     const data = await callAIEndpoint(ENDPOINT, {
       provider: DEFAULT_PROVIDER,
@@ -62,14 +61,12 @@ export async function getChatCompletion(
       stream: false,
       parameters: safeParams,
     });
-    // Return plain text for legacy callers
     return data?.choices?.[0]?.message?.content ?? '';
   }
 
   // ── Explicit form: getChatCompletion(provider, model, messages[], params?) ─
   const provider = providerOrMessages as string;
   const model = modelOrOptions as string;
-  // Apply a sensible default token cap
   const safeParams = { max_completion_tokens: 2000, ...parameters };
   return callAIEndpoint(ENDPOINT, {
     provider,
@@ -158,7 +155,7 @@ async function attemptStreaming(
                   }
                   return;
                 }
-                let errMsg = data.error || 'Streaming error';
+                const errMsg = data.error || 'Streaming error';
                 if (!resolved) {
                   resolved = true;
                   resolve('error');
