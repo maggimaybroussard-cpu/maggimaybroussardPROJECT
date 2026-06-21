@@ -2,6 +2,8 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useChat } from '@/lib/hooks/useChat';
+import { useAuth } from '@/contexts/AuthContext';
+import Link from 'next/link';
 import toast from 'react-hot-toast';
 import ReactMarkdown from 'react-markdown';
 
@@ -34,10 +36,13 @@ export default function ChatbotWidget() {
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [streamingContent, setStreamingContent] = useState('');
+  const [showSignUpNudge, setShowSignUpNudge] = useState(false);
+  const [nudgeDismissed, setNudgeDismissed] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const hasGreeted = useRef(false);
 
+  const { user, loading: authLoading } = useAuth();
   const { response, isLoading, error, sendMessage } = useChat(
     'ANTHROPIC',
     'claude-sonnet-4-6',
@@ -80,10 +85,19 @@ export default function ChatbotWidget() {
     }
   }, [response, isLoading]);
 
+  // Show sign-up nudge after 3 user messages for unauthenticated users
+  useEffect(() => {
+    if (authLoading || user || nudgeDismissed) return;
+    const userMsgCount = messages.filter((m) => m.role === 'user').length;
+    if (userMsgCount >= 3 && !showSignUpNudge) {
+      setShowSignUpNudge(true);
+    }
+  }, [messages, user, authLoading, nudgeDismissed, showSignUpNudge]);
+
   // Auto-scroll
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, streamingContent]);
+  }, [messages, streamingContent, showSignUpNudge]);
 
   // Focus textarea when opened
   useEffect(() => {
@@ -126,6 +140,7 @@ export default function ChatbotWidget() {
     ]);
     setStreamingContent('');
     setInput('');
+    setShowSignUpNudge(false);
     hasGreeted.current = true;
   };
 
@@ -295,6 +310,56 @@ export default function ChatbotWidget() {
               </div>
             )}
 
+            {/* Sign-up nudge for unauthenticated users after 3 messages */}
+            {showSignUpNudge && !user && !nudgeDismissed && (
+              <div className="mx-1 mt-2 rounded-xl border border-primary/20 bg-primary/5 p-3.5 shrink-0">
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                        <circle cx="9" cy="7" r="4"/>
+                        <line x1="19" y1="8" x2="19" y2="14"/>
+                        <line x1="22" y1="11" x2="16" y2="11"/>
+                      </svg>
+                    </div>
+                    <p className="text-xs font-semibold text-foreground">Save your conversation</p>
+                  </div>
+                  <button
+                    onClick={() => setNudgeDismissed(true)}
+                    aria-label="Dismiss"
+                    className="text-muted-foreground hover:text-foreground transition-colors shrink-0"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                  </button>
+                </div>
+                <p className="text-xs text-muted-foreground leading-relaxed mb-3">
+                  Create a free client account to save this conversation, track your case status, manage bookings, and access your documents.
+                </p>
+                <div className="flex gap-2">
+                  <Link
+                    href="/portal/register"
+                    onClick={() => setOpen(false)}
+                    className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:opacity-90 transition-opacity"
+                  >
+                    Create Account
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+                    </svg>
+                  </Link>
+                  <Link
+                    href="/portal/login"
+                    onClick={() => setOpen(false)}
+                    className="flex-1 inline-flex items-center justify-center px-3 py-2 rounded-lg border border-border text-xs font-medium text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-all"
+                  >
+                    Sign In
+                  </Link>
+                </div>
+              </div>
+            )}
+
             <div ref={bottomRef} />
           </div>
 
@@ -341,12 +406,25 @@ export default function ChatbotWidget() {
 
           {/* Footer links */}
           <div className="border-t border-border px-4 py-2 flex items-center justify-between shrink-0">
-            <a href="/availability" className="text-xs text-primary hover:underline font-medium">
-              Book a consultation →
-            </a>
-            <a href="/pricing" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
-              View pricing
-            </a>
+            {user ? (
+              <>
+                <Link href="/portal/dashboard" className="text-xs text-primary hover:underline font-medium">
+                  My Portal →
+                </Link>
+                <a href="/availability" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+                  Book consultation
+                </a>
+              </>
+            ) : (
+              <>
+                <a href="/availability" className="text-xs text-primary hover:underline font-medium">
+                  Book a consultation →
+                </a>
+                <Link href="/portal/register" className="text-xs text-muted-foreground hover:text-foreground transition-colors font-medium">
+                  Create account
+                </Link>
+              </>
+            )}
           </div>
         </div>
       )}

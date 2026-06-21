@@ -113,6 +113,17 @@ export default function HeroSection() {
               
               View Services
             </Link>
+            <Link
+              href="/portal/register"
+              onClick={() => trackCTAClick('Client Portal', 'hero', '/portal/register')}
+              className="inline-flex items-center justify-center gap-2 px-8 py-4 border border-primary-foreground/20 text-primary-foreground/80 rounded-full text-xs font-semibold uppercase tracking-[0.15em] hover:bg-primary-foreground/8 hover:border-primary-foreground/40 hover:text-primary-foreground transition-all duration-300">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+                <polyline points="10 17 15 12 10 7"/>
+                <line x1="15" y1="12" x2="3" y2="12"/>
+              </svg>
+              Client Portal
+            </Link>
           </div>
         </div>
 

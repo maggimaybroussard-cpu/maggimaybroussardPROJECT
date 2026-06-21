@@ -58,6 +58,26 @@ export default function ContactCTASection() {
             Send an Email
           </a>
         </div>
+
+        {/* Prospect-to-client conversion link */}
+        <p className="mt-8 text-xs text-primary-foreground/50">
+          Already a client?{' '}
+          <Link
+            href="/portal/login"
+            onClick={() => trackCTAClick('Sign In', 'homepage_cta', '/portal/login')}
+            className="text-primary-foreground/80 hover:text-primary-foreground underline underline-offset-2 transition-colors font-medium"
+          >
+            Sign in to your portal
+          </Link>
+          {' '}·{' '}
+          <Link
+            href="/portal/register"
+            onClick={() => trackCTAClick('Create Account', 'homepage_cta', '/portal/register')}
+            className="text-accent hover:text-accent/80 underline underline-offset-2 transition-colors font-medium"
+          >
+            Create a free account
+          </Link>
+        </p>
       </div>
     </section>
   );
