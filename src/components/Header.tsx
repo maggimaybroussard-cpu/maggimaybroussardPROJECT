@@ -20,6 +20,7 @@ const navLinks = [
   { label: 'Log Formats', href: '/log-formats' },
   { label: 'Retainer', href: '/retainer-contract' },
   { label: 'Pay Retainer', href: '/retainer-payment' },
+  { label: '📅 Schedule', href: '/schedule' },
   { label: '📋 Book Now', href: '/prospect-booking' },
   { label: 'Contact', href: '/contact' },
   { label: '📁 Deliverable Hub', href: '/client-deliverable-hub' },
