@@ -5,7 +5,9 @@ import Link from 'next/link';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import PaymentModal from '@/components/PaymentModal';
-import { trackBookingPageView, trackPaymentModalOpen, trackCalendlyBooking, trackLeadQuality, trackBookingComplete, trackCTAClick, trackConsultationFunnelEntry, trackConsultationCalendlyEngaged, trackConsultationBooked, trackConsultationServiceSelected, getTrafficAttribution,  } from '@/lib/analytics';
+import {
+  trackBookingPageView, trackPaymentModalOpen, trackCalendlyBooking, trackLeadQuality, trackBookingComplete, trackCTAClick, trackConsultationFunnelEntry, trackConsultationCalendlyEngaged, trackConsultationBooked, trackConsultationServiceSelected, getTrafficAttribution, trackBookingPageFunnelEntry,
+} from '@/lib/analytics';
 import QRCodeImage from '@/components/ui/QRCodeImage';
 import ConsultationCalendar from '@/components/ConsultationCalendar';
 import ConsultationDepositField from '@/components/ConsultationDepositField';
@@ -56,6 +58,7 @@ export default function BookConsultationPage() {
 
   useEffect(() => {
     trackBookingPageView();
+    trackBookingPageFunnelEntry('book_consultation');
     const attr = getTrafficAttribution();
     setAttribution(attr);
     trackConsultationFunnelEntry({

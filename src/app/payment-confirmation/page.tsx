@@ -10,6 +10,7 @@ import {
   trackPaymentSuccess,
   trackBookingConfirmationPageView,
   trackLeadQuality,
+  trackServicesFunnelConversionComplete,
 } from '@/lib/analytics';
 
 interface TransactionDetails {
@@ -147,6 +148,12 @@ function ConfirmationContent() {
         service: option.label,
         conversionType: 'payment',
         value: option.amount,
+      });
+      // Fire services → booking funnel terminal conversion event
+      trackServicesFunnelConversionComplete({
+        paymentType: option.type,
+        amount: option.amount,
+        transactionId: paymentIntentId,
       });
 
       // Trigger post-payment welcome email sequence

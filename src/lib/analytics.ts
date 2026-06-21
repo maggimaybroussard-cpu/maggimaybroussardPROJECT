@@ -1709,3 +1709,163 @@ export function trackPortalInvoicesView(params: {
     total_outstanding: params.totalOutstanding,
   });
 }
+
+// ── Services → Booking Conversion Funnel ─────────────────────────────────────
+
+/**
+ * Funnel Step 1 — User lands on the services page.
+ * Captures the referrer source so we know which channel drove the visit.
+ */
+export function trackServicesFunnelEntry(params: {
+  referrerSource: 'homepage' | 'direct' | 'external' | 'other';
+  referrerPath?: string;
+}) {
+  trackEvent('services_funnel_entry', {
+    event_category: 'services_booking_funnel',
+    funnel_step: 1,
+    funnel_step_name: 'services_page',
+    referrer_source: params.referrerSource,
+    referrer_path: params.referrerPath ?? '',
+  });
+}
+
+/**
+ * Funnel Step 2 — User clicks a service card on the services page.
+ * Captures which specific service drove the most booking intent.
+ */
+export function trackServiceCardFunnelClick(serviceName: string) {
+  trackEvent('services_funnel_card_click', {
+    event_category: 'services_booking_funnel',
+    funnel_step: 2,
+    funnel_step_name: 'service_card_clicked',
+    service_name: serviceName,
+    page: 'services',
+  });
+  // Store the originating service in sessionStorage for attribution on confirmation page
+  if (typeof window !== 'undefined') {
+    try {
+      sessionStorage.setItem('funnel_origin_service', serviceName);
+      sessionStorage.setItem('funnel_origin_cta', 'service_card');
+    } catch {
+      // sessionStorage unavailable — non-blocking
+    }
+  }
+}
+
+/**
+ * Funnel Step 2 (CTA variant) — User clicks a named CTA button on the services page.
+ * Captures which CTA (e.g. "Schedule a Consultation", "Email Direct") converts highest.
+ */
+export function trackServicesCTAFunnelClick(ctaLabel: string, ctaPosition: 'hero' | 'work_cta' | 'process' | 'other') {
+  trackEvent('services_funnel_cta_click', {
+    event_category: 'services_booking_funnel',
+    funnel_step: 2,
+    funnel_step_name: 'services_cta_clicked',
+    cta_label: ctaLabel,
+    cta_position: ctaPosition,
+    page: 'services',
+  });
+  // Store the originating CTA in sessionStorage for attribution on confirmation page
+  if (typeof window !== 'undefined') {
+    try {
+      sessionStorage.setItem('funnel_origin_cta', ctaLabel);
+      sessionStorage.setItem('funnel_origin_page', 'services');
+    } catch {
+      // sessionStorage unavailable — non-blocking
+    }
+  }
+}
+
+/**
+ * Funnel Step 3 — User reaches the booking page (book-consultation or schedule).
+ * Reads sessionStorage to attribute which services-page CTA drove the visit.
+ */
+export function trackBookingPageFunnelEntry(bookingPage: 'book_consultation' | 'schedule' | 'prospect_booking') {
+  let originService = '';
+  let originCta = '';
+  let originPage = '';
+  if (typeof window !== 'undefined') {
+    try {
+      originService = sessionStorage.getItem('funnel_origin_service') ?? '';
+      originCta = sessionStorage.getItem('funnel_origin_cta') ?? '';
+      originPage = sessionStorage.getItem('funnel_origin_page') ?? '';
+    } catch {
+      // sessionStorage unavailable
+    }
+  }
+  trackEvent('services_funnel_booking_page', {
+    event_category: 'services_booking_funnel',
+    funnel_step: 3,
+    funnel_step_name: 'booking_page_reached',
+    booking_page: bookingPage,
+    origin_service: originService,
+    origin_cta: originCta,
+    origin_page: originPage || 'unknown',
+  });
+}
+
+/**
+ * Funnel Step 4 — Booking confirmed (Calendly or direct scheduler).
+ * Reads sessionStorage to attribute which services-page CTA and service card converted.
+ */
+export function trackServicesFunnelBookingConfirmed(params: {
+  bookingSource: 'calendly' | 'direct_scheduler' | 'prospect_booking';
+  serviceType?: string;
+}) {
+  let originService = '';
+  let originCta = '';
+  if (typeof window !== 'undefined') {
+    try {
+      originService = sessionStorage.getItem('funnel_origin_service') ?? '';
+      originCta = sessionStorage.getItem('funnel_origin_cta') ?? '';
+    } catch {
+      // sessionStorage unavailable
+    }
+  }
+  trackEvent('services_funnel_booking_confirmed', {
+    event_category: 'services_booking_funnel',
+    funnel_step: 4,
+    funnel_step_name: 'booking_confirmed',
+    booking_source: params.bookingSource,
+    service_type: params.serviceType ?? originService ?? 'unknown',
+    origin_service: originService,
+    origin_cta: originCta,
+  });
+}
+
+/**
+ * Funnel Step 5 — Payment / booking confirmation page reached.
+ * This is the terminal conversion event for the services → booking funnel.
+ * Reads sessionStorage to attribute which services-page CTA and service card converted.
+ */
+export function trackServicesFunnelConversionComplete(params: {
+  paymentType: string;
+  amount: number;
+  transactionId: string;
+}) {
+  let originService = '';
+  let originCta = '';
+  if (typeof window !== 'undefined') {
+    try {
+      originService = sessionStorage.getItem('funnel_origin_service') ?? '';
+      originCta = sessionStorage.getItem('funnel_origin_cta') ?? '';
+      // Clear funnel attribution after conversion
+      sessionStorage.removeItem('funnel_origin_service');
+      sessionStorage.removeItem('funnel_origin_cta');
+      sessionStorage.removeItem('funnel_origin_page');
+    } catch {
+      // sessionStorage unavailable
+    }
+  }
+  trackEvent('services_funnel_conversion_complete', {
+    event_category: 'services_booking_funnel',
+    funnel_step: 5,
+    funnel_step_name: 'conversion_complete',
+    payment_type: params.paymentType,
+    value: params.amount,
+    currency: 'USD',
+    transaction_id: params.transactionId,
+    origin_service: originService,
+    origin_cta: originCta,
+  });
+}

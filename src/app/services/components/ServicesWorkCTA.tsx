@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { trackCTAClick, trackBookConsultationClick } from '@/lib/analytics';
+import { trackCTAClick, trackBookConsultationClick, trackServicesCTAFunnelClick } from '@/lib/analytics';
 
 export default function ServicesWorkCTA() {
   return (
@@ -28,6 +28,7 @@ export default function ServicesWorkCTA() {
             onClick={() => {
               trackCTAClick('Schedule a Consultation', 'services_cta', '/book-consultation');
               trackBookConsultationClick('services_cta');
+              trackServicesCTAFunnelClick('Schedule a Consultation', 'work_cta');
             }}
             className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-primary text-primary-foreground rounded-full text-sm font-semibold uppercase tracking-widest hover:opacity-90 transition-all duration-300 hover:gap-3"
           >
@@ -38,7 +39,10 @@ export default function ServicesWorkCTA() {
           </Link>
           <a
             href="mailto:broussardlegalservices@gmail.com"
-            onClick={() => trackCTAClick('Email Direct', 'services_cta', 'mailto:broussardlegalservices@gmail.com')}
+            onClick={() => {
+              trackCTAClick('Email Direct', 'services_cta', 'mailto:broussardlegalservices@gmail.com');
+              trackServicesCTAFunnelClick('Email Direct', 'work_cta');
+            }}
             className="inline-flex items-center justify-center gap-2 px-8 py-4 border border-border text-foreground rounded-full text-sm font-medium tracking-wide hover:border-accent hover:text-accent transition-all duration-300"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
