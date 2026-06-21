@@ -26,7 +26,7 @@ export default function Footer() {
             <Link href="/" className="flex items-center gap-2.5 group shrink-0">
               <AppLogo size={28} />
               <span className="font-serif text-[15px] tracking-tight transition-colors duration-200 group-hover:text-accent" style={{ color: '#355E3B' }}>
-                Maggi May Broussard
+                Broussard Legal Services
               </span>
             </Link>
             {/* Business Address */}
@@ -63,7 +63,7 @@ export default function Footer() {
 
             {/* Copyright */}
             <p className="text-[13px] text-muted-foreground/70 sm:text-right shrink-0">
-              © {year} Maggi May Broussard
+              © {year} Broussard Legal Services
             </p>
           </div>
 

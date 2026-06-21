@@ -79,7 +79,7 @@ export default function ClientPortalLoginPage() {
         <Link href="/" className="inline-flex items-center gap-3 group">
           <AppLogo size={32} className="transition-transform duration-300 group-hover:scale-105" />
           <span className="font-serif text-base tracking-tight" style={{ color: '#355E3B' }}>
-            Maggi May Broussard
+Broussard Legal Services
           </span>
         </Link>
       </header>

@@ -20,7 +20,9 @@ const navLinks = [
   { label: 'Log Formats', href: '/log-formats' },
   { label: 'Retainer', href: '/retainer-contract' },
   { label: 'Pay Retainer', href: '/retainer-payment' },
+  { label: '📅 Schedule', href: '/schedule' },
   { label: '📋 Book Now', href: '/prospect-booking' },
+  { label: '📅 Book Appointment', href: '/book-appointment' },
   { label: 'Contact', href: '/contact' },
   { label: '📁 Deliverable Hub', href: '/client-deliverable-hub' },
   { label: '📲 Install App', href: '/mobile-download' },
@@ -155,12 +157,12 @@ export default function Header() {
               )}
             </div>
 
-            <Link href="/" className="flex items-center gap-2.5" aria-label="Maggi May Broussard — Home">
+            <Link href="/" className="flex items-center gap-2.5" aria-label="Broussard Legal Services — Home">
               <span
                 className="font-serif text-lg tracking-tight transition-colors duration-300"
                 style={{ color: '#355E3B' }}
               >
-                Maggi May Broussard
+                Broussard Legal Services
               </span>
               <Image
                 src="/assets/images/initiallogo-1781843073214.png"

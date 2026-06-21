@@ -32,7 +32,7 @@ export default function AboutSection() {
   }, []);
 
   return (
-    <section ref={sectionRef} suppressHydrationWarning className="py-20 md:py-36 bg-background overflow-hidden" id="about" aria-label="About Maggi May Broussard">
+    <section ref={sectionRef} suppressHydrationWarning className="py-20 md:py-36 bg-background overflow-hidden" id="about" aria-label="About Broussard Legal Services">
       <div suppressHydrationWarning className="max-w-7xl mx-auto px-5 md:px-10">
         <div suppressHydrationWarning className="grid lg:grid-cols-2 gap-12 lg:gap-28 items-center">
 

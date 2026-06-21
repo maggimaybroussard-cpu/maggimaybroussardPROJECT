@@ -31,7 +31,7 @@ function emailWrapper(content: string, preheader = "", digestLabel = "Case Diges
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <meta name="x-apple-disable-message-reformatting">
-      <title>${digestLabel} — Maggi May Broussard</title>
+      <title>${digestLabel} — Broussard Legal Services</title>
       ${preheader ? `<!--[if !mso]><!--><div style="display:none;font-size:1px;color:#fefefe;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;">${preheader}</div><!--<![endif]-->` : ""}
     </head>
     <body style="margin:0; padding:0; background-color:#EDE8E0; font-family: Georgia, 'Times New Roman', serif; -webkit-text-size-adjust:100%; -ms-text-size-adjust:100%;">
@@ -53,7 +53,7 @@ function emailWrapper(content: string, preheader = "", digestLabel = "Case Diges
                             <p style="margin:0; font-size:10px; color:${brand.accent}; letter-spacing:0.18em; text-transform:uppercase; font-family: Georgia, serif; line-height:1.4;">Services</p>
                           </td>
                           <td style="padding-left: 14px; vertical-align: middle;">
-                            <h1 style="margin:0; font-size:24px; color:${brand.white}; font-family: Georgia, 'Times New Roman', serif; font-weight:normal; letter-spacing:0.01em; line-height:1.2;">Maggi May Broussard</h1>
+                            <h1 style="margin:0; font-size:24px; color:${brand.white}; font-family: Georgia, 'Times New Roman', serif; font-weight:normal; letter-spacing:0.01em; line-height:1.2;">Broussard Legal Services</h1>
                             <p style="margin:4px 0 0; font-size:12px; color:rgba(255,255,255,0.65); font-family: Georgia, serif; letter-spacing:0.06em;">Louisiana &amp; Nationwide</p>
                           </td>
                           <td style="text-align:right; vertical-align: middle; padding-left: 20px;">
@@ -83,9 +83,9 @@ function emailWrapper(content: string, preheader = "", digestLabel = "Case Diges
                 <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
                   <tr>
                     <td>
-                      <p style="margin:0 0 6px; font-size:12px; color:${brand.primary}; font-weight:bold; font-family: Georgia, serif; letter-spacing:0.04em;">Maggi May Broussard Legal Services</p>
+                      <p style="margin:0 0 6px; font-size:12px; color:${brand.primary}; font-weight:bold; font-family: Georgia, serif; letter-spacing:0.04em;">Broussard Legal Services</p>
                       <p style="margin:0; font-size:11px; color:${brand.muted}; line-height:1.7; font-family: Georgia, serif;">
-                        You are receiving this ${isDaily ? "daily" : "weekly"} digest because you have an active case with Maggi May Broussard Legal Services.
+                        You are receiving this ${isDaily ? "daily" : "weekly"} digest because you have an active case with Broussard Legal Services.
                         &nbsp;·&nbsp;
                         <a href="${SITE_URL}/portal/login" style="color:${brand.accent}; text-decoration:none;">Access your portal</a>
                         &nbsp;·&nbsp;
@@ -152,7 +152,7 @@ function signature(): string {
       <tr>
         <td>
           <p style="margin:0 0 4px; font-size:15px; color:${brand.foreground}; font-family: Georgia, serif;">Warm regards,</p>
-          <p style="margin:0 0 2px; font-size:16px; color:${brand.primary}; font-weight:bold; font-family: Georgia, serif;">Maggi May Broussard</p>
+          <p style="margin:0 0 2px; font-size:16px; color:${brand.primary}; font-weight:bold; font-family: Georgia, serif;">Broussard Legal Services</p>
           <p style="margin:0 0 6px; font-size:12px; color:${brand.muted}; font-family: Georgia, serif; letter-spacing:0.04em;">Licensed Paralegal · Louisiana &amp; Nationwide</p>
           <a href="mailto:maggimaybroussard@gmail.com" style="color:${brand.accent}; font-size:13px; text-decoration:none; font-family: Georgia, serif;">maggimaybroussard@gmail.com</a>
           &nbsp;<span style="color:${brand.border};">|</span>&nbsp;
@@ -586,8 +586,8 @@ serve(async (req) => {
       const html = emailWrapper(bodyContent, preheader, digestLabel);
 
       const subject = frequency === "daily"
-        ? `Your Daily Case Digest — ${new Date().toLocaleDateString("en-US", { month: "long", day: "numeric" })} · Maggi May Broussard`
-        : `Your Weekly Case Digest — ${new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })} · Maggi May Broussard`;
+        ? `Your Daily Case Digest — ${new Date().toLocaleDateString("en-US", { month: "long", day: "numeric" })} · Broussard Legal Services`
+        : `Your Weekly Case Digest — ${new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })} · Broussard Legal Services`;
 
       const sendRes = await fetch("https://api.resend.com/emails", {
         method: "POST",

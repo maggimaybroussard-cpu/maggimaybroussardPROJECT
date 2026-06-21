@@ -9,17 +9,17 @@ const sections = [
   {
     id: 'acceptance',
     title: '1. Acceptance of Terms',
-    content: `By accessing or using the services provided by Maggi May Broussard ("we," "us," or "our"), you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use our services. These terms apply to all clients, visitors, and users who access or use our legal services.`,
+    content: `By accessing or using the services provided by Broussard Legal Services ("we," "us," or "our"), you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use our services. These terms apply to all clients, visitors, and users who access or use our legal services.`,
   },
   {
     id: 'services',
     title: '2. Description of Services',
-    content: `Maggi May Broussard provides freelance legal services including, but not limited to: litigation support, contract review, legal research, document drafting, case management, and deposition preparation. All services are provided to licensed attorneys and law firms only. We do not provide legal advice directly to the public.`,
+    content: `Broussard Legal Services provides freelance legal services including, but not limited to: litigation support, contract review, legal research, document drafting, case management, and deposition preparation. All services are provided to licensed attorneys and law firms only. We do not provide legal advice directly to the public.`,
   },
   {
     id: 'not-legal-advice',
     title: '3. No Attorney-Client Relationship',
-    content: `Our services are provided to attorneys and law firms as a support resource. Nothing in our communications, deliverables, or website constitutes legal advice, and no attorney-client relationship is formed between Maggi May Broussard and any end client. All work product is intended to assist supervising attorneys who bear sole responsibility for legal advice rendered to their clients.`,
+    content: `Our services are provided to attorneys and law firms as a support resource. Nothing in our communications, deliverables, or website constitutes legal advice, and no attorney-client relationship is formed between Broussard Legal Services and any end client. All work product is intended to assist supervising attorneys who bear sole responsibility for legal advice rendered to their clients.`,
   },
   {
     id: 'engagement',
@@ -39,7 +39,7 @@ const sections = [
   {
     id: 'limitation',
     title: '7. Limitation of Liability',
-    content: `To the fullest extent permitted by law, Maggi May Broussard's liability for any claim arising out of or related to our services shall not exceed the total fees paid for the specific engagement giving rise to the claim. We shall not be liable for any indirect, incidental, consequential, or punitive damages. Our services are provided as a support resource to licensed attorneys who retain professional responsibility.`,
+    content: `To the fullest extent permitted by law, Broussard Legal Services's liability for any claim arising out of or related to our services shall not exceed the total fees paid for the specific engagement giving rise to the claim. We shall not be liable for any indirect, incidental, consequential, or punitive damages. Our services are provided as a support resource to licensed attorneys who retain professional responsibility.`,
   },
   {
     id: 'termination',title: '8. Termination',
@@ -67,12 +67,12 @@ export default function TermsOfServicePage() {
             '@context': 'https://schema.org',
             '@type': 'WebPage',
             name: 'Terms of Service',
-            description: 'Legal terms and conditions for services provided by Maggi May Broussard to law firms and attorneys.',
+            description: 'Legal terms and conditions for services provided by Broussard Legal Services to law firms and attorneys.',
             url: `${baseUrl}/terms-of-service`,
             image: `${baseUrl}/assets/images/og-image.png`,
             publisher: {
               '@type': 'Organization',
-              name: 'Maggi May Broussard',
+              name: 'Broussard Legal Services',
               logo: {
                 '@type': 'ImageObject',
                 url: `${baseUrl}/assets/images/app_logo.png`,

@@ -76,7 +76,7 @@ serve(async (req) => {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Share Your Experience — Maggi May Broussard</title>
+  <title>Share Your Experience — Broussard Legal Services</title>
   <div style="display:none;font-size:1px;color:#fefefe;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;">
     Your feedback means the world — share your experience in just a few clicks.
   </div>
@@ -100,7 +100,7 @@ serve(async (req) => {
                         <p style="margin:0;font-size:10px;color:${brand.accent};letter-spacing:0.18em;text-transform:uppercase;font-family:Georgia,serif;line-height:1.4;">Services</p>
                       </td>
                       <td style="padding-left:14px;vertical-align:middle;">
-                        <h1 style="margin:0;font-size:24px;color:${brand.white};font-family:Georgia,'Times New Roman',serif;font-weight:normal;letter-spacing:0.01em;line-height:1.2;">Maggi May Broussard</h1>
+                        <h1 style="margin:0;font-size:24px;color:${brand.white};font-family:Georgia,'Times New Roman',serif;font-weight:normal;letter-spacing:0.01em;line-height:1.2;">Broussard Legal Services</h1>
                         <p style="margin:4px 0 0;font-size:12px;color:rgba(255,255,255,0.65);font-family:Georgia,serif;letter-spacing:0.06em;">Louisiana &amp; Nationwide</p>
                       </td>
                     </tr>
@@ -156,7 +156,7 @@ serve(async (req) => {
               <tr>
                 <td>
                   <p style="margin:0 0 4px;font-size:15px;color:${brand.foreground};font-family:Georgia,serif;">With gratitude,</p>
-                  <p style="margin:0 0 2px;font-size:16px;color:${brand.primary};font-weight:bold;font-family:Georgia,serif;">Maggi May Broussard</p>
+                  <p style="margin:0 0 2px;font-size:16px;color:${brand.primary};font-weight:bold;font-family:Georgia,serif;">Broussard Legal Services</p>
                   <p style="margin:0 0 6px;font-size:12px;color:${brand.muted};font-family:Georgia,serif;letter-spacing:0.04em;">Licensed Paralegal &middot; Louisiana &amp; Nationwide</p>
                   <a href="mailto:maggimaybroussard@gmail.com" style="color:${brand.accent};font-size:13px;text-decoration:none;font-family:Georgia,serif;">maggimaybroussard@gmail.com</a>
                   &nbsp;<span style="color:${brand.border};">|</span>&nbsp;
@@ -170,9 +170,9 @@ serve(async (req) => {
         <!-- FOOTER -->
         <tr>
           <td style="background-color:${brand.secondary};padding:20px 36px;border-top:1px solid ${brand.border};">
-            <p style="margin:0 0 6px;font-size:12px;color:${brand.primary};font-weight:bold;font-family:Georgia,serif;letter-spacing:0.04em;">Maggi May Broussard Legal Services</p>
+            <p style="margin:0 0 6px;font-size:12px;color:${brand.primary};font-weight:bold;font-family:Georgia,serif;letter-spacing:0.04em;">Broussard Legal Services</p>
             <p style="margin:0;font-size:11px;color:${brand.muted};line-height:1.7;">
-              You are receiving this email because you booked a consultation with Maggi May Broussard. Your feedback is entirely optional. If you prefer not to receive follow-up emails, simply reply to this message.
+              You are receiving this email because you booked a consultation with Broussard Legal Services. Your feedback is entirely optional. If you prefer not to receive follow-up emails, simply reply to this message.
             </p>
           </td>
         </tr>

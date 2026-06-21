@@ -85,7 +85,7 @@ export default function ClientLoginPage() {
               className="font-serif text-base tracking-tight"
               style={{ color: '#355E3B' }}
             >
-              Maggi May Broussard
+              Broussard Legal Services
             </span>
           </Link>
           <Link

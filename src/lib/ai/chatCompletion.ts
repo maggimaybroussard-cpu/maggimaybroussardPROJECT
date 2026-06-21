@@ -4,7 +4,45 @@ const ENDPOINT = '/api/ai/chat-completion';
 
 // Default cost-efficient model
 const DEFAULT_PROVIDER = 'OPEN_AI';
-const DEFAULT_MODEL = 'gpt-4o-mini';
+const DEFAULT_MODEL = 'openai/gpt-4o-mini';
+
+// Fallback providers when primary hits rate limits or quota errors
+const PROVIDER_FALLBACKS: Record<string, { provider: string; model: string }[]> = {
+  OPEN_AI: [
+    { provider: 'GEMINI', model: 'gemini/gemini-2.5-flash' },
+    { provider: 'ANTHROPIC', model: 'anthropic/claude-haiku-4-5' },
+    { provider: 'PERPLEXITY', model: 'perplexity/llama-3.1-sonar-small-128k-online' },
+  ],
+  GEMINI: [
+    { provider: 'OPEN_AI', model: 'openai/gpt-4o-mini' },
+    { provider: 'ANTHROPIC', model: 'anthropic/claude-haiku-4-5' },
+    { provider: 'PERPLEXITY', model: 'perplexity/llama-3.1-sonar-small-128k-online' },
+  ],
+  ANTHROPIC: [
+    { provider: 'OPEN_AI', model: 'openai/gpt-4o-mini' },
+    { provider: 'GEMINI', model: 'gemini/gemini-2.5-flash' },
+    { provider: 'PERPLEXITY', model: 'perplexity/llama-3.1-sonar-small-128k-online' },
+  ],
+  PERPLEXITY: [
+    { provider: 'OPEN_AI', model: 'openai/gpt-4o-mini' },
+    { provider: 'GEMINI', model: 'gemini/gemini-2.5-flash' },
+    { provider: 'ANTHROPIC', model: 'anthropic/claude-haiku-4-5' },
+  ],
+};
+
+function isRateLimitOrQuotaError(message: string): boolean {
+  const lower = message.toLowerCase();
+  return (
+    lower.includes('429') ||
+    lower.includes('rate_limit') ||
+    lower.includes('ratelimit') ||
+    lower.includes('quota') ||
+    lower.includes('billing') ||
+    lower.includes('exceeded') ||
+    lower.includes('insufficient_quota') ||
+    lower.includes('busy')
+  );
+}
 
 /**
  * Unified chat completion helper.
@@ -27,7 +65,6 @@ export async function getChatCompletion(
     const msgs = providerOrMessages;
     const opts = (modelOrOptions as Record<string, unknown>) ?? {};
     const { model = DEFAULT_MODEL, ...rest } = opts;
-    // Apply a sensible default token cap to keep costs low
     const safeParams = { max_completion_tokens: 2000, ...rest };
     const data = await callAIEndpoint(ENDPOINT, {
       provider: DEFAULT_PROVIDER,
@@ -36,14 +73,12 @@ export async function getChatCompletion(
       stream: false,
       parameters: safeParams,
     });
-    // Return plain text for legacy callers
     return data?.choices?.[0]?.message?.content ?? '';
   }
 
   // ── Explicit form: getChatCompletion(provider, model, messages[], params?) ─
   const provider = providerOrMessages as string;
   const model = modelOrOptions as string;
-  // Apply a sensible default token cap
   const safeParams = { max_completion_tokens: 2000, ...parameters };
   return callAIEndpoint(ENDPOINT, {
     provider,
@@ -51,6 +86,107 @@ export async function getChatCompletion(
     messages,
     stream: false,
     parameters: safeParams,
+  });
+}
+
+async function attemptStreaming(
+  provider: string,
+  model: string,
+  messages: object[],
+  onChunk: (chunk: any) => void,
+  onComplete: () => void,
+  onError: (error: Error) => void,
+  parameters: object
+): Promise<'success' | 'rate_limit' | 'error'> {
+  return new Promise(async (resolve) => {
+    try {
+      const response = await fetch(ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider, model, messages, stream: true, parameters }),
+      });
+
+      if (!response.ok) {
+        let errorMessage = `HTTP error: ${response.status}`;
+        try {
+          const data = await response.json();
+          errorMessage = data.error || errorMessage;
+        } catch {
+          // ignore JSON parse error
+        }
+        if (response.status === 429 || errorMessage.includes('429')) {
+          resolve('rate_limit');
+          return;
+        } else if (response.status === 503 || response.status === 502) {
+          errorMessage = 'The AI service is temporarily unavailable. Please try again shortly.';
+        }
+        resolve('error');
+        onError(new Error(errorMessage));
+        return;
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) {
+        resolve('error');
+        onError(new Error('Response body is not readable'));
+        return;
+      }
+
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let resolved = false;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              if (data.type === 'chunk' && data.chunk) {
+                if (!resolved) {
+                  resolved = true;
+                  resolve('success');
+                }
+                onChunk(data.chunk);
+              } else if (data.type === 'done') {
+                if (!resolved) resolve('success');
+                onComplete();
+              } else if (data.type === 'error') {
+                console.error('API Route Error:', { error: data.error, details: data.details });
+                const combinedMsg = `${data.error || ''} ${data.details || ''}`;
+                if (isRateLimitOrQuotaError(combinedMsg)) {
+                  if (!resolved) {
+                    resolved = true;
+                    resolve('rate_limit');
+                  }
+                  return;
+                }
+                const errMsg = data.error || 'Streaming error';
+                if (!resolved) {
+                  resolved = true;
+                  resolve('error');
+                }
+                onError(new Error(errMsg));
+              }
+            } catch {
+              // Skip invalid JSON
+            }
+          }
+        }
+      }
+
+      if (!resolved) resolve('success');
+    } catch (error) {
+      console.error('Streaming error:', error);
+      resolve('error');
+      onError(error instanceof Error ? error : new Error('Streaming error'));
+    }
   });
 }
 
@@ -63,54 +199,42 @@ export async function getStreamingChatCompletion(
   onError: (error: Error) => void,
   parameters: object = {}
 ) {
-  try {
-    const response = await fetch(ENDPOINT, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ provider, model, messages, stream: true, parameters }),
-    });
+  // Build attempt list: primary + fallbacks
+  const fallbacks = PROVIDER_FALLBACKS[provider] || [];
+  const attempts = [
+    { provider, model },
+    ...fallbacks,
+  ];
 
-    if (!response.ok) {
-      const data = await response.json();
-      throw new Error(data.error || `HTTP error: ${response.status}`);
-    }
+  for (let i = 0; i < attempts.length; i++) {
+    const attempt = attempts[i];
+    const isLast = i === attempts.length - 1;
 
-    const reader = response.body?.getReader();
-    if (!reader) throw new Error('Response body is not readable');
+    const result = await attemptStreaming(
+      attempt.provider,
+      attempt.model,
+      messages,
+      onChunk,
+      onComplete,
+      isLast ? onError : () => {},
+      parameters
+    );
 
-    const decoder = new TextDecoder();
-    let buffer = '';
+    if (result === 'success') return;
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || '';
-
-      for (const line of lines) {
-        if (line.startsWith('data: ')) {
-          try {
-            const data = JSON.parse(line.slice(6));
-            if (data.type === 'chunk' && data.chunk) {
-              onChunk(data.chunk);
-            } else if (data.type === 'done') onComplete();
-            else if (data.type === 'error') {
-              console.error('API Route Error:', {
-                error: data.error,
-                details: data.details,
-              });
-              onError(new Error(data.error));
-            }
-          } catch {
-            // Skip invalid JSON
-          }
-        }
+    if (result === 'rate_limit') {
+      if (!isLast) {
+        console.warn(`Provider ${attempt.provider} rate limited, trying fallback ${attempts[i + 1].provider}...`);
+        continue;
       }
+      // All providers exhausted
+      onError(new Error('The AI assistant is currently busy. Please wait a moment and try again.'));
+      return;
     }
-  } catch (error) {
-    console.error('Streaming error:', error);
-    onError(error instanceof Error ? error : new Error('Streaming error'));
+
+    if (result === 'error') {
+      // Non-rate-limit error — don't fallback, already called onError
+      return;
+    }
   }
 }

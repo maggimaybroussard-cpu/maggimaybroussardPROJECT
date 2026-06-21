@@ -511,7 +511,7 @@ export default function CaseStudiesPage() {
             url: `${baseUrl}/case-studies`,
             publisher: {
               '@type': 'Organization',
-              name: 'Maggi May Broussard',
+              name: 'Broussard Legal Services',
               logo: { '@type': 'ImageObject', url: `${baseUrl}/assets/images/app_logo.png` },
             },
           }),

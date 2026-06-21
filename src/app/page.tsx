@@ -17,13 +17,13 @@ import MobileAppSection from './components/MobileAppSection';
 import BrandVideoSection from './components/BrandVideoSection';
 
 export const metadata: Metadata = {
-  title: 'Contract Paralegal Services — Maggi May Broussard',
+  title: 'Contract Paralegal Services — Broussard Legal Services',
   description: 'Professional contract paralegal for law firms nationwide. Remote litigation support, legal research, document drafting, and case management assistance.',
   alternates: {
     canonical: process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
   },
   openGraph: {
-    title: 'Contract Paralegal Services — Maggi May Broussard',
+    title: 'Contract Paralegal Services — Broussard Legal Services',
     description: 'Professional paralegal support for law firms. Remote litigation, legal research, and document drafting.',
     url: process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
     type: 'website',
@@ -32,13 +32,13 @@ export const metadata: Metadata = {
         url: '/assets/images/og-image.png',
         width: 1200,
         height: 630,
-        alt: 'Maggi May Broussard — Professional Contract Paralegal',
+        alt: 'Broussard Legal Services — Professional Contract Paralegal',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Contract Paralegal Services — Maggi May Broussard',
+    title: 'Contract Paralegal Services — Broussard Legal Services',
     description: 'Professional paralegal support for law firms. Remote litigation, legal research, and document drafting.',
     images: ['/assets/images/og-image.png'],
   },
@@ -61,7 +61,7 @@ export default function HomePage() {
             image: `${baseUrl}/assets/images/og-image.png`,
             publisher: {
               '@type': 'Organization',
-              name: 'Maggi May Broussard',
+              name: 'Broussard Legal Services',
               logo: {
                 '@type': 'ImageObject',
                 url: `${baseUrl}/assets/images/app_logo.png`,
@@ -76,7 +76,7 @@ export default function HomePage() {
           __html: JSON.stringify({
             '@context': 'https://schema.org',
             '@type': 'ProfessionalService',
-            name: 'Maggi May Broussard — Contract Paralegal Services',
+            name: 'Broussard Legal Services — Contract Paralegal Services',
             description: 'Remote contract paralegal services for law firms nationwide',
             url: baseUrl,
             image: `${baseUrl}/assets/images/app_logo.png`,

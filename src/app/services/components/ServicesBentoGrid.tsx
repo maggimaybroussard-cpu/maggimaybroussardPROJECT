@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
-import { trackServiceImpression, trackServiceCardHover, trackServiceCardClick } from '@/lib/analytics';
+import { trackServiceImpression, trackServiceCardHover, trackServiceCardClick, trackServiceCardFunnelClick } from '@/lib/analytics';
 
 /* BENTO AUDIT
    Array has 6 cards: [Litigation Support, Contract Review, Legal Research, Document Drafting, Case Management, Deposition Prep]
@@ -135,6 +135,11 @@ export default function ServicesBentoGrid() {
     return () => observer.disconnect();
   }, []);
 
+  const handleCardClick = (serviceTitle: string) => {
+    trackServiceCardClick(serviceTitle, 'services_bento_grid');
+    trackServiceCardFunnelClick(serviceTitle);
+  };
+
   return (
     <section ref={sectionRef} className="py-16 md:py-28 bg-background">
       <div className="max-w-7xl mx-auto px-5 md:px-10">
@@ -157,7 +162,7 @@ export default function ServicesBentoGrid() {
             data-service-title={services[0].title}
             className={`scroll-reveal-hidden service-card-hover ${services[0].colSpan} bg-primary text-primary-foreground card-rounded p-8 md:p-10 flex flex-col gap-6 min-h-[260px] cursor-pointer`}
             onMouseEnter={() => trackServiceCardHover(services[0].title, 'services_bento_grid')}
-            onClick={() => trackServiceCardClick(services[0].title, 'services_bento_grid')}
+            onClick={() => handleCardClick(services[0].title)}
           >
             <div className="flex items-start justify-between">
               <div className="w-14 h-14 rounded-2xl bg-accent/20 flex items-center justify-center text-accent">
@@ -177,7 +182,7 @@ export default function ServicesBentoGrid() {
             className={`scroll-reveal-hidden service-card-hover ${services[1].colSpan} ${services[1].rowSpan} bg-secondary border border-border card-rounded p-8 flex flex-col gap-5 cursor-pointer`}
             style={{ transitionDelay: '0.1s' }}
             onMouseEnter={() => trackServiceCardHover(services[1].title, 'services_bento_grid')}
-            onClick={() => trackServiceCardClick(services[1].title, 'services_bento_grid')}
+            onClick={() => handleCardClick(services[1].title)}
           >
             <div className="w-14 h-14 rounded-2xl bg-accent/15 flex items-center justify-center text-accent">
               {services[1].icon}
@@ -198,7 +203,7 @@ export default function ServicesBentoGrid() {
             className={`scroll-reveal-hidden service-card-hover ${services[2].colSpan} bg-secondary border border-border card-rounded p-8 flex flex-col gap-4 min-h-[220px] cursor-pointer`}
             style={{ transitionDelay: '0.15s' }}
             onMouseEnter={() => trackServiceCardHover(services[2].title, 'services_bento_grid')}
-            onClick={() => trackServiceCardClick(services[2].title, 'services_bento_grid')}
+            onClick={() => handleCardClick(services[2].title)}
           >
             <div className="flex items-start justify-between">
               <div className="w-12 h-12 rounded-xl bg-accent/15 flex items-center justify-center text-accent">
@@ -216,7 +221,7 @@ export default function ServicesBentoGrid() {
             className={`scroll-reveal-hidden service-card-hover ${services[3].colSpan} bg-secondary border border-border card-rounded p-8 flex flex-col gap-4 min-h-[220px] cursor-pointer`}
             style={{ transitionDelay: '0.2s' }}
             onMouseEnter={() => trackServiceCardHover(services[3].title, 'services_bento_grid')}
-            onClick={() => trackServiceCardClick(services[3].title, 'services_bento_grid')}
+            onClick={() => handleCardClick(services[3].title)}
           >
             <div className="flex items-start justify-between">
               <div className="w-12 h-12 rounded-xl bg-accent/15 flex items-center justify-center text-accent">
@@ -234,7 +239,7 @@ export default function ServicesBentoGrid() {
             className={`scroll-reveal-hidden service-card-hover ${services[4].colSpan} bg-secondary border border-border card-rounded p-8 flex flex-col gap-4 min-h-[220px] cursor-pointer`}
             style={{ transitionDelay: '0.25s' }}
             onMouseEnter={() => trackServiceCardHover(services[4].title, 'services_bento_grid')}
-            onClick={() => trackServiceCardClick(services[4].title, 'services_bento_grid')}
+            onClick={() => handleCardClick(services[4].title)}
           >
             <div className="flex items-start justify-between">
               <div className="w-14 h-14 rounded-2xl bg-accent/15 flex items-center justify-center text-accent">
@@ -252,7 +257,7 @@ export default function ServicesBentoGrid() {
             className={`scroll-reveal-hidden service-card-hover ${services[5].colSpan} bg-accent/10 border border-accent/20 card-rounded p-8 flex flex-col gap-4 min-h-[220px] cursor-pointer`}
             style={{ transitionDelay: '0.3s' }}
             onMouseEnter={() => trackServiceCardHover(services[5].title, 'services_bento_grid')}
-            onClick={() => trackServiceCardClick(services[5].title, 'services_bento_grid')}
+            onClick={() => handleCardClick(services[5].title)}
           >
             <div className="flex items-start justify-between">
               <div className="w-12 h-12 rounded-xl bg-accent/20 flex items-center justify-center text-accent">
