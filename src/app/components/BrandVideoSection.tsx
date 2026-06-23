@@ -2,6 +2,11 @@
 
 import React, { useState } from 'react';
 
+// ── Replace YOUTUBE_VIDEO_ID below with your actual YouTube video ID ──────────
+// Example: if your video URL is https://www.youtube.com/watch?v=dQw4w9WgXcQ
+// then YOUTUBE_VIDEO_ID = 'dQw4w9WgXcQ'
+const YOUTUBE_VIDEO_ID = 'dQw4w9WgXcQ'; // TODO: Replace with your actual YouTube video ID
+
 export default function BrandVideoSection() {
   const [playing, setPlaying] = useState(false);
 
@@ -48,12 +53,11 @@ export default function BrandVideoSection() {
                 onClick={() => setPlaying(true)}
                 className="group absolute inset-0 w-full h-full flex flex-col items-center justify-center bg-primary/80 hover:bg-primary/70 transition-colors duration-300 cursor-pointer"
                 aria-label="Play brand video">
-                {/* Thumbnail background */}
+                {/* YouTube thumbnail */}
                 <div
-                  className="absolute inset-0 bg-cover bg-center opacity-30"
+                  className="absolute inset-0 bg-cover bg-center opacity-40"
                   style={{
-                    backgroundImage:
-                      "url('https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=1200&q=60')",
+                    backgroundImage: `url('https://img.youtube.com/vi/${YOUTUBE_VIDEO_ID}/maxresdefault.jpg')`,
                   }}
                 />
 
@@ -74,10 +78,10 @@ export default function BrandVideoSection() {
                 </div>
               </button>
             ) : (
-              /* Embedded video — replace VIDEO_ID with your YouTube video ID */
+              /* Embedded YouTube video */
               <iframe
                 className="absolute inset-0 w-full h-full"
-                src="https://www.youtube.com/embed/VIDEO_ID?autoplay=1&rel=0&modestbranding=1"
+                src={`https://www.youtube.com/embed/${YOUTUBE_VIDEO_ID}?autoplay=1&rel=0&modestbranding=1`}
                 title="Broussard Legal Services — Brand Video"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen

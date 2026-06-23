@@ -65,6 +65,11 @@ export default function LexiFloatingChat() {
   const [transcriptEmail, setTranscriptEmail] = useState('');
   const [sendingTranscript, setSendingTranscript] = useState(false);
 
+  // SMS summary state
+  const [showSmsModal, setShowSmsModal] = useState(false);
+  const [smsPhone, setSmsPhone] = useState('');
+  const [sendingSms, setSendingSms] = useState(false);
+
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const emailInputRef = useRef<HTMLInputElement>(null);
@@ -208,6 +213,56 @@ export default function LexiFloatingChat() {
       setSendingTranscript(false);
     }
   }, [transcriptEmail, messages]);
+
+  // Send conversation summary via SMS
+  const handleSendSmsSummary = useCallback(async () => {
+    const phone = smsPhone.trim();
+    if (!phone || phone.length < 10) {
+      toast.error('Please enter a valid phone number.');
+      return;
+    }
+
+    const userMessages = messages.filter((m) => m.role === 'user');
+    if (userMessages.length === 0) {
+      toast.error('Start a conversation first, then request the summary.');
+      return;
+    }
+
+    // Build a short summary from the conversation
+    const summary = messages
+      .filter((m) => m.role === 'assistant')
+      .slice(-2)
+      .map((m) => m.content)
+      .join(' ')
+      .slice(0, 400);
+
+    setSendingSms(true);
+    try {
+      const res = await fetch('/api/lexi/sms-summary', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: phone.startsWith('+') ? phone : `+1${phone.replace(/\D/g, '')}`,
+          clientName: 'Lexi Chat User',
+          summary,
+          visitorId: visitorIdRef.current,
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast.success('Summary sent to your phone!');
+        setShowSmsModal(false);
+        setSmsPhone('');
+      } else {
+        toast.error(data.error ?? 'Could not send SMS. Please try again.');
+      }
+    } catch {
+      toast.error('Could not send SMS. Please try again.');
+    } finally {
+      setSendingSms(false);
+    }
+  }, [smsPhone, messages]);
 
   const handleSend = useCallback(
     async (text: string) => {
@@ -456,6 +511,19 @@ export default function LexiFloatingChat() {
                   </svg>
                 </button>
               )}
+              {/* SMS summary button */}
+              {hasConversation && (
+                <button
+                  onClick={() => setShowSmsModal(true)}
+                  aria-label="Send conversation summary via SMS"
+                  title="Text me a summary"
+                  className="text-white/60 hover:text-white transition-colors"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                  </svg>
+                </button>
+              )}
               <button
                 onClick={handleReset}
                 aria-label="Reset conversation"
@@ -519,6 +587,59 @@ export default function LexiFloatingChat() {
                         <polyline points="22,6 12,13 2,6" />
                       </svg>
                       Send Transcript
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* SMS summary modal */}
+          {showSmsModal && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/40 rounded-2xl">
+              <div className="bg-white rounded-xl shadow-xl mx-4 p-5 w-full max-w-xs">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="font-semibold text-sm text-gray-900">Text Me a Summary</p>
+                  <button
+                    onClick={() => { setShowSmsModal(false); setSmsPhone(''); }}
+                    aria-label="Close"
+                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500 mb-3 leading-relaxed">
+                  Enter your phone number and we'll text you a summary of this conversation.
+                </p>
+                <input
+                  type="tel"
+                  value={smsPhone}
+                  onChange={(e) => setSmsPhone(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleSendSmsSummary(); }}
+                  placeholder="+1 (555) 000-0000"
+                  aria-label="Your phone number"
+                  className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1B2A4A]/30 focus:border-[#1B2A4A]/50 transition-all mb-3"
+                />
+                <button
+                  onClick={handleSendSmsSummary}
+                  disabled={sendingSms || !smsPhone.trim()}
+                  className="w-full py-2 rounded-lg bg-[#1B2A4A] text-white text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {sendingSms ? (
+                    <>
+                      <svg className="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                      </svg>
+                      Sending…
+                    </>
+                  ) : (
+                    <>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                      </svg>
+                      Send Summary
                     </>
                   )}
                 </button>

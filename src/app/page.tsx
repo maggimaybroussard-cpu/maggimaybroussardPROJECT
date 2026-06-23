@@ -17,14 +17,14 @@ import MobileAppSection from './components/MobileAppSection';
 import BrandVideoSection from './components/BrandVideoSection';
 
 export const metadata: Metadata = {
-  title: 'Contract Paralegal Services — Broussard Legal Services',
-  description: 'Professional contract paralegal for law firms nationwide. Remote litigation support, legal research, document drafting, and case management assistance.',
+  title: 'Contract Paralegal Services New Orleans — Broussard Legal Services',
+  description: 'Professional contract paralegal for law firms in New Orleans, Louisiana and nationwide. Remote litigation support, legal research, document drafting, and case management by Maggi May Broussard.',
   alternates: {
     canonical: process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
   },
   openGraph: {
-    title: 'Contract Paralegal Services — Broussard Legal Services',
-    description: 'Professional paralegal support for law firms. Remote litigation, legal research, and document drafting.',
+    title: 'Contract Paralegal Services New Orleans — Broussard Legal Services',
+    description: 'Professional paralegal support for law firms in New Orleans, LA and nationwide. Remote litigation, legal research, and document drafting.',
     url: process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
     type: 'website',
     images: [
@@ -32,14 +32,14 @@ export const metadata: Metadata = {
         url: '/assets/images/og-image.png',
         width: 1200,
         height: 630,
-        alt: 'Broussard Legal Services — Professional Contract Paralegal',
+        alt: 'Broussard Legal Services — Professional Contract Paralegal New Orleans',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Contract Paralegal Services — Broussard Legal Services',
-    description: 'Professional paralegal support for law firms. Remote litigation, legal research, and document drafting.',
+    title: 'Contract Paralegal Services New Orleans — Broussard Legal Services',
+    description: 'Professional paralegal support for law firms in New Orleans, LA and nationwide. Remote litigation, legal research, and document drafting.',
     images: ['/assets/images/og-image.png'],
   },
 };

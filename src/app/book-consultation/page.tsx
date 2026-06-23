@@ -12,6 +12,7 @@ import QRCodeImage from '@/components/ui/QRCodeImage';
 import ConsultationCalendar from '@/components/ConsultationCalendar';
 import ConsultationDepositField from '@/components/ConsultationDepositField';
 import ConsultationScheduler from '@/components/ConsultationScheduler';
+import TypeformIntakeEmbed from '@/components/TypeformIntakeEmbed';
 
 const CALENDLY_URL = 'https://calendly.com/maggimaybroussard/30min';
 
@@ -260,6 +261,23 @@ export default function BookConsultationPage() {
                   });
                   setIntakeUrl(`${siteUrl}/post-booking-intake?${params.toString()}`);
                   trackBookingComplete({ source: 'direct_scheduler', inviteeName: booking.clientName, hasEmail: true });
+
+                  // Send SMS booking confirmation if phone is available
+                  if ((booking as any).clientPhone) {
+                    fetch('/api/sms/booking-reminder', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        type: 'confirmation',
+                        to: (booking as any).clientPhone,
+                        clientName: booking.clientName,
+                        appointmentType: `${booking.durationMinutes}-min Paralegal Consultation`,
+                        appointmentDate: booking.bookingDate,
+                        appointmentTime: booking.bookingTime,
+                        timezone: 'America/Chicago',
+                      }),
+                    }).catch(() => { /* fire-and-forget */ });
+                  }
                 }}
               />
             </div>
@@ -372,6 +390,28 @@ export default function BookConsultationPage() {
                 </a>
               </div>
             </div>
+          </div>
+        </section>
+
+        {/* ── Typeform Client Intake Section ─────────────────────────────────── */}
+        <section className="py-10 md:py-14 px-5 md:px-10 bg-secondary/20 border-t border-border">
+          <div className="max-w-3xl mx-auto">
+            <div className="mb-6">
+              <p className="text-xs font-semibold uppercase tracking-[0.35em] text-accent flex items-center gap-3 mb-3">
+                <span className="w-6 h-px bg-accent" />
+                Before Your Consultation
+              </p>
+              <h2 className="font-serif text-2xl md:text-3xl text-foreground mb-2">
+                Complete Your Intake Form
+              </h2>
+              <p className="text-sm text-muted-foreground font-light leading-relaxed max-w-xl">
+                Help Maggi prepare for your consultation by sharing a few details about your legal matter. This takes about 3 minutes and ensures your session is focused and productive.
+              </p>
+            </div>
+            <TypeformIntakeEmbed
+              clientName={bookedName || undefined}
+              clientEmail={bookedEmail || undefined}
+            />
           </div>
         </section>
 

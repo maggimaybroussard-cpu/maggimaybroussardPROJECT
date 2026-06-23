@@ -48,8 +48,18 @@ export const metadata: Metadata = {
     'case management',
     'remote paralegal',
     'Louisiana paralegal',
-    'law firm support',
+    'New Orleans paralegal',
+    'New Orleans legal services',
+    'New Orleans contract paralegal',
+    'Louisiana legal support',
+    'paralegal New Orleans LA',
+    'legal document drafting New Orleans',
+    'litigation support New Orleans',
+    'law firm support New Orleans',
     'Maggi May Broussard',
+    'Broussard Legal Services',
+    'paralegal services Louisiana',
+    'remote legal support',
   ],
   authors: [{ name: 'Broussard Legal Services', url: process.env.NEXT_PUBLIC_SITE_URL }],
   creator: 'Broussard Legal Services',
@@ -198,7 +208,7 @@ export default function RootLayout({
           }}
         />
 
-        {/* LocalBusiness structured data */}
+        {/* LocalBusiness structured data — New Orleans local SEO */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -206,24 +216,44 @@ export default function RootLayout({
               '@context': 'https://schema.org',
               '@type': 'LegalService',
               name: 'Broussard Legal Services — Contract Paralegal Services',
-              description: 'Remote contract paralegal services for law firms nationwide. Litigation support, legal research, document drafting, and case management.',
+              description: 'Contract paralegal services for law firms in New Orleans, Louisiana and nationwide. Litigation support, legal research, document drafting, and case management by Maggi May Broussard.',
               url: baseUrl,
-              image: `${baseUrl}/assets/images/app_logo.png`,
+              image: `${baseUrl}/assets/images/og-image.png`,
+              logo: `${baseUrl}/assets/images/app_logo.png`,
               priceRange: '$$',
-              areaServed: {
-                '@type': 'Country',
-                name: 'US',
+              telephone: '',
+              email: 'broussardlegalservices@gmail.com',
+              address: {
+                '@type': 'PostalAddress',
+                addressLocality: 'New Orleans',
+                addressRegion: 'LA',
+                addressCountry: 'US',
+              },
+              geo: {
+                '@type': 'GeoCoordinates',
+                latitude: 29.9511,
+                longitude: -90.0715,
+              },
+              areaServed: [
+                { '@type': 'City', name: 'New Orleans', containedInPlace: { '@type': 'State', name: 'Louisiana' } },
+                { '@type': 'State', name: 'Louisiana' },
+                { '@type': 'Country', name: 'United States' },
+              ],
+              serviceArea: {
+                '@type': 'GeoCircle',
+                geoMidpoint: { '@type': 'GeoCoordinates', latitude: 29.9511, longitude: -90.0715 },
+                geoRadius: '50000',
               },
               hasOfferCatalog: {
                 '@type': 'OfferCatalog',
                 name: 'Paralegal Services',
                 itemListElement: [
-                  { '@type': 'Offer', itemOffered: { '@type': 'Service', name: 'Litigation Support' } },
-                  { '@type': 'Offer', itemOffered: { '@type': 'Service', name: 'Legal Research' } },
-                  { '@type': 'Offer', itemOffered: { '@type': 'Service', name: 'Document Drafting' } },
-                  { '@type': 'Offer', itemOffered: { '@type': 'Service', name: 'Case Management' } },
-                  { '@type': 'Offer', itemOffered: { '@type': 'Service', name: 'Discovery Assistance' } },
-                  { '@type': 'Offer', itemOffered: { '@type': 'Service', name: 'Contract Review' } },
+                  { '@type': 'Offer', itemOffered: { '@type': 'Service', name: 'Litigation Support', areaServed: 'New Orleans, LA' } },
+                  { '@type': 'Offer', itemOffered: { '@type': 'Service', name: 'Legal Research', areaServed: 'New Orleans, LA' } },
+                  { '@type': 'Offer', itemOffered: { '@type': 'Service', name: 'Document Drafting', areaServed: 'New Orleans, LA' } },
+                  { '@type': 'Offer', itemOffered: { '@type': 'Service', name: 'Case Management', areaServed: 'New Orleans, LA' } },
+                  { '@type': 'Offer', itemOffered: { '@type': 'Service', name: 'Discovery Assistance', areaServed: 'New Orleans, LA' } },
+                  { '@type': 'Offer', itemOffered: { '@type': 'Service', name: 'Contract Review', areaServed: 'New Orleans, LA' } },
                 ],
               },
               contactPoint: {
@@ -231,6 +261,12 @@ export default function RootLayout({
                 contactType: 'Customer Service',
                 availableLanguage: 'en',
                 email: 'broussardlegalservices@gmail.com',
+              },
+              founder: {
+                '@type': 'Person',
+                name: 'Maggi May Broussard',
+                jobTitle: 'Contract Paralegal',
+                worksFor: { '@type': 'Organization', name: 'Broussard Legal Services' },
               },
             }),
           }}
