@@ -129,57 +129,40 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
 
   return (
-    <html lang="en" className={`${playfairDisplay.variable} ${raleway.variable}`} suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       <head>
-        {/* Resource hints for LCP — preconnect to image CDNs */}
-        <link rel="preconnect" href="https://images.unsplash.com" />
-        <link rel="preconnect" href="https://img.rocket.new" />
-        <link rel="dns-prefetch" href="https://assets.calendly.com" />
-        <link rel="dns-prefetch" href="https://embed.typeform.com" />
-        <link rel="dns-prefetch" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-
-        {/* PWA — Microsoft Edge / Windows */}
-        <meta name="msapplication-TileColor" content="#4A3728" />
-        <meta name="msapplication-TileImage" content="/assets/images/app_logo.png" />
-        <meta name="msapplication-config" content="/browserconfig.xml" />
-        <meta name="application-name" content="Broussard Legal" />
-
-        {/* PWA — iOS Safari */}
+        <meta charSet="utf-8" />
+        <meta name="theme-color" content="#1B2A4A" />
+        <link rel="icon" href="/favicon.ico" />
+        <link rel="apple-touch-icon" href="/favicon.ico" />
+        <link rel="manifest" href="/manifest.json" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="Broussard Legal" />
-        <link rel="apple-touch-icon" href="/assets/images/app_logo.png" />
-
-        {/* PWA — Service Worker registration */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              if ('serviceWorker' in navigator) {
-                // Unregister all existing SWs and clear all caches first.
-                // This purges any stale Next.js chunk files cached by the old SW
-                // that caused "Cannot read properties of undefined (reading 'call')".
-                navigator.serviceWorker.getRegistrations().then(function(registrations) {
-                  registrations.forEach(function(r) { r.unregister(); });
-                });
-                caches.keys().then(function(keys) {
-                  keys.forEach(function(k) { caches.delete(k); });
-                });
-                // Re-register the fixed SW (which no longer caches /_next/ paths)
-                window.addEventListener('load', function() {
-                  navigator.serviceWorker.register('/sw.js').catch(function(err) {
-                    console.warn('SW registration failed:', err);
-                  });
-                });
-              }
-            `,
-          }}
-        />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="msapplication-config" content="/browserconfig.xml" />
+        <style>
+          {`
+            :root {
+              ${playfairDisplay.style.fontFamily};
+              ${raleway.style.fontFamily};
+            }
+          `}
+        </style>
+        <style>
+          {`
+            :root {
+              ${playfairDisplay.style.fontFamily};
+              ${raleway.style.fontFamily};
+            }
+          `}
+        </style>
 
         {/* Organization structured data */}
         <script
@@ -197,36 +180,39 @@ export default function RootLayout({
                 width: 512,
                 height: 512,
               },
-              sameAs: [],
               contactPoint: {
                 '@type': 'ContactPoint',
                 contactType: 'Customer Service',
                 availableLanguage: 'en',
                 email: 'broussardlegalservices@gmail.com',
+                telephone: '+1-504-458-2831',
               },
             }),
           }}
         />
 
-        {/* LocalBusiness structured data — New Orleans local SEO */}
+        {/* LocalBusiness structured data — New Orleans local SEO with business hours */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               '@context': 'https://schema.org',
-              '@type': 'LegalService',
+              '@type': 'LocalBusiness',
+              '@id': baseUrl,
               name: 'Broussard Legal Services — Contract Paralegal Services',
               description: 'Contract paralegal services for law firms in New Orleans, Louisiana and nationwide. Litigation support, legal research, document drafting, and case management by Maggi May Broussard.',
               url: baseUrl,
               image: `${baseUrl}/assets/images/og-image.png`,
               logo: `${baseUrl}/assets/images/app_logo.png`,
-              priceRange: '$$',
-              telephone: '',
+              priceRange: '$750–$2,800/month',
+              telephone: '+1-504-458-2831',
               email: 'broussardlegalservices@gmail.com',
               address: {
                 '@type': 'PostalAddress',
+                streetAddress: '900 Camp Street Suite 3rd Fl. PMB 70111',
                 addressLocality: 'New Orleans',
                 addressRegion: 'LA',
+                postalCode: '70130',
                 addressCountry: 'US',
               },
               geo: {
@@ -244,6 +230,26 @@ export default function RootLayout({
                 geoMidpoint: { '@type': 'GeoCoordinates', latitude: 29.9511, longitude: -90.0715 },
                 geoRadius: '50000',
               },
+              openingHoursSpecification: [
+                {
+                  '@type': 'OpeningHoursSpecification',
+                  dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
+                  opens: '09:00',
+                  closes: '17:00',
+                },
+                {
+                  '@type': 'OpeningHoursSpecification',
+                  dayOfWeek: 'Saturday',
+                  opens: '10:00',
+                  closes: '18:00',
+                },
+                {
+                  '@type': 'OpeningHoursSpecification',
+                  dayOfWeek: 'Sunday',
+                  opens: '00:00',
+                  closes: '00:00',
+                },
+              ],
               hasOfferCatalog: {
                 '@type': 'OfferCatalog',
                 name: 'Paralegal Services',
@@ -261,6 +267,7 @@ export default function RootLayout({
                 contactType: 'Customer Service',
                 availableLanguage: 'en',
                 email: 'broussardlegalservices@gmail.com',
+                telephone: '+1-504-458-2831',
               },
               founder: {
                 '@type': 'Person',
@@ -271,9 +278,9 @@ export default function RootLayout({
             }),
           }}
         />
-
-        <script type="module" async src="https://static.rocket.new/rocket-web.js?_cfg=https%3A%2F%2Fmaggimaybr6854back.builtwithrocket.new&_be=https%3A%2F%2Fappanalytics.rocket.new&_v=0.1.19" />
-        <script type="module" defer src="https://static.rocket.new/rocket-shot.js?v=0.0.2" /></head>
+      
+      <script type="module" async src="https://static.rocket.new/rocket-web.js?_cfg=https%3A%2F%2Fmaggimaybr6854back.builtwithrocket.new&_be=https%3A%2F%2Fappanalytics.rocket.new&_v=0.1.19" />
+      <script type="module" defer src="https://static.rocket.new/rocket-shot.js?v=0.0.2" /></head>
       <body className={raleway.className}>
         {/* Skip to main content — keyboard navigation / accessibility */}
         <a

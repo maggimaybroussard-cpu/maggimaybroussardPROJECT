@@ -72,14 +72,39 @@ export default function ContactPage() {
             description: 'Remote contract paralegal services for law firms nationwide.',
             url: baseUrl,
             image: `${baseUrl}/assets/images/app_logo.png`,
+            telephone: '+1-504-458-2831',
+            address: {
+              '@type': 'PostalAddress',
+              streetAddress: '900 Camp Street Suite 3rd Fl. PMB 70111',
+              addressLocality: 'New Orleans',
+              addressRegion: 'LA',
+              postalCode: '70130',
+              addressCountry: 'US',
+            },
             areaServed: {
               '@type': 'Country',
               name: 'US',
             },
+            priceRange: '$750–$2,800/month',
+            openingHoursSpecification: [
+              {
+                '@type': 'OpeningHoursSpecification',
+                dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
+                opens: '09:00',
+                closes: '17:00',
+              },
+              {
+                '@type': 'OpeningHoursSpecification',
+                dayOfWeek: 'Saturday',
+                opens: '10:00',
+                closes: '18:00',
+              },
+            ],
             contactPoint: {
               '@type': 'ContactPoint',
               contactType: 'Customer Service',
               availableLanguage: 'en',
+              telephone: '+1-504-458-2831',
             },
           }),
         }}
@@ -93,6 +118,7 @@ export default function ContactPage() {
             contactType: 'Customer Service',
             availableLanguage: 'en',
             url: baseUrl,
+            telephone: '+1-504-458-2831',
           }),
         }}
       />

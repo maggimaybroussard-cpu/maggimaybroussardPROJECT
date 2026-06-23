@@ -56,7 +56,7 @@ export default function ServicesPage() {
             description: 'Professional contract paralegal services for law firms nationwide.',
             url: baseUrl,
             image: `${baseUrl}/assets/images/og-image.png`,
-            telephone: '1-504-458-2831',
+            telephone: '+1-504-458-2831',
             address: {
               '@type': 'PostalAddress',
               streetAddress: '900 Camp Street Suite 3rd Fl. PMB 70111',
@@ -66,7 +66,21 @@ export default function ServicesPage() {
               addressCountry: 'US',
             },
             areaServed: { '@type': 'Country', name: 'US' },
-            priceRange: 'Varies',
+            priceRange: '$750–$2,800/month',
+            openingHoursSpecification: [
+              {
+                '@type': 'OpeningHoursSpecification',
+                dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
+                opens: '09:00',
+                closes: '17:00',
+              },
+              {
+                '@type': 'OpeningHoursSpecification',
+                dayOfWeek: 'Saturday',
+                opens: '10:00',
+                closes: '18:00',
+              },
+            ],
           }),
         }}
       />
@@ -82,23 +96,10 @@ export default function ServicesPage() {
               '@type': 'Organization',
               name: 'Broussard Legal Services',
               url: baseUrl,
+              logo: `${baseUrl}/assets/images/app_logo.png`,
             },
             areaServed: { '@type': 'Country', name: 'US' },
-            hasOfferingDetails: [
-              { '@type': 'OfferingDetails', name: 'Litigation Support' },
-              { '@type': 'OfferingDetails', name: 'Contract Review' },
-              { '@type': 'OfferingDetails', name: 'Legal Research' },
-              { '@type': 'OfferingDetails', name: 'Document Drafting' },
-              { '@type': 'OfferingDetails', name: 'Case Management' },
-              { '@type': 'OfferingDetails', name: 'Deposition Prep' },
-              { '@type': 'OfferingDetails', name: 'Discovery Assistance' },
-              { '@type': 'OfferingDetails', name: 'Client Intake & Onboarding' },
-              { '@type': 'OfferingDetails', name: 'Regulatory & Compliance Research' },
-              { '@type': 'OfferingDetails', name: 'Court Filing & Docketing' },
-              { '@type': 'OfferingDetails', name: 'Settlement & Demand Letters' },
-              { '@type': 'OfferingDetails', name: 'Estate & Probate Support' },
-            ],
-            priceRange: 'Varies',
+            priceRange: '$750–$2,800/month',
           }),
         }}
       />
@@ -154,15 +155,15 @@ export default function ServicesPage() {
         }}
       />
       <Header />
-      <main id="main-content">
+      <main>
         <ServicesPageTracker />
         <ServicesHero />
         <ServicesBentoGrid />
         <ServicesWhyBroussard />
         <ServicesPracticeAreas />
         <ServicesProcess />
-        <FAQSection variant="light" />
         <EmailOptInSection />
+        <FAQSection />
         <ServicesWorkCTA />
       </main>
       <Footer />

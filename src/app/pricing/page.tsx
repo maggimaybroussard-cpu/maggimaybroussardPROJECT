@@ -15,15 +15,38 @@ export default function PricingPage() {
           __html: JSON.stringify({
             '@context': 'https://schema.org',
             '@type': 'LocalBusiness',
-            name: 'Maggi May Broussard — Contract Paralegal Services',
+            name: 'Broussard Legal Services — Contract Paralegal Services',
             description: 'Professional contract paralegal services with flexible retainer pricing.',
             url: baseUrl,
             image: `${baseUrl}/assets/images/og-image.png`,
+            telephone: '+1-504-458-2831',
+            address: {
+              '@type': 'PostalAddress',
+              streetAddress: '900 Camp Street Suite 3rd Fl. PMB 70111',
+              addressLocality: 'New Orleans',
+              addressRegion: 'LA',
+              postalCode: '70130',
+              addressCountry: 'US',
+            },
             areaServed: {
               '@type': 'Country',
               name: 'US',
             },
-            priceRange: '$750–$2800/month',
+            priceRange: '$750–$2,800/month',
+            openingHoursSpecification: [
+              {
+                '@type': 'OpeningHoursSpecification',
+                dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
+                opens: '09:00',
+                closes: '17:00',
+              },
+              {
+                '@type': 'OpeningHoursSpecification',
+                dayOfWeek: 'Saturday',
+                opens: '10:00',
+                closes: '18:00',
+              },
+            ],
           }),
         }}
       />
@@ -71,7 +94,7 @@ export default function PricingPage() {
                 billingDuration: 'P1M',
               },
             ],
-            priceRange: '$750–$2800/month',
+            priceRange: '$750–$2,800/month',
           }),
         }}
       />
