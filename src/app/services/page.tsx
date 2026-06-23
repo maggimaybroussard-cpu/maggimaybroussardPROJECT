@@ -4,6 +4,8 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import ServicesHero from './components/ServicesHero';
 import ServicesBentoGrid from './components/ServicesBentoGrid';
+import ServicesWhyBroussard from './components/ServicesWhyBroussard';
+import ServicesPracticeAreas from './components/ServicesPracticeAreas';
 import ServicesProcess from './components/ServicesProcess';
 import ServicesWorkCTA from './components/ServicesWorkCTA';
 import ServicesPageTracker from './components/ServicesPageTracker';
@@ -13,13 +15,13 @@ import FAQSection from '../components/FAQSection';
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
   title: 'Legal Services — Litigation Support, Legal Research & Document Drafting',
-  description: 'Comprehensive legal services including litigation support, legal research, document drafting, case management, and discovery assistance for law firms nationwide.',
+  description: 'Comprehensive legal services including litigation support, legal research, document drafting, case management, discovery assistance, contract review, court filing, and more — nationwide.',
   alternates: {
     canonical: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/services`,
   },
   openGraph: {
-    title: 'Legal Services — Litigation Support & Legal Research',
-    description: 'Comprehensive legal services including litigation support, legal research, document drafting, and case management.',
+    title: 'Legal Services — Broussard Legal Services',
+    description: 'Full-service paralegal support: litigation, research, drafting, case management, discovery, intake, compliance, court filing, and more.',
     url: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/services`,
     type: 'website',
     images: [
@@ -27,14 +29,14 @@ export const metadata: Metadata = {
         url: '/assets/images/og-image.png',
         width: 1200,
         height: 630,
-        alt: 'Professional Legal Services — Litigation Support and Legal Research',
+        alt: 'Professional Legal Services — Broussard Legal Services',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Legal Services — Litigation Support & Legal Research',
-    description: 'Comprehensive legal services including litigation support, legal research, document drafting, and case management.',
+    title: 'Legal Services — Broussard Legal Services',
+    description: 'Full-service paralegal support: litigation, research, drafting, case management, discovery, intake, compliance, court filing, and more.',
     images: ['/assets/images/og-image.png'],
   },
 };
@@ -54,34 +56,17 @@ export default function ServicesPage() {
             description: 'Professional contract paralegal services for law firms nationwide.',
             url: baseUrl,
             image: `${baseUrl}/assets/images/og-image.png`,
-            telephone: '',
-            areaServed: {
-              '@type': 'Country',
-              name: 'US',
+            telephone: '1-504-458-2831',
+            address: {
+              '@type': 'PostalAddress',
+              streetAddress: '900 Camp Street Suite 3rd Fl. PMB 70111',
+              addressLocality: 'New Orleans',
+              addressRegion: 'LA',
+              postalCode: '70130',
+              addressCountry: 'US',
             },
+            areaServed: { '@type': 'Country', name: 'US' },
             priceRange: 'Varies',
-            sameAs: [],
-          }),
-        }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            '@context': 'https://schema.org',
-            '@type': 'WebPage',
-            name: 'Legal Services',
-            description: 'Comprehensive legal services including litigation support, legal research, document drafting, case management, and discovery assistance.',
-            url: `${baseUrl}/services`,
-            image: `${baseUrl}/assets/images/og-image.png`,
-            publisher: {
-              '@type': 'Organization',
-              name: 'Broussard Legal Services',
-              logo: {
-                '@type': 'ImageObject',
-                url: `${baseUrl}/assets/images/app_logo.png`,
-              },
-            },
           }),
         }}
       />
@@ -92,43 +77,26 @@ export default function ServicesPage() {
             '@context': 'https://schema.org',
             '@type': 'Service',
             name: 'Contract Paralegal Services',
-            description: 'Remote contract paralegal services for law firms nationwide including litigation support, legal research, document drafting, case management, and discovery assistance.',
+            description: 'Remote contract paralegal services for law firms nationwide including litigation support, legal research, document drafting, case management, discovery assistance, contract review, court filing, estate planning support, and more.',
             provider: {
               '@type': 'Organization',
               name: 'Broussard Legal Services',
               url: baseUrl,
-              logo: `${baseUrl}/assets/images/app_logo.png`,
             },
-            areaServed: {
-              '@type': 'Country',
-              name: 'US',
-            },
+            areaServed: { '@type': 'Country', name: 'US' },
             hasOfferingDetails: [
-              {
-                '@type': 'OfferingDetails',
-                name: 'Litigation Support',
-                description: 'Trial preparation, exhibit organization, deposition summaries, and case management for complex litigation.',
-              },
-              {
-                '@type': 'OfferingDetails',
-                name: 'Legal Research',
-                description: 'Comprehensive legal research memos, case law analysis, and statutory interpretation for law firms.',
-              },
-              {
-                '@type': 'OfferingDetails',
-                name: 'Document Drafting',
-                description: 'Professional drafting of motions, briefs, contracts, and legal documents tailored to your jurisdiction.',
-              },
-              {
-                '@type': 'OfferingDetails',
-                name: 'Case Management',
-                description: 'End-to-end case management including deadline tracking, file organization, and matter administration.',
-              },
-              {
-                '@type': 'OfferingDetails',
-                name: 'Discovery Assistance',
-                description: 'Document review, privilege log preparation, and discovery management for complex cases.',
-              },
+              { '@type': 'OfferingDetails', name: 'Litigation Support' },
+              { '@type': 'OfferingDetails', name: 'Contract Review' },
+              { '@type': 'OfferingDetails', name: 'Legal Research' },
+              { '@type': 'OfferingDetails', name: 'Document Drafting' },
+              { '@type': 'OfferingDetails', name: 'Case Management' },
+              { '@type': 'OfferingDetails', name: 'Deposition Prep' },
+              { '@type': 'OfferingDetails', name: 'Discovery Assistance' },
+              { '@type': 'OfferingDetails', name: 'Client Intake & Onboarding' },
+              { '@type': 'OfferingDetails', name: 'Regulatory & Compliance Research' },
+              { '@type': 'OfferingDetails', name: 'Court Filing & Docketing' },
+              { '@type': 'OfferingDetails', name: 'Settlement & Demand Letters' },
+              { '@type': 'OfferingDetails', name: 'Estate & Probate Support' },
             ],
             priceRange: 'Varies',
           }),
@@ -146,7 +114,7 @@ export default function ServicesPage() {
                 name: 'What legal services does Broussard Legal Services provide?',
                 acceptedAnswer: {
                   '@type': 'Answer',
-                  text: 'Broussard Legal Services provides comprehensive contract paralegal services including litigation support, legal research, document drafting, case management, discovery assistance, and contract review for law firms nationwide.',
+                  text: 'Broussard Legal Services provides 12+ contract paralegal services including litigation support, legal research, document drafting, case management, discovery assistance, contract review, court filing, client intake, regulatory research, settlement letters, and estate & probate support.',
                 },
               },
               {
@@ -154,7 +122,7 @@ export default function ServicesPage() {
                 name: 'Is the service available nationwide?',
                 acceptedAnswer: {
                   '@type': 'Answer',
-                  text: 'Yes, Broussard Legal Services provides remote contract paralegal services to law firms and attorneys across the United States.',
+                  text: 'Yes, Broussard Legal Services provides remote contract paralegal services to law firms and attorneys across all 50 states.',
                 },
               },
               {
@@ -167,10 +135,10 @@ export default function ServicesPage() {
               },
               {
                 '@type': 'Question',
-                name: 'What is the pricing structure?',
+                name: 'What practice areas do you support?',
                 acceptedAnswer: {
                   '@type': 'Answer',
-                  text: 'Pricing varies based on the scope and complexity of your project. Contact us for a consultation to discuss your specific needs and receive a customized quote.',
+                  text: 'Broussard Legal Services supports civil litigation, family law, real estate, estate planning, business & corporate, employment law, personal injury, criminal defense, immigration, intellectual property, healthcare, and environmental law.',
                 },
               },
               {
@@ -178,7 +146,7 @@ export default function ServicesPage() {
                 name: 'Can you handle confidential client matters?',
                 acceptedAnswer: {
                   '@type': 'Answer',
-                  text: 'Yes, all work is handled with strict confidentiality. We maintain professional standards and can execute NDAs as needed.',
+                  text: 'Yes, all work is handled with strict confidentiality under a signed NDA. Professional standards are maintained at all times.',
                 },
               },
             ],
@@ -190,6 +158,8 @@ export default function ServicesPage() {
         <ServicesPageTracker />
         <ServicesHero />
         <ServicesBentoGrid />
+        <ServicesWhyBroussard />
+        <ServicesPracticeAreas />
         <ServicesProcess />
         <FAQSection variant="light" />
         <EmailOptInSection />
