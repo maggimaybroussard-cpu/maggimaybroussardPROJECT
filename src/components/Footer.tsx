@@ -32,7 +32,7 @@ export default function Footer() {
             {/* Business Address */}
             <address className="not-italic text-[12px] text-muted-foreground/80 leading-relaxed sm:text-left">
               <span className="font-semibold text-muted-foreground">Broussard Legal Services</span><br />
-              900 Camp St FL 3<br />
+              900 Camp Street Suite 3rd Fl. PMB 70111<br />
               New Orleans, LA 70130<br />
               <a href="tel:+15044582831" className="hover:text-foreground transition-colors duration-200">1-504-458-2831</a>
             </address>

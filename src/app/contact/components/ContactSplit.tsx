@@ -174,8 +174,8 @@ const contactDetails = [
       </svg>
     ),
     label: 'Location',
-    value: 'Broussard Legal Services · 900 Camp St FL 3, New Orleans, LA 70130',
-    href: 'https://maps.google.com/?q=900+Camp+St+FL+3+New+Orleans+LA+70130',
+    value: 'Broussard Legal Services · 900 Camp Street Suite 3rd Fl. PMB 70111, New Orleans, LA 70130',
+    href: 'https://maps.google.com/?q=900+Camp+Street+Suite+3rd+Fl+PMB+70111+New+Orleans+LA+70130',
   },
   {
     icon: (
