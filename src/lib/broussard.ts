@@ -22,12 +22,20 @@ export async function pushConversationToBroussard(conversation: {
   summary?: string;
   messages: { role: string; content: string }[];
 }): Promise<BroussardSyncResult | undefined> {
-  const url = process.env.BROUSSARD_API_URL;
-  const key = process.env.BROUSSARD_API_KEY;
+  // BROUSSARD_API_URL now points to this site's own domain.
+  // Fall back to NEXT_PUBLIC_SITE_URL so it always resolves locally.
+  const url =
+    process.env.BROUSSARD_API_URL ||
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    'https://broussardlegalservices.com';
 
-  if (!url || !key) {
+  // BROUSSARD_API_KEY should equal LEGAL_ASSISTANT_KEY (same secret, same site).
+  const key =
+    process.env.BROUSSARD_API_KEY || process.env.LEGAL_ASSISTANT_KEY;
+
+  if (!key) {
     console.warn(
-      'Broussard sync skipped: missing BROUSSARD_API_URL or BROUSSARD_API_KEY'
+      'Broussard sync skipped: missing BROUSSARD_API_KEY / LEGAL_ASSISTANT_KEY'
     );
     return;
   }
@@ -44,12 +52,12 @@ export async function pushConversationToBroussard(conversation: {
     });
 
     if (!res.ok) {
-      console.error(`Broussard sync failed: ${res.status} ${await res.text()}`);
+      console.error(`Conversation sync failed: ${res.status} ${await res.text()}`);
       return;
     }
 
     return await res.json();
   } catch (e) {
-    console.error('Failed to reach Broussard app', e);
+    console.error('Failed to sync conversation locally', e);
   }
 }
