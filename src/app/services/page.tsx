@@ -11,6 +11,7 @@ import ServicesWorkCTA from './components/ServicesWorkCTA';
 import ServicesPageTracker from './components/ServicesPageTracker';
 import EmailOptInSection from '../components/EmailOptInSection';
 import FAQSection from '../components/FAQSection';
+import ServicesFAQ from './components/ServicesFAQ';
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
@@ -162,6 +163,7 @@ export default function ServicesPage() {
         <ServicesWhyBroussard />
         <ServicesPracticeAreas />
         <ServicesProcess />
+        <ServicesFAQ />
         <EmailOptInSection />
         <FAQSection />
         <ServicesWorkCTA />
