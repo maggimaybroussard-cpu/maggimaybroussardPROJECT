@@ -212,6 +212,59 @@ const TRUST_ITEMS = [
   { icon: '🔄', label: 'Cancel Anytime' },
 ];
 
+/* ─── Payment Options Data ───────────────────────────────────────────── */
+const PAYMENT_OPTIONS = [
+  {
+    id: 'card',
+    icon: (
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
+        <line x1="1" y1="10" x2="23" y2="10" />
+      </svg>
+    ),
+    title: 'Credit or Debit Card',
+    subtitle: 'Visa, Mastercard, Amex, Discover',
+    desc: 'Pay instantly with any major credit or debit card. Your card is charged at the start of each billing cycle. Receipts emailed automatically.',
+    badge: 'Most Common',
+    badgeColor: '#355E3B',
+    highlight: true,
+    details: ['Instant processing', 'Auto-renews monthly', 'Detailed invoice emailed', 'Cancel anytime'],
+  },
+  {
+    id: 'ach',
+    icon: (
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="2" y="5" width="20" height="14" rx="2" />
+        <path d="M2 10h20" />
+        <path d="M6 15h2" />
+        <path d="M10 15h4" />
+      </svg>
+    ),
+    title: 'ACH Bank Transfer',
+    subtitle: 'Direct bank-to-bank payment',
+    desc: 'Connect your business checking account for direct ACH transfers. Lower processing fees, ideal for firms paying from a trust or operating account.',
+    badge: 'Lower Fees',
+    badgeColor: '#C8965A',
+    highlight: false,
+    details: ['3–5 business day processing', 'Lower transaction fees', 'Ideal for business accounts', 'Secure bank-level encryption'],
+  },
+  {
+    id: 'installment',
+    icon: (
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+      </svg>
+    ),
+    title: 'Installment Plan',
+    subtitle: 'Split into 2 payments',
+    desc: 'Split your monthly retainer into two equal payments — due on the 1st and 15th of each month. Available for Standard and Full-Service tiers.',
+    badge: 'Flexible',
+    badgeColor: '#355E3B',
+    highlight: false,
+    details: ['2 equal payments per month', 'Standard & Full-Service only', 'No additional fees', 'Contact us to set up'],
+  },
+];
+
 const VALUE_PROPS = [
   {
     stat: '24hr',
@@ -535,6 +588,148 @@ export default function PricingPageClient() {
               Need a custom arrangement?
             </Link>
           </p>
+        </div>
+      </section>
+
+      {/* ── Payment Options ── */}
+      <section
+        className="py-20 md:py-24 px-5 md:px-10"
+        style={{ background: 'rgba(53,94,59,0.025)', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)' }}
+      >
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-14">
+            <span
+              className="inline-block px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-widest mb-4"
+              style={{ background: 'rgba(200,150,90,0.1)', color: '#C8965A', border: '1px solid rgba(200,150,90,0.2)' }}
+            >
+              How to Pay
+            </span>
+            <h2 className="font-serif text-3xl md:text-4xl text-foreground mb-4">Payment Options</h2>
+            <p className="text-muted-foreground font-light max-w-xl mx-auto">
+              Choose the payment method that works best for your firm. All options are processed securely through Stripe — no account required to pay by card.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-6 lg:gap-8">
+            {PAYMENT_OPTIONS.map((opt) => (
+              <div
+                key={opt.id}
+                className="rounded-3xl flex flex-col overflow-hidden transition-all duration-300 hover:-translate-y-1"
+                style={{
+                  border: opt.highlight ? '2px solid #355E3B' : '1px solid var(--border)',
+                  background: opt.highlight
+                    ? 'linear-gradient(160deg, rgba(53,94,59,0.05) 0%, rgba(53,94,59,0.01) 100%)'
+                    : 'var(--background)',
+                  boxShadow: opt.highlight ? '0 8px 40px rgba(53,94,59,0.1)' : '0 2px 12px rgba(0,0,0,0.04)',
+                }}
+              >
+                <div className="p-7 md:p-8 flex flex-col flex-1">
+                  {/* Icon + badge row */}
+                  <div className="flex items-start justify-between mb-5">
+                    <div
+                      className="w-12 h-12 rounded-2xl flex items-center justify-center"
+                      style={{ background: 'rgba(53,94,59,0.08)', color: '#355E3B' }}
+                    >
+                      {opt.icon}
+                    </div>
+                    <span
+                      className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest"
+                      style={{
+                        background: `${opt.badgeColor}18`,
+                        color: opt.badgeColor,
+                        border: `1px solid ${opt.badgeColor}30`,
+                      }}
+                    >
+                      {opt.badge}
+                    </span>
+                  </div>
+
+                  {/* Title */}
+                  <h3 className="font-serif text-xl font-bold text-foreground mb-1">{opt.title}</h3>
+                  <p className="text-xs font-semibold uppercase tracking-widest mb-4" style={{ color: '#C8965A' }}>{opt.subtitle}</p>
+
+                  {/* Description */}
+                  <p className="text-sm text-muted-foreground font-light leading-relaxed mb-6 flex-1">{opt.desc}</p>
+
+                  {/* Detail bullets */}
+                  <ul className="space-y-2 mb-7">
+                    {opt.details.map((d) => (
+                      <li key={d} className="flex items-center gap-2.5 text-sm text-muted-foreground font-light">
+                        <span
+                          className="shrink-0 w-4 h-4 rounded-full flex items-center justify-center"
+                          style={{ background: 'rgba(53,94,59,0.1)' }}
+                        >
+                          <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#355E3B" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        </span>
+                        {d}
+                      </li>
+                    ))}
+                  </ul>
+
+                  {/* CTA */}
+                  {opt.id === 'installment' ? (
+                    <Link
+                      href="/contact"
+                      className="w-full py-3.5 rounded-full text-xs font-semibold uppercase tracking-widest text-center transition-all duration-200 hover:opacity-90 border"
+                      style={{ borderColor: 'rgba(53,94,59,0.35)', color: '#355E3B' }}
+                    >
+                      Contact Us to Set Up
+                    </Link>
+                  ) : (
+                    <Link
+                      href="/retainer-payment"
+                      className="w-full py-3.5 rounded-full text-xs font-semibold uppercase tracking-widest text-center transition-all duration-200 hover:opacity-90 hover:shadow-md flex items-center justify-center gap-2"
+                      style={
+                        opt.highlight
+                          ? { background: '#355E3B', color: '#fff' }
+                          : { background: 'rgba(53,94,59,0.08)', color: '#355E3B' }
+                      }
+                    >
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
+                        <line x1="1" y1="10" x2="23" y2="10" />
+                      </svg>
+                      Pay with {opt.id === 'card' ? 'Card' : 'ACH'}
+                    </Link>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Security strip */}
+          <div
+            className="mt-10 rounded-2xl px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-4"
+            style={{ background: 'var(--background)', border: '1px solid var(--border)' }}
+          >
+            <div className="flex items-center gap-3">
+              <div
+                className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                style={{ background: 'rgba(53,94,59,0.08)', color: '#355E3B' }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-foreground">All payments secured by Stripe</p>
+                <p className="text-xs text-muted-foreground font-light">256-bit SSL encryption · PCI DSS Level 1 compliant · No card data stored on our servers</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 shrink-0">
+              {['Visa', 'MC', 'Amex', 'ACH'].map((brand) => (
+                <span
+                  key={brand}
+                  className="px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest"
+                  style={{ background: 'rgba(53,94,59,0.06)', color: '#355E3B', border: '1px solid rgba(53,94,59,0.12)' }}
+                >
+                  {brand}
+                </span>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 
