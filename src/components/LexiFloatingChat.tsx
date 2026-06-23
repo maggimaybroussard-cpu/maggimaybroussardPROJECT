@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { useChat } from '@/lib/hooks/useChat';
 import toast from 'react-hot-toast';
 import {
   trackAssistantConversationStart,
@@ -16,24 +15,6 @@ interface Message {
   content: string;
 }
 
-const SYSTEM_PROMPT = `You are Lexi, a knowledgeable AI legal assistant for Broussard Legal Services, a professional contract paralegal firm run by Maggi May Broussard. You help website visitors understand their legal questions and guide them toward the right services.
-
-Your role:
-- Answer general legal questions clearly and helpfully
-- Explain legal concepts in plain language
-- Help visitors understand what type of legal support they may need
-- Guide interested visitors to book a consultation or contact Maggi
-- Be warm, professional, and reassuring
-
-Important disclaimers:
-- Always clarify that your responses are general legal information, not legal advice
-- For specific legal matters, always recommend consulting with a licensed attorney
-- You can suggest Maggi May Broussard's services when relevant
-
-Services offered: Litigation Support, Contract Review, Legal Research, Document Drafting, Case Management, Deposition Prep.
-
-Keep responses concise (2-4 sentences typically) and conversational. If a visitor seems ready to hire, suggest booking a free consultation at /availability.`;
-
 const SUGGESTED_QUESTIONS = [
   'What is litigation support?',
   'How can a paralegal help my law firm?',
@@ -41,79 +22,37 @@ const SUGGESTED_QUESTIONS = [
   'How do I get started?',
 ];
 
+// Generate a stable visitor ID for conversation memory
+function getVisitorId(): string {
+  if (typeof window === 'undefined') return '';
+  const key = 'lexi_visitor_id';
+  let id = localStorage.getItem(key);
+  if (!id) {
+    id = `v_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+    localStorage.setItem(key, id);
+  }
+  return id;
+}
+
 export default function LexiFloatingChat() {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const [streamingContent, setStreamingContent] = useState('');
+  const [rateLimited, setRateLimited] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const hasGreeted = useRef(false);
   const sessionStartRef = useRef<number | null>(null);
   const userMessageCountRef = useRef(0);
   const hasTrackedStartRef = useRef(false);
+  const visitorIdRef = useRef<string>('');
 
-  const { response, isLoading, error, sendMessage } = useChat('OPEN_AI', 'gpt-4o-mini', true);
-
-  // Track whether the previous render was loading (to detect completion)
-  const wasLoadingRef = useRef(false);
-
+  // Initialize visitor ID on mount (client-only)
   useEffect(() => {
-    if (error) toast.error('Lexi is temporarily unavailable. Please try again.');
-  }, [error]);
-
-  // Track streaming response
-  useEffect(() => {
-    if (isLoading && response) {
-      setStreamingContent(response);
-    }
-  }, [response, isLoading]);
-
-  // When streaming completes, commit the message
-  useEffect(() => {
-    if (!isLoading && response && streamingContent) {
-      setMessages((prev) => {
-        // Avoid duplicate if already added
-        const last = prev[prev.length - 1];
-        if (last?.role === 'assistant' && last.content === response) return prev;
-        return [...prev, { role: 'assistant', content: response }];
-      });
-      setStreamingContent('');
-    }
-  }, [isLoading, response, streamingContent]);
-
-  // Sync conversation to Replit legal assistant after each assistant reply
-  useEffect(() => {
-    const justFinished = wasLoadingRef.current && !isLoading;
-    wasLoadingRef.current = isLoading;
-
-    if (!justFinished || !response) return;
-
-    // Build the full conversation including the just-completed assistant message
-    const fullHistory = messages.some((m) => m.role === 'assistant' && m.content === response)
-      ? messages
-      : [...messages, { role: 'assistant' as const, content: response }];
-
-    // Only sync if there's a real exchange (at least one user + one assistant message)
-    const hasUserMsg = fullHistory.some((m) => m.role === 'user');
-    const hasAssistantMsg = fullHistory.some((m) => m.role === 'assistant' && m.content !== fullHistory[0]?.content);
-    if (!hasUserMsg || !hasAssistantMsg) return;
-
-    const conversationHistory = fullHistory.map((m) => ({ role: m.role, content: m.content }));
-
-    fetch('/api/lexi/session', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        clientName: 'Public Visitor',
-        caseRef: 'lexi-public-chat',
-        conversationHistory,
-        caseSummary: 'Public visitor conversation via Lexi floating chat',
-      }),
-    }).catch((err) => {
-      console.warn('Lexi session sync failed (non-critical):', err);
-    });
-  }, [isLoading, response, messages]);
+    visitorIdRef.current = getVisitorId();
+  }, []);
 
   // Track session start when chat opens
   useEffect(() => {
@@ -124,7 +63,7 @@ export default function LexiFloatingChat() {
     }
   }, [open]);
 
-  // Track session end when chat closes or component unmounts
+  // Track session end when chat closes
   useEffect(() => {
     if (!open && sessionStartRef.current !== null && userMessageCountRef.current > 0) {
       const durationSeconds = Math.round((Date.now() - sessionStartRef.current) / 1000);
@@ -157,7 +96,7 @@ export default function LexiFloatingChat() {
         {
           role: 'assistant',
           content:
-            "Hi! I'm Lexi, your AI legal assistant. I can answer general legal questions and help you understand how Broussard Legal Services can support you. What's on your mind?",
+            "Hi! I'm Lexi, your AI legal assistant for Broussard Legal Services. I can answer general legal questions and help you understand how Maggi can support you. What's on your mind?",
         },
       ]);
     }
@@ -175,31 +114,136 @@ export default function LexiFloatingChat() {
     }
   }, [open]);
 
-  const buildApiMessages = useCallback(
-    (userText: string) => {
-      const history = messages.map((m) => ({ role: m.role, content: m.content }));
-      return [
-        { role: 'system', content: SYSTEM_PROMPT },
-        ...history,
-        { role: 'user', content: userText },
-      ];
-    },
-    [messages]
-  );
-
   const handleSend = useCallback(
-    (text: string) => {
+    async (text: string) => {
       const trimmed = text.trim();
-      if (!trimmed || isLoading) return;
+      if (!trimmed || isLoading || rateLimited) return;
+
       userMessageCountRef.current += 1;
       const currentCount = userMessageCountRef.current;
-      setMessages((prev) => [...prev, { role: 'user', content: trimmed }]);
+
+      const newUserMsg: Message = { role: 'user', content: trimmed };
+      const updatedMessages = [...messages, newUserMsg];
+      setMessages(updatedMessages);
       setInput('');
+      setIsLoading(true);
+      setStreamingContent('');
+
       trackAssistantMessageSent({ messageCount: currentCount, source: 'floating_chat' });
       trackAssistantQueryTopic({ query: trimmed, messageCount: currentCount, source: 'floating_chat' });
-      sendMessage(buildApiMessages(trimmed), { max_completion_tokens: 400 });
+
+      try {
+        const res = await fetch('/api/lexi/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            messages: updatedMessages.map((m) => ({ role: m.role, content: m.content })),
+            visitorId: visitorIdRef.current,
+            stream: true,
+          }),
+        });
+
+        // Handle rate limiting
+        if (res.status === 429) {
+          const data = await res.json();
+          setRateLimited(true);
+          const errorMsg =
+            data.error ?? "You've reached the message limit. Please book a consultation for personalized help.";
+          setMessages((prev) => [...prev, { role: 'assistant', content: errorMsg }]);
+          setIsLoading(false);
+          return;
+        }
+
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          // Confidence fallback: show booking CTA on error
+          setMessages((prev) => [
+            ...prev,
+            {
+              role: 'assistant',
+              content:
+                "I'm having trouble answering that right now. For accurate guidance on your situation, I'd recommend booking a free consultation with Maggi — she can give you a clear path forward.",
+            },
+          ]);
+          setIsLoading(false);
+          return;
+        }
+
+        // Handle non-streaming JSON response (cached or off-topic)
+        const contentType = res.headers.get('content-type') ?? '';
+        if (contentType.includes('application/json')) {
+          const data = await res.json();
+          setMessages((prev) => [...prev, { role: 'assistant', content: data.content }]);
+          setIsLoading(false);
+          return;
+        }
+
+        // Stream response
+        const reader = res.body?.getReader();
+        const decoder = new TextDecoder();
+        let accumulated = '';
+
+        if (!reader) {
+          setIsLoading(false);
+          return;
+        }
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value, { stream: true });
+          const lines = chunk.split('\n');
+
+          for (const line of lines) {
+            if (!line.startsWith('data: ')) continue;
+            const jsonStr = line.slice(6).trim();
+            if (!jsonStr) continue;
+
+            try {
+              const parsed = JSON.parse(jsonStr);
+              if (parsed.type === 'chunk' && parsed.chunk?.content) {
+                accumulated += parsed.chunk.content;
+                setStreamingContent(accumulated);
+              } else if (parsed.type === 'done') {
+                setMessages((prev) => {
+                  const last = prev[prev.length - 1];
+                  if (last?.role === 'assistant' && last.content === accumulated) return prev;
+                  return [...prev, { role: 'assistant', content: accumulated }];
+                });
+                setStreamingContent('');
+              } else if (parsed.type === 'error') {
+                setMessages((prev) => [
+                  ...prev,
+                  {
+                    role: 'assistant',
+                    content:
+                      "I'm having trouble with that question. For personalized guidance, please book a free consultation with Maggi at /availability.",
+                  },
+                ]);
+                setStreamingContent('');
+              }
+            } catch {
+              // Ignore malformed SSE lines
+            }
+          }
+        }
+      } catch (err) {
+        toast.error('Lexi is temporarily unavailable. Please try again.');
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: 'assistant',
+            content:
+              "I'm temporarily unavailable. For immediate assistance, please book a consultation with Maggi at /availability.",
+          },
+        ]);
+      } finally {
+        setIsLoading(false);
+        setStreamingContent('');
+      }
     },
-    [isLoading, buildApiMessages, sendMessage]
+    [isLoading, messages, rateLimited]
   );
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -216,18 +260,19 @@ export default function LexiFloatingChat() {
       {
         role: 'assistant',
         content:
-          "Hi! I'm Lexi, your AI legal assistant. I can answer general legal questions and help you understand how Broussard Legal Services can support you. What's on your mind?",
+          "Hi! I'm Lexi, your AI legal assistant for Broussard Legal Services. I can answer general legal questions and help you understand how Maggi can support you. What's on your mind?",
       },
     ]);
     setInput('');
     setStreamingContent('');
+    setRateLimited(false);
   };
 
   const showSuggestions = messages.length <= 1 && !isLoading;
 
   return (
     <>
-      {/* Floating toggle button — positioned bottom-left */}
+      {/* Floating toggle button */}
       <button
         onClick={() => setOpen((prev) => !prev)}
         aria-label={open ? 'Close Lexi AI chat' : 'Ask Lexi — AI legal assistant'}
@@ -375,14 +420,14 @@ export default function LexiFloatingChat() {
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask a legal question…"
-              disabled={isLoading}
+              placeholder={rateLimited ? 'Daily limit reached — book a consultation' : 'Ask a legal question…'}
+              disabled={isLoading || rateLimited}
               aria-label="Type your legal question"
               className="flex-1 px-3.5 py-2 rounded-xl border border-gray-200 bg-gray-50 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1B2A4A]/30 focus:border-[#1B2A4A]/50 transition-all disabled:opacity-50"
             />
             <button
               type="submit"
-              disabled={!input.trim() || isLoading}
+              disabled={!input.trim() || isLoading || rateLimited}
               aria-label="Send message"
               className="w-9 h-9 rounded-xl bg-[#1B2A4A] text-white flex items-center justify-center hover:opacity-90 transition-opacity disabled:opacity-40 shrink-0"
             >

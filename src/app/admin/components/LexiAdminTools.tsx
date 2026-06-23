@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import LexiAuditLogDashboard from './LexiAuditLogDashboard';
 
 interface ConflictCheckResult {
   id: string;
@@ -52,7 +53,7 @@ interface LineItem {
   work_type?: string;
 }
 
-type ActiveView = 'conflict_checker' | 'invoice_drafts';
+type ActiveView = 'conflict_checker' | 'invoice_drafts' | 'audit_log';
 
 const RISK_COLORS: Record<string, string> = {
   none: 'bg-emerald-50 text-emerald-700 border-emerald-200',
@@ -318,6 +319,10 @@ export default function LexiAdminTools() {
             </span>
           )}
         </button>
+        <button onClick={() => setActiveView('audit_log')}
+          className={`px-4 py-2 rounded-lg text-xs font-semibold uppercase tracking-widest transition-all ${activeView === 'audit_log' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
+          ⚖️ Audit Log
+        </button>
       </div>
 
       {/* Conflict Checker */}
@@ -535,6 +540,11 @@ export default function LexiAdminTools() {
             </div>
           )}
         </div>
+      )}
+
+      {/* Lexi Audit Log */}
+      {activeView === 'audit_log' && (
+        <LexiAuditLogDashboard />
       )}
     </div>
   );
