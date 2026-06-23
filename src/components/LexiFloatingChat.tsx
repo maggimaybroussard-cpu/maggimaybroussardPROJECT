@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
+import LexiCalendlyEmbed from './LexiCalendlyEmbed';
 import {
   trackAssistantConversationStart,
   trackAssistantMessageSent,
@@ -13,6 +14,7 @@ import {
 interface Message {
   role: 'user' | 'assistant';
   content: string;
+  showCalendly?: boolean;
 }
 
 const SUGGESTED_QUESTIONS = [
@@ -34,6 +36,20 @@ function getVisitorId(): string {
   return id;
 }
 
+// Detect high-intent signals for Airtable sync
+function detectHighIntent(messages: Message[]): boolean {
+  const userMessages = messages.filter((m) => m.role === 'user');
+  if (userMessages.length < 2) return false;
+  const fullText = userMessages.map((m) => m.content).join(' ').toLowerCase();
+  const signals = [
+    'hire', 'cost', 'price', 'fee', 'how much', 'retainer', 'consult',
+    'book', 'schedule', 'appointment', 'urgent', 'asap', 'deadline',
+    'lawsuit', 'sue', 'court', 'contract', 'sign', 'review my',
+    'help me', 'need a', 'looking for', 'interested in',
+  ];
+  return signals.some((s) => fullText.includes(s));
+}
+
 export default function LexiFloatingChat() {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
@@ -41,6 +57,8 @@ export default function LexiFloatingChat() {
   const [isLoading, setIsLoading] = useState(false);
   const [streamingContent, setStreamingContent] = useState('');
   const [rateLimited, setRateLimited] = useState(false);
+  const [calendlyDismissed, setCalendlyDismissed] = useState(false);
+  const [airtableSynced, setAirtableSynced] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const hasGreeted = useRef(false);
@@ -114,6 +132,28 @@ export default function LexiFloatingChat() {
     }
   }, [open]);
 
+  // Sync high-intent lead to Airtable (fire-and-forget)
+  const syncToAirtable = useCallback(
+    async (currentMessages: Message[], intentScore: 'High' | 'Medium' | 'Low' = 'High') => {
+      if (airtableSynced) return;
+      setAirtableSynced(true);
+      try {
+        await fetch('/api/lexi/airtable-sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            messages: currentMessages.map((m) => ({ role: m.role, content: m.content })),
+            visitorId: visitorIdRef.current,
+            intentScore,
+          }),
+        });
+      } catch {
+        // Non-blocking — sync failure should not affect chat
+      }
+    },
+    [airtableSynced]
+  );
+
   const handleSend = useCallback(
     async (text: string) => {
       const trimmed = text.trim();
@@ -149,20 +189,25 @@ export default function LexiFloatingChat() {
           setRateLimited(true);
           const errorMsg =
             data.error ?? "You've reached the message limit. Please book a consultation for personalized help.";
-          setMessages((prev) => [...prev, { role: 'assistant', content: errorMsg }]);
+          // Show Calendly embed on rate limit
+          setMessages((prev) => [
+            ...prev,
+            { role: 'assistant', content: errorMsg, showCalendly: !calendlyDismissed },
+          ]);
           setIsLoading(false);
+          // Sync to Airtable on rate limit (they engaged enough)
+          void syncToAirtable(updatedMessages, 'High');
           return;
         }
 
         if (!res.ok) {
-          const data = await res.json().catch(() => ({}));
-          // Confidence fallback: show booking CTA on error
           setMessages((prev) => [
             ...prev,
             {
               role: 'assistant',
               content:
                 "I'm having trouble answering that right now. For accurate guidance on your situation, I'd recommend booking a free consultation with Maggi — she can give you a clear path forward.",
+              showCalendly: !calendlyDismissed,
             },
           ]);
           setIsLoading(false);
@@ -182,6 +227,7 @@ export default function LexiFloatingChat() {
         const reader = res.body?.getReader();
         const decoder = new TextDecoder();
         let accumulated = '';
+        let bookingIntentDetected = false;
 
         if (!reader) {
           setIsLoading(false);
@@ -206,12 +252,34 @@ export default function LexiFloatingChat() {
                 accumulated += parsed.chunk.content;
                 setStreamingContent(accumulated);
               } else if (parsed.type === 'done') {
+                // Detect booking intent in the response or user message
+                const lowerAccumulated = accumulated.toLowerCase();
+                const lowerUserText = trimmed.toLowerCase();
+                bookingIntentDetected =
+                  lowerAccumulated.includes('/availability') ||
+                  lowerAccumulated.includes('book') ||
+                  lowerAccumulated.includes('consult') ||
+                  lowerUserText.includes('book') ||
+                  lowerUserText.includes('schedule') ||
+                  lowerUserText.includes('consult') ||
+                  lowerUserText.includes('hire') ||
+                  lowerUserText.includes('cost') ||
+                  lowerUserText.includes('price');
+
+                const showCalendly = bookingIntentDetected && !calendlyDismissed;
+
                 setMessages((prev) => {
                   const last = prev[prev.length - 1];
                   if (last?.role === 'assistant' && last.content === accumulated) return prev;
-                  return [...prev, { role: 'assistant', content: accumulated }];
+                  return [...prev, { role: 'assistant', content: accumulated, showCalendly }];
                 });
                 setStreamingContent('');
+
+                // Sync to Airtable if high intent detected
+                const allMessages = [...updatedMessages, { role: 'assistant' as const, content: accumulated }];
+                if (bookingIntentDetected || detectHighIntent(updatedMessages)) {
+                  void syncToAirtable(allMessages, bookingIntentDetected ? 'High' : 'Medium');
+                }
               } else if (parsed.type === 'error') {
                 setMessages((prev) => [
                   ...prev,
@@ -219,6 +287,7 @@ export default function LexiFloatingChat() {
                     role: 'assistant',
                     content:
                       "I'm having trouble with that question. For personalized guidance, please book a free consultation with Maggi at /availability.",
+                    showCalendly: !calendlyDismissed,
                   },
                 ]);
                 setStreamingContent('');
@@ -243,7 +312,7 @@ export default function LexiFloatingChat() {
         setStreamingContent('');
       }
     },
-    [isLoading, messages, rateLimited]
+    [isLoading, messages, rateLimited, calendlyDismissed, syncToAirtable]
   );
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -266,6 +335,8 @@ export default function LexiFloatingChat() {
     setInput('');
     setStreamingContent('');
     setRateLimited(false);
+    setCalendlyDismissed(false);
+    setAirtableSynced(false);
   };
 
   const showSuggestions = messages.length <= 1 && !isLoading;
@@ -301,7 +372,7 @@ export default function LexiFloatingChat() {
           aria-modal="true"
           aria-label="Lexi AI Legal Assistant"
           className="fixed bottom-24 left-6 z-50 w-80 sm:w-96 bg-white border border-gray-200 rounded-2xl shadow-2xl flex flex-col overflow-hidden"
-          style={{ maxHeight: '540px' }}
+          style={{ maxHeight: '580px' }}
         >
           {/* Header */}
           <div className="bg-[#1B2A4A] text-white px-5 py-4 flex items-center gap-3 shrink-0">
@@ -337,19 +408,45 @@ export default function LexiFloatingChat() {
             style={{ minHeight: 0 }}
           >
             {messages.map((msg, i) => (
-              <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                {msg.role === 'assistant' && (
-                  <div className="w-6 h-6 rounded-full bg-[#1B2A4A] text-white flex items-center justify-center text-xs font-bold shrink-0 mr-2 mt-0.5">
-                    L
+              <div key={i} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+                <div className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} w-full`}>
+                  {msg.role === 'assistant' && (
+                    <div className="w-6 h-6 rounded-full bg-[#1B2A4A] text-white flex items-center justify-center text-xs font-bold shrink-0 mr-2 mt-0.5">
+                      L
+                    </div>
+                  )}
+                  <div
+                    className={`max-w-[78%] px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed ${
+                      msg.role === 'user' ?'bg-[#1B2A4A] text-white rounded-tr-sm' :'bg-white text-gray-800 rounded-tl-sm border border-gray-100 shadow-sm'
+                    }`}
+                  >
+                    {msg.content}
+                  </div>
+                </div>
+                {/* Inline Calendly embed for booking-intent messages */}
+                {msg.role === 'assistant' && msg.showCalendly && (
+                  <div className="w-full pl-8 mt-1">
+                    <LexiCalendlyEmbed
+                      onBooked={() => {
+                        setMessages((prev) =>
+                          prev.map((m, idx) =>
+                            idx === i ? { ...m, showCalendly: false } : m
+                          )
+                        );
+                        // Sync booked status to Airtable
+                        void syncToAirtable(messages, 'High');
+                      }}
+                      onDismiss={() => {
+                        setCalendlyDismissed(true);
+                        setMessages((prev) =>
+                          prev.map((m, idx) =>
+                            idx === i ? { ...m, showCalendly: false } : m
+                          )
+                        );
+                      }}
+                    />
                   </div>
                 )}
-                <div
-                  className={`max-w-[78%] px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed ${
-                    msg.role === 'user' ?'bg-[#1B2A4A] text-white rounded-tr-sm' :'bg-white text-gray-800 rounded-tl-sm border border-gray-100 shadow-sm'
-                  }`}
-                >
-                  {msg.content}
-                </div>
               </div>
             ))}
 
@@ -389,8 +486,8 @@ export default function LexiFloatingChat() {
               </div>
             )}
 
-            {/* CTA after conversation */}
-            {messages.length >= 4 && !isLoading && (
+            {/* CTA after conversation (only if Calendly not already shown) */}
+            {messages.length >= 4 && !isLoading && calendlyDismissed && (
               <div className="mt-2 p-3 rounded-xl bg-[#1B2A4A]/5 border border-[#1B2A4A]/10 text-center">
                 <p className="text-xs text-gray-600 mb-2">Ready to get started with Maggi?</p>
                 <a
