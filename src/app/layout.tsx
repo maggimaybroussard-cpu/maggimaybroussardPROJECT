@@ -278,9 +278,9 @@ export default function RootLayout({
             }),
           }}
         />
-      
-      <script type="module" async src="https://static.rocket.new/rocket-web.js?_cfg=https%3A%2F%2Fmaggimaybr6854back.builtwithrocket.new&_be=https%3A%2F%2Fappanalytics.rocket.new&_v=0.1.19" />
-      <script type="module" defer src="https://static.rocket.new/rocket-shot.js?v=0.0.2" /></head>
+
+        <script type="module" async src="https://static.rocket.new/rocket-web.js?_cfg=https%3A%2F%2Fmaggimaybr6854back.builtwithrocket.new&_be=https%3A%2F%2Fappanalytics.rocket.new&_v=0.1.19" />
+        <script type="module" defer src="https://static.rocket.new/rocket-shot.js?v=0.0.2" /></head>
       <body className={raleway.className}>
         {/* Skip to main content — keyboard navigation / accessibility */}
         <a

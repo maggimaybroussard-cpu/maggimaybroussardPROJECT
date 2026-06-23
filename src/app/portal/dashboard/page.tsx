@@ -998,6 +998,45 @@ export default function ClientHomePage() {
 
         </div>
 
+        {/* ── Notion Case Notes Card ── */}
+        <div className="mt-6 bg-card border border-border rounded-2xl overflow-hidden">
+          <div className="px-5 py-4 flex items-center justify-between border-b border-border/60">
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 bg-foreground/10">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-foreground">
+                  <path d="M4 4h16v16H4z" /><path d="M4 9h16M9 4v16" />
+                </svg>
+              </div>
+              <p className="text-xs font-semibold uppercase tracking-widest text-foreground">Case Notes</p>
+            </div>
+            <Link
+              href="/portal/notion-notes"
+              className="inline-flex items-center gap-1 text-[11px] font-semibold text-muted-foreground hover:text-primary transition-colors"
+            >
+              View all
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </Link>
+          </div>
+          <div className="p-5">
+            <p className="text-xs text-muted-foreground leading-relaxed mb-3">
+              Your paralegal&apos;s case notes and Notion workspace updates appear here. Stay informed on case progress, research findings, and action items.
+            </p>
+            <Link
+              href="/portal/notion-notes"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all duration-200 hover:opacity-80"
+              style={{ background: 'rgba(53,94,59,0.08)', color: '#355E3B', border: '1px solid rgba(53,94,59,0.2)' }}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" />
+                <line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" />
+              </svg>
+              Open Case Notes
+            </Link>
+          </div>
+        </div>
+
         {/* ── Quick links ── */}
         <div className="mt-6 pt-6 border-t border-border/60">
           <p className="text-[11px] uppercase tracking-widest text-muted-foreground font-semibold mb-3">Quick Access</p>
@@ -1012,6 +1051,7 @@ export default function ClientHomePage() {
               { href: '/portal/signatures', label: 'Signatures', color: '#7C3AED' },
               { href: '/portal/retainer', label: 'Retainer', color: '#0891B2' },
               { href: '/portal/notifications', label: 'Notifications', color: '#059669' },
+              { href: '/portal/notion-notes', label: 'Case Notes', color: '#374151' },
               { href: '/portal/settings', label: 'Settings', color: '#6B7280' },
               { href: '/portal/welcome', label: 'Portal Guide', color: '#C8965A' },
             ].map((link) => (

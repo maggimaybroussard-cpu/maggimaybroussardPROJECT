@@ -18,6 +18,7 @@ interface BlogPost {
   publishedDate: string;
   readTime: string;
   contentHtml: string;
+  jsonLd?: Record<string, unknown>;
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -63,6 +64,13 @@ export default function BlogArticlePage() {
   return (
     <>
       <Header />
+      {/* JSON-LD structured data for SEO */}
+      {post?.jsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(post.jsonLd) }}
+        />
+      )}
       <main className="min-h-screen bg-background">
         {loading && (
           <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
@@ -161,6 +169,34 @@ export default function BlogArticlePage() {
                       {post.readTime}
                     </span>
                   )}
+                  {/* Share buttons */}
+                  <div className="ml-auto flex items-center gap-2">
+                    <a
+                      href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(post.title)}&url=${encodeURIComponent(typeof window !== 'undefined' ? window.location.href : '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors text-[11px] font-medium"
+                      aria-label="Share on Twitter"
+                    >
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                      </svg>
+                      Share
+                    </a>
+                    <a
+                      href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(typeof window !== 'undefined' ? window.location.href : '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-muted text-muted-foreground hover:bg-blue-50 hover:text-blue-700 transition-colors text-[11px] font-medium"
+                      aria-label="Share on LinkedIn"
+                    >
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                        <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6zM2 9h4v12H2z"/>
+                        <circle cx="4" cy="4" r="2"/>
+                      </svg>
+                      LinkedIn
+                    </a>
+                  </div>
                 </div>
               </header>
 
@@ -196,6 +232,20 @@ export default function BlogArticlePage() {
                 >
                   Book a Consultation
                 </Link>
+              </div>
+
+              {/* Related articles navigation */}
+              <div className="mt-8 pt-6 border-t border-border/60 flex justify-between items-center">
+                <Link
+                  href="/blog"
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-primary transition-colors"
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="m15 18-6-6 6-6" />
+                  </svg>
+                  All Articles
+                </Link>
+                <p className="text-[11px] text-muted-foreground">Broussard Legal Services · Legal Knowledge Hub</p>
               </div>
             </article>
           </>

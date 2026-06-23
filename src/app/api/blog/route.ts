@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 const NOTION_API_KEY = process.env.NOTION_API_KEY;
 const NOTION_DATABASE_ID = 'c45f58aad075484abfc8991431ecf59c';
 const NOTION_VERSION = '2022-06-28';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://broussardlegalservices.com';
 
 interface NotionProperty {
   type: string;
@@ -74,19 +75,63 @@ export async function GET(request: NextRequest) {
 
     const data = await res.json();
 
-    const posts = (data.results as NotionPage[]).map((page) => ({
-      id: page.id,
-      title: extractText(page.properties['Name']),
-      slug: extractText(page.properties['Slug']) || page.id,
-      excerpt: extractText(page.properties['Excerpt']),
-      category: extractText(page.properties['Category']),
-      tags: page.properties['Tags']?.multi_select?.map((t) => t.name) ?? [],
-      coverImage: extractText(page.properties['Cover Image']),
-      author: extractText(page.properties['Author']),
-      publishedDate: extractText(page.properties['Published Date']),
-      readTime: extractText(page.properties['Read Time']),
-      createdTime: page.created_time,
-    }));
+    const posts = (data.results as NotionPage[]).map((page) => {
+      const title = extractText(page.properties['Name']);
+      const slug = extractText(page.properties['Slug']) || page.id;
+      const excerpt = extractText(page.properties['Excerpt']);
+      const category = extractText(page.properties['Category']);
+      const coverImage = extractText(page.properties['Cover Image']);
+      const author = extractText(page.properties['Author']);
+      const publishedDate = extractText(page.properties['Published Date']);
+      const readTime = extractText(page.properties['Read Time']);
+
+      // Build JSON-LD structured data for each post
+      const jsonLd = {
+        '@context': 'https://schema.org',
+        '@type': 'Article',
+        headline: title,
+        description: excerpt,
+        author: {
+          '@type': 'Person',
+          name: author || 'Maggi May Broussard',
+          url: SITE_URL,
+        },
+        publisher: {
+          '@type': 'Organization',
+          name: 'Broussard Legal Services',
+          url: SITE_URL,
+          logo: {
+            '@type': 'ImageObject',
+            url: `${SITE_URL}/assets/images/Broussardlogo-1781834380907.png`,
+          },
+        },
+        datePublished: publishedDate ? `${publishedDate}T00:00:00Z` : page.created_time,
+        dateModified: page.last_edited_time,
+        image: coverImage || `${SITE_URL}/assets/images/og-image.png`,
+        url: `${SITE_URL}/blog/${page.id}`,
+        mainEntityOfPage: {
+          '@type': 'WebPage',
+          '@id': `${SITE_URL}/blog/${page.id}`,
+        },
+        articleSection: category || 'Legal Services',
+        keywords: `paralegal, legal services, Louisiana, ${category || 'legal guides'}`,
+      };
+
+      return {
+        id: page.id,
+        title,
+        slug,
+        excerpt,
+        category,
+        tags: page.properties['Tags']?.multi_select?.map((t) => t.name) ?? [],
+        coverImage,
+        author,
+        publishedDate,
+        readTime,
+        createdTime: page.created_time,
+        jsonLd,
+      };
+    });
 
     return NextResponse.json({ posts });
   } catch (err) {

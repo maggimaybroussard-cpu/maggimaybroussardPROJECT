@@ -17,6 +17,7 @@ interface BlogPost {
   publishedDate: string;
   readTime: string;
   createdTime: string;
+  jsonLd?: Record<string, unknown>;
 }
 
 const CATEGORIES = ['All', 'Paralegal Tips', 'Legal Guides', 'Jurisdiction', 'Resources'];
@@ -33,6 +34,30 @@ function formatDate(dateStr: string): string {
   const d = new Date(dateStr + 'T00:00:00');
   return d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 }
+
+// Blog listing JSON-LD
+const BLOG_LIST_JSON_LD = {
+  '@context': 'https://schema.org',
+  '@type': 'Blog',
+  name: 'Broussard Legal Services — Legal Knowledge Hub',
+  description: 'Paralegal tips, plain-language legal guides, and jurisdiction-specific articles for attorneys and legal professionals.',
+  url: 'https://broussardlegalservices.com/blog',
+  publisher: {
+    '@type': 'Organization',
+    name: 'Broussard Legal Services',
+    url: 'https://broussardlegalservices.com',
+    logo: {
+      '@type': 'ImageObject',
+      url: 'https://broussardlegalservices.com/assets/images/Broussardlogo-1781834380907.png',
+    },
+  },
+  author: {
+    '@type': 'Person',
+    name: 'Maggi May Broussard',
+    jobTitle: 'Licensed Paralegal',
+    url: 'https://broussardlegalservices.com',
+  },
+};
 
 export default function BlogPage() {
   const [posts, setPosts] = useState<BlogPost[]>([]);
@@ -76,6 +101,21 @@ export default function BlogPage() {
 
   return (
     <>
+      {/* Blog listing JSON-LD */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(BLOG_LIST_JSON_LD) }}
+      />
+      {/* Individual post JSON-LDs */}
+      {filteredPosts.map((post) =>
+        post.jsonLd ? (
+          <script
+            key={post.id}
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(post.jsonLd) }}
+          />
+        ) : null
+      )}
       <Header />
       <main className="min-h-screen bg-background">
         {/* Hero */}
@@ -288,28 +328,18 @@ export default function BlogPage() {
           )}
         </section>
 
-        {/* CTA */}
-        <section className="bg-secondary border-t border-border/60 px-5 md:px-10 py-16">
-          <div className="max-w-2xl mx-auto text-center">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.4em] text-accent mb-4 flex items-center justify-center gap-3">
-              <span className="w-8 h-px bg-accent/70" />
-              Get Expert Help
-              <span className="w-8 h-px bg-accent/70" />
-            </p>
-            <h2 className="font-serif text-2xl md:text-3xl text-foreground mb-3">
-              Need personalized legal support?
-            </h2>
-            <p className="text-sm text-muted-foreground mb-7 font-light leading-relaxed">
-              These articles are a starting point. For your specific situation, book a consultation and get expert paralegal guidance.
+        {/* Newsletter CTA */}
+        <section className="max-w-2xl mx-auto px-5 md:px-10 pb-20 text-center">
+          <div className="p-8 rounded-2xl bg-secondary border border-accent/20">
+            <h2 className="font-serif text-2xl text-primary mb-2">Stay Informed</h2>
+            <p className="text-sm text-muted-foreground mb-5">
+              Get the latest legal guides and paralegal tips delivered to your inbox.
             </p>
             <Link
-              href="/availability"
-              className="inline-flex items-center gap-2.5 px-7 py-3.5 rounded-full bg-primary text-primary-foreground text-[11px] font-semibold uppercase tracking-widest hover:opacity-90 transition-opacity shadow-lg shadow-primary/15"
+              href="/contact"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary text-primary-foreground text-[11px] font-semibold uppercase tracking-widest hover:opacity-90 transition-opacity"
             >
-              Book a Consultation
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M5 12h14M12 5l7 7-7 7" />
-              </svg>
+              Subscribe to Updates
             </Link>
           </div>
         </section>
