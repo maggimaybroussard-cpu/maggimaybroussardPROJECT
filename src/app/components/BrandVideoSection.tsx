@@ -5,7 +5,7 @@ import React, { useState } from 'react';
 // ── Replace YOUTUBE_VIDEO_ID below with your actual YouTube video ID ──────────
 // Example: if your video URL is https://www.youtube.com/watch?v=dQw4w9WgXcQ
 // then YOUTUBE_VIDEO_ID = 'dQw4w9WgXcQ'
-const YOUTUBE_VIDEO_ID = 'dQw4w9WgXcQ'; // TODO: Replace with your actual YouTube video ID
+const YOUTUBE_VIDEO_ID = 'etsM4wvX158'; // TODO: Replace with your actual YouTube video ID
 
 export default function BrandVideoSection() {
   const [playing, setPlaying] = useState(false);
