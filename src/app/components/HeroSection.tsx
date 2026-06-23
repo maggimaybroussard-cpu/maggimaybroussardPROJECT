@@ -96,7 +96,7 @@ export default function HeroSection() {
                 trackCTAClick('Work With Me', 'hero', '/contact');
                 trackBookConsultationClick('hero');
               }}
-              className="inline-flex items-center justify-center gap-2.5 px-8 py-4 bg-accent text-accent-foreground rounded-full text-xs font-semibold uppercase tracking-[0.15em] hover:opacity-90 transition-all duration-300 hover:gap-4 shadow-lg shadow-accent/20">
+              className="inline-flex items-center justify-center gap-2.5 px-8 py-4 bg-accent text-white rounded-full text-xs font-semibold uppercase tracking-[0.15em] hover:opacity-90 transition-all duration-300 hover:gap-4 shadow-lg shadow-accent/20">
               
               Work With Me
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

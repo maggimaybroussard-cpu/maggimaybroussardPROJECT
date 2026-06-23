@@ -188,7 +188,7 @@ export default function Header() {
                 }
                 className={`px-3 py-2 rounded-full text-[11px] font-semibold uppercase tracking-widest transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent whitespace-nowrap ${
                   pathname === link?.href || (link?.href === '/' && (pathname === '/' || pathname === '/homepage'))
-                    ? 'bg-accent text-white'
+                    ? 'bg-[#8B3A45] text-white'
                     : scrolled || !isHeroPage
                     ? 'text-primary-foreground/80 hover:text-white hover:bg-accent/80'
                     : 'text-primary-foreground/80 hover:text-white hover:bg-accent/80'
@@ -218,9 +218,9 @@ export default function Header() {
               href="/checkout"
               className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-[11px] font-semibold uppercase tracking-widest transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent border"
               style={{
-                borderColor: 'rgba(200,150,90,0.6)',
-                color: '#C8965A',
-                background: 'rgba(200,150,90,0.08)',
+                borderColor: 'rgba(139,96,32,0.6)',
+                color: '#6B4A10',
+                background: 'rgba(139,96,32,0.08)',
               }}
             >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
