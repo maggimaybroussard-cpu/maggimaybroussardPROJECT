@@ -59,8 +59,15 @@ export default function LexiFloatingChat() {
   const [rateLimited, setRateLimited] = useState(false);
   const [calendlyDismissed, setCalendlyDismissed] = useState(false);
   const [airtableSynced, setAirtableSynced] = useState(false);
+
+  // Email transcript state
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [transcriptEmail, setTranscriptEmail] = useState('');
+  const [sendingTranscript, setSendingTranscript] = useState(false);
+
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const emailInputRef = useRef<HTMLInputElement>(null);
   const hasGreeted = useRef(false);
   const sessionStartRef = useRef<number | null>(null);
   const userMessageCountRef = useRef(0);
@@ -132,6 +139,13 @@ export default function LexiFloatingChat() {
     }
   }, [open]);
 
+  // Focus email input when modal opens
+  useEffect(() => {
+    if (showEmailModal) {
+      setTimeout(() => emailInputRef.current?.focus(), 100);
+    }
+  }, [showEmailModal]);
+
   // Sync high-intent lead to Airtable (fire-and-forget)
   const syncToAirtable = useCallback(
     async (currentMessages: Message[], intentScore: 'High' | 'Medium' | 'Low' = 'High') => {
@@ -153,6 +167,47 @@ export default function LexiFloatingChat() {
     },
     [airtableSynced]
   );
+
+  // Send transcript via email
+  const handleSendTranscript = useCallback(async () => {
+    const email = transcriptEmail.trim();
+    if (!email || !email.includes('@')) {
+      toast.error('Please enter a valid email address.');
+      return;
+    }
+
+    const userMessages = messages.filter((m) => m.role === 'user');
+    if (userMessages.length === 0) {
+      toast.error('Start a conversation first, then request the transcript.');
+      return;
+    }
+
+    setSendingTranscript(true);
+    try {
+      const res = await fetch('/api/lexi/email-transcript', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          messages: messages.map((m) => ({ role: m.role, content: m.content })),
+          visitorId: visitorIdRef.current,
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast.success('Transcript sent! Check your inbox.');
+        setShowEmailModal(false);
+        setTranscriptEmail('');
+      } else {
+        toast.error(data.error ?? 'Could not send transcript. Please try again.');
+      }
+    } catch {
+      toast.error('Could not send transcript. Please try again.');
+    } finally {
+      setSendingTranscript(false);
+    }
+  }, [transcriptEmail, messages]);
 
   const handleSend = useCallback(
     async (text: string) => {
@@ -337,9 +392,12 @@ export default function LexiFloatingChat() {
     setRateLimited(false);
     setCalendlyDismissed(false);
     setAirtableSynced(false);
+    setShowEmailModal(false);
+    setTranscriptEmail('');
   };
 
   const showSuggestions = messages.length <= 1 && !isLoading;
+  const hasConversation = messages.filter((m) => m.role === 'user').length > 0;
 
   return (
     <>
@@ -384,6 +442,20 @@ export default function LexiFloatingChat() {
               <p className="text-xs text-white/60">AI Legal Assistant · Broussard Legal</p>
             </div>
             <div className="flex items-center gap-2">
+              {/* Email transcript button — visible once conversation has started */}
+              {hasConversation && (
+                <button
+                  onClick={() => setShowEmailModal(true)}
+                  aria-label="Email conversation transcript"
+                  title="Email me this transcript"
+                  className="text-white/60 hover:text-white transition-colors"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                    <polyline points="22,6 12,13 2,6" />
+                  </svg>
+                </button>
+              )}
               <button
                 onClick={handleReset}
                 aria-label="Reset conversation"
@@ -398,6 +470,61 @@ export default function LexiFloatingChat() {
               <div className="w-2 h-2 rounded-full bg-emerald-400" title="Online" />
             </div>
           </div>
+
+          {/* Email transcript modal — overlays the messages area */}
+          {showEmailModal && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/40 rounded-2xl">
+              <div className="bg-white rounded-xl shadow-xl mx-4 p-5 w-full max-w-xs">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="font-semibold text-sm text-gray-900">Email Transcript</p>
+                  <button
+                    onClick={() => { setShowEmailModal(false); setTranscriptEmail(''); }}
+                    aria-label="Close"
+                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500 mb-3 leading-relaxed">
+                  Enter your email and we'll send you a copy of this conversation for your records.
+                </p>
+                <input
+                  ref={emailInputRef}
+                  type="email"
+                  value={transcriptEmail}
+                  onChange={(e) => setTranscriptEmail(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleSendTranscript(); }}
+                  placeholder="your@email.com"
+                  aria-label="Your email address"
+                  className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1B2A4A]/30 focus:border-[#1B2A4A]/50 transition-all mb-3"
+                />
+                <button
+                  onClick={handleSendTranscript}
+                  disabled={sendingTranscript || !transcriptEmail.trim()}
+                  className="w-full py-2 rounded-lg bg-[#1B2A4A] text-white text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {sendingTranscript ? (
+                    <>
+                      <svg className="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                      </svg>
+                      Sending…
+                    </>
+                  ) : (
+                    <>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                        <polyline points="22,6 12,13 2,6" />
+                      </svg>
+                      Send Transcript
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Messages */}
           <div
@@ -497,6 +624,22 @@ export default function LexiFloatingChat() {
                 >
                   Book a Free Consultation →
                 </a>
+              </div>
+            )}
+
+            {/* Email transcript prompt — appears after 3+ user messages */}
+            {messages.filter((m) => m.role === 'user').length >= 3 && !isLoading && !showEmailModal && (
+              <div className="mt-1 flex items-center justify-center">
+                <button
+                  onClick={() => setShowEmailModal(true)}
+                  className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-[#1B2A4A] transition-colors"
+                >
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                    <polyline points="22,6 12,13 2,6" />
+                  </svg>
+                  Email me this transcript
+                </button>
               </div>
             )}
 
