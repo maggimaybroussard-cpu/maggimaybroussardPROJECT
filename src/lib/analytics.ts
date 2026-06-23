@@ -1869,3 +1869,95 @@ export function trackServicesFunnelConversionComplete(params: {
     origin_cta: originCta,
   });
 }
+
+// ── Lexi Assistant Engagement & ROI Tracking ─────────────────────────────────
+
+/**
+ * Fired when the Lexi chat panel is opened for the first time in a session.
+ * Measures conversation start rate (opens / page views).
+ */
+export function trackAssistantConversationStart(source: string = 'floating_chat') {
+  trackEvent('assistant_conversation_start', {
+    event_category: 'assistant_engagement',
+    event_label: 'Conversation Started',
+    assistant_source: source,
+  });
+}
+
+/**
+ * Fired each time the user sends a message to Lexi.
+ * Use messageCount to track depth of engagement per session.
+ */
+export function trackAssistantMessageSent(params: {
+  messageCount: number;
+  source?: string;
+}) {
+  trackEvent('assistant_message_sent', {
+    event_category: 'assistant_engagement',
+    event_label: 'User Message',
+    message_count: params.messageCount,
+    assistant_source: params.source ?? 'floating_chat',
+  });
+}
+
+/**
+ * Fired when the chat is closed or the session ends (component unmounts while open).
+ * Captures total message count and session duration for ROI measurement.
+ */
+export function trackAssistantSessionEnd(params: {
+  messageCount: number;
+  sessionDurationSeconds: number;
+  source?: string;
+}) {
+  trackEvent('assistant_session_end', {
+    event_category: 'assistant_engagement',
+    event_label: 'Session Ended',
+    message_count: params.messageCount,
+    session_duration_seconds: params.sessionDurationSeconds,
+    assistant_source: params.source ?? 'floating_chat',
+  });
+}
+
+/**
+ * Fired when the user asks about a specific legal topic.
+ * Extracts the first meaningful keyword from the query to measure topic distribution.
+ * Helps identify which legal topics drive the most assistant engagement.
+ */
+export function trackAssistantQueryTopic(params: {
+  query: string;
+  messageCount: number;
+  source?: string;
+}) {
+  // Classify query into a broad topic bucket for GA4 reporting
+  const q = params.query.toLowerCase();
+  let topic = 'general';
+  if (/contract|agreement|clause|review/.test(q)) topic = 'contract_review';
+  else if (/litigation|lawsuit|court|trial|deposition/.test(q)) topic = 'litigation_support';
+  else if (/research|case law|statute|precedent/.test(q)) topic = 'legal_research';
+  else if (/document|draft|template|letter/.test(q)) topic = 'document_drafting';
+  else if (/case|manage|status|timeline/.test(q)) topic = 'case_management';
+  else if (/price|cost|fee|retainer|pay/.test(q)) topic = 'pricing';
+  else if (/book|consult|appointment|schedule|availability/.test(q)) topic = 'booking_intent';
+  else if (/paralegal|attorney|lawyer|firm/.test(q)) topic = 'firm_info';
+
+  trackEvent('assistant_query_topic', {
+    event_category: 'assistant_engagement',
+    event_label: topic,
+    query_topic: topic,
+    message_count: params.messageCount,
+    assistant_source: params.source ?? 'floating_chat',
+  });
+}
+
+/**
+ * Fired when the user clicks the "Book a Free Consultation" CTA inside the chat.
+ * Measures assistant-to-booking conversion rate (key ROI signal).
+ */
+export function trackAssistantBookingCTAClick(messageCount: number) {
+  trackEvent('assistant_booking_cta_click', {
+    event_category: 'assistant_roi',
+    event_label: 'Chat → Booking CTA',
+    message_count: messageCount,
+    assistant_source: 'floating_chat',
+  });
+}

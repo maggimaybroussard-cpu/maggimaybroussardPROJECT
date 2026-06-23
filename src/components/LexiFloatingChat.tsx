@@ -3,6 +3,13 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useChat } from '@/lib/hooks/useChat';
 import toast from 'react-hot-toast';
+import {
+  trackAssistantConversationStart,
+  trackAssistantMessageSent,
+  trackAssistantSessionEnd,
+  trackAssistantQueryTopic,
+  trackAssistantBookingCTAClick,
+} from '@/lib/analytics';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -42,6 +49,9 @@ export default function LexiFloatingChat() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const hasGreeted = useRef(false);
+  const sessionStartRef = useRef<number | null>(null);
+  const userMessageCountRef = useRef(0);
+  const hasTrackedStartRef = useRef(false);
 
   const { response, isLoading, error, sendMessage } = useChat('OPEN_AI', 'gpt-4o-mini', true);
 
@@ -105,6 +115,40 @@ export default function LexiFloatingChat() {
     });
   }, [isLoading, response, messages]);
 
+  // Track session start when chat opens
+  useEffect(() => {
+    if (open && !hasTrackedStartRef.current) {
+      hasTrackedStartRef.current = true;
+      sessionStartRef.current = Date.now();
+      trackAssistantConversationStart('floating_chat');
+    }
+  }, [open]);
+
+  // Track session end when chat closes or component unmounts
+  useEffect(() => {
+    if (!open && sessionStartRef.current !== null && userMessageCountRef.current > 0) {
+      const durationSeconds = Math.round((Date.now() - sessionStartRef.current) / 1000);
+      trackAssistantSessionEnd({
+        messageCount: userMessageCountRef.current,
+        sessionDurationSeconds: durationSeconds,
+        source: 'floating_chat',
+      });
+    }
+  }, [open]);
+
+  useEffect(() => {
+    return () => {
+      if (sessionStartRef.current !== null && userMessageCountRef.current > 0) {
+        const durationSeconds = Math.round((Date.now() - sessionStartRef.current) / 1000);
+        trackAssistantSessionEnd({
+          messageCount: userMessageCountRef.current,
+          sessionDurationSeconds: durationSeconds,
+          source: 'floating_chat',
+        });
+      }
+    };
+  }, []);
+
   // Greeting on first open
   useEffect(() => {
     if (open && !hasGreeted.current) {
@@ -147,8 +191,12 @@ export default function LexiFloatingChat() {
     (text: string) => {
       const trimmed = text.trim();
       if (!trimmed || isLoading) return;
+      userMessageCountRef.current += 1;
+      const currentCount = userMessageCountRef.current;
       setMessages((prev) => [...prev, { role: 'user', content: trimmed }]);
       setInput('');
+      trackAssistantMessageSent({ messageCount: currentCount, source: 'floating_chat' });
+      trackAssistantQueryTopic({ query: trimmed, messageCount: currentCount, source: 'floating_chat' });
       sendMessage(buildApiMessages(trimmed), { max_completion_tokens: 400 });
     },
     [isLoading, buildApiMessages, sendMessage]
@@ -302,6 +350,7 @@ export default function LexiFloatingChat() {
                 <p className="text-xs text-gray-600 mb-2">Ready to get started with Maggi?</p>
                 <a
                   href="/availability"
+                  onClick={() => trackAssistantBookingCTAClick(userMessageCountRef.current)}
                   className="inline-block px-4 py-1.5 rounded-lg bg-[#1B2A4A] text-white text-xs font-medium hover:opacity-90 transition-opacity"
                 >
                   Book a Free Consultation →
