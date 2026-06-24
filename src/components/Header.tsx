@@ -158,19 +158,19 @@ export default function Header() {
             </div>
 
             <Link href="/" className="flex items-center gap-2.5" aria-label="Broussard Legal Services — Home">
+              <Image
+                src="/assets/images/initiallogo-1782343923794.png"
+                alt="BL monogram — Broussard Legal Services"
+                width={32}
+                height={32}
+                className="flex-shrink-0 object-contain"
+              />
               <span
                 className="font-serif text-lg tracking-tight transition-colors duration-300"
                 style={{ color: '#355E3B' }}
               >
                 Broussard Legal Services
               </span>
-              <Image
-                src="/assets/images/app_logo-1782343606167.png"
-                alt="Gold scales of justice — Broussard Legal Services"
-                width={36}
-                height={36}
-                className="flex-shrink-0 object-contain"
-              />
             </Link>
           </div>
 

@@ -2,7 +2,10 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, AreaChart, Area } from 'recharts';
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  Legend, AreaChart, Area, PieChart, Pie, Cell, LineChart, Line,
+} from 'recharts';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -64,11 +67,21 @@ interface IntakeNurture {
   sent_at: string | null;
 }
 
+interface ContactInquiry {
+  id: string;
+  name: string;
+  email: string;
+  booking_stage: string;
+  created_at: string;
+  practice_area?: string;
+}
+
 interface DailyPoint {
   date: string;
   bookings: number;
   portalBookings: number;
   revenue: number;
+  leads: number;
 }
 
 interface ChannelBreakdown {
@@ -81,7 +94,7 @@ interface ChannelBreakdown {
   rate: number;
 }
 
-// ─── Constants (used in component) ───────────────────────────────────────────
+// ─── Constants ────────────────────────────────────────────────────────────────
 
 const BOOKING_TYPES_LIST = [
   { key: 'initial_consultation', label: 'Initial Consultation' },
@@ -90,10 +103,12 @@ const BOOKING_TYPES_LIST = [
   { key: 'document_review', label: 'Document Review' },
 ];
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
 const ACCENT = '#355E3B';
-const CHART_COLORS = ['#355E3B', '#4a7c59', '#6b9e7a', '#8dbf9a', '#afd9ba'];
+const GOLD = '#8B6020';
+const CHART_COLORS = ['#355E3B', '#4a7c59', '#6b9e7a', '#8dbf9a', '#afd9ba', '#8B6020', '#C8965A'];
+const PIE_COLORS = ['#355E3B', '#8B6020', '#4a7c59', '#C8965A', '#6b9e7a', '#e8a838', '#afd9ba'];
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function fmt(amount: number) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(amount);
@@ -104,16 +119,20 @@ function dayLabel(dateStr: string) {
 }
 
 function dayLabelFromDate(dateStr: string) {
-  // dateStr is YYYY-MM-DD
   return new Date(dateStr + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function pct(num: number, denom: number) {
+  return denom > 0 ? Math.round((num / denom) * 100) : 0;
 }
 
 // ─── Stat Card ────────────────────────────────────────────────────────────────
 
 function StatCard({
-  label, value, sub, icon, accent = false, warn = false,
+  label, value, sub, icon, accent = false, warn = false, trend,
 }: {
-  label: string; value: string; sub?: string; icon: React.ReactNode; accent?: boolean; warn?: boolean;
+  label: string; value: string; sub?: string; icon: React.ReactNode;
+  accent?: boolean; warn?: boolean; trend?: { value: number; label: string };
 }) {
   const bg = accent ? 'bg-emerald-50 border-emerald-200' : warn ? 'bg-amber-50 border-amber-200' : 'bg-card border-border';
   const iconBg = accent ? 'bg-emerald-100 text-emerald-700' : warn ? 'bg-amber-100 text-amber-700' : 'bg-primary/10 text-primary';
@@ -124,7 +143,16 @@ function StatCard({
         <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${iconBg}`}>{icon}</div>
       </div>
       <p className="text-3xl font-semibold text-foreground leading-none">{value}</p>
-      {sub && <p className="text-xs text-muted-foreground">{sub}</p>}
+      <div className="flex items-center justify-between gap-2">
+        {sub && <p className="text-xs text-muted-foreground">{sub}</p>}
+        {trend && (
+          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0 ${
+            trend.value > 0 ? 'bg-emerald-100 text-emerald-700' : trend.value < 0 ? 'bg-red-100 text-red-600' : 'bg-secondary text-muted-foreground'
+          }`}>
+            {trend.value > 0 ? '↑' : trend.value < 0 ? '↓' : '→'} {Math.abs(trend.value)}% {trend.label}
+          </span>
+        )}
+      </div>
     </div>
   );
 }
@@ -157,6 +185,25 @@ function ChannelRow({ ch }: { ch: ChannelBreakdown }) {
   );
 }
 
+// ─── Insight Card ─────────────────────────────────────────────────────────────
+
+function InsightCard({ icon, title, value, detail, color }: {
+  icon: React.ReactNode; title: string; value: string; detail: string; color: string;
+}) {
+  return (
+    <div className={`rounded-2xl border p-4 flex items-start gap-3 ${color}`}>
+      <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 bg-white/60">
+        {icon}
+      </div>
+      <div className="min-w-0">
+        <p className="text-xs font-semibold uppercase tracking-widest opacity-70 mb-0.5">{title}</p>
+        <p className="text-xl font-bold leading-none mb-1">{value}</p>
+        <p className="text-xs opacity-70">{detail}</p>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function AdminAnalyticsDashboard() {
@@ -169,10 +216,12 @@ export default function AdminAnalyticsDashboard() {
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [prospectEmails, setProspectEmails] = useState<ProspectEmail[]>([]);
   const [intakeNurture, setIntakeNurture] = useState<IntakeNurture[]>([]);
+  const [leads, setLeads] = useState<ContactInquiry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
   const [range, setRange] = useState<7 | 14 | 30>(30);
+  const [activeTab, setActiveTab] = useState<'overview' | 'bookings' | 'revenue' | 'email' | 'leads'>('overview');
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
@@ -183,7 +232,7 @@ export default function AdminAnalyticsDashboard() {
       const sinceISO = since.toISOString();
       const sinceDateStr = sinceISO.split('T')[0];
 
-      const [bRes, cbRes, pRes, sRes, rRes, prRes, inRes] = await Promise.all([
+      const [bRes, cbRes, pRes, sRes, rRes, prRes, inRes, lRes] = await Promise.all([
         supabase.from('calendly_bookings').select('id, status, start_time, created_at').gte('created_at', sinceISO).order('created_at', { ascending: true }),
         supabase.from('consultation_bookings').select('id, status, booking_date, booking_time, booking_type, client_name, client_email, confirmation_sent, created_at').gte('booking_date', sinceDateStr).order('booking_date', { ascending: true }),
         supabase.from('payments').select('id, amount, currency, payment_status, payment_type, customer_name, created_at').gte('created_at', sinceISO).order('created_at', { ascending: true }),
@@ -191,6 +240,7 @@ export default function AdminAnalyticsDashboard() {
         supabase.from('payment_reminder_sequences').select('id, send_status, scheduled_at, sent_at').gte('created_at', sinceISO),
         supabase.from('prospect_followup_sequences').select('id, send_status, scheduled_at, sent_at').gte('created_at', sinceISO),
         supabase.from('intake_nurture_sequences').select('id, send_status, scheduled_at, sent_at').gte('created_at', sinceISO),
+        supabase.from('contact_inquiries').select('id, name, email, booking_stage, created_at, practice_area').gte('created_at', sinceISO).order('created_at', { ascending: true }),
       ]);
 
       setBookings((bRes.data as Booking[]) ?? []);
@@ -200,6 +250,7 @@ export default function AdminAnalyticsDashboard() {
       setReminders((rRes.data as Reminder[]) ?? []);
       setProspectEmails((prRes.data as ProspectEmail[]) ?? []);
       setIntakeNurture((inRes.data as IntakeNurture[]) ?? []);
+      setLeads((lRes.data as ContactInquiry[]) ?? []);
       setLastRefreshed(new Date());
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load analytics data');
@@ -216,18 +267,14 @@ export default function AdminAnalyticsDashboard() {
 
   const confirmedBookings = bookings.filter((b) => b.status === 'active' || b.status === 'confirmed');
   const canceledBookings = bookings.filter((b) => b.status === 'canceled' || b.status === 'cancelled');
-  const cancelRate = bookings.length > 0 ? Math.round((canceledBookings.length / bookings.length) * 100) : 0;
+  const cancelRate = pct(canceledBookings.length, bookings.length);
 
-  // Portal consultation bookings metrics
   const confirmedPortalBookings = consultationBookings.filter((b) => b.status === 'confirmed' || b.status === 'completed');
   const cancelledPortalBookings = consultationBookings.filter((b) => b.status === 'cancelled');
   const pendingPortalBookings = consultationBookings.filter((b) => b.status === 'pending');
   const confirmationsSent = consultationBookings.filter((b) => b.confirmation_sent).length;
-  const portalCancelRate = consultationBookings.length > 0
-    ? Math.round((cancelledPortalBookings.length / consultationBookings.length) * 100)
-    : 0;
+  const portalCancelRate = pct(cancelledPortalBookings.length, consultationBookings.length);
 
-  // Booking type breakdown
   const bookingTypeBreakdown = BOOKING_TYPES_LIST.map((type) => ({
     type: type.label,
     count: consultationBookings.filter((b) => b.booking_type === type.key).length,
@@ -241,6 +288,9 @@ export default function AdminAnalyticsDashboard() {
   const pendingRevenue = payments
     .filter((p) => p.payment_status === 'pending' || p.payment_status === 'processing')
     .reduce((s, p) => s + p.amount / 100, 0);
+  const failedRevenue = payments
+    .filter((p) => p.payment_status === 'failed')
+    .reduce((s, p) => s + p.amount / 100, 0);
   const avgPayment = payments.filter((p) => p.payment_status === 'succeeded' || p.payment_status === 'paid').length > 0
     ? collectedRevenue / payments.filter((p) => p.payment_status === 'succeeded' || p.payment_status === 'paid').length
     : 0;
@@ -248,17 +298,35 @@ export default function AdminAnalyticsDashboard() {
   const allEmails = [...sequences, ...reminders, ...prospectEmails, ...intakeNurture];
   const totalEmailSent = allEmails.filter((e) => e.send_status === 'sent').length;
   const totalEmailFailed = allEmails.filter((e) => e.send_status === 'failed').length;
-  const overallDeliveryRate = allEmails.length > 0 ? Math.round((totalEmailSent / allEmails.length) * 100) : 0;
+  const overallDeliveryRate = pct(totalEmailSent, allEmails.length);
 
-  // ── Daily trend (bookings + portal bookings + revenue) ───────────────────────
+  // Lead funnel
+  const totalLeads = leads.length;
+  const activeLeads = leads.filter((l) => l.booking_stage === 'active_client').length;
+  const consultationLeads = leads.filter((l) => l.booking_stage === 'consultation_booked').length;
+  const proposalLeads = leads.filter((l) => l.booking_stage === 'proposal_sent').length;
+  const conversionRate = pct(activeLeads, totalLeads);
+
+  // Practice area breakdown
+  const practiceAreaMap: Record<string, number> = {};
+  leads.forEach((l) => {
+    const area = l.practice_area || 'General';
+    practiceAreaMap[area] = (practiceAreaMap[area] ?? 0) + 1;
+  });
+  const practiceAreaData = Object.entries(practiceAreaMap)
+    .map(([name, value]) => ({ name, value }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 6);
+
+  // ── Daily trend ──────────────────────────────────────────────────────────────
 
   const dailyData: DailyPoint[] = (() => {
-    const map: Record<string, { bookings: number; portalBookings: number; revenue: number }> = {};
+    const map: Record<string, { bookings: number; portalBookings: number; revenue: number; leads: number }> = {};
     const now = new Date();
     for (let i = range - 1; i >= 0; i--) {
       const d = new Date(now);
       d.setDate(d.getDate() - i);
-      map[dayLabel(d.toISOString())] = { bookings: 0, portalBookings: 0, revenue: 0 };
+      map[dayLabel(d.toISOString())] = { bookings: 0, portalBookings: 0, revenue: 0, leads: 0 };
     }
     bookings.forEach((b) => {
       const k = dayLabel(b.created_at);
@@ -274,6 +342,10 @@ export default function AdminAnalyticsDashboard() {
         const k = dayLabel(p.created_at);
         if (map[k]) map[k].revenue += p.amount / 100;
       });
+    leads.forEach((l) => {
+      const k = dayLabel(l.created_at);
+      if (map[k]) map[k].leads += 1;
+    });
     return Object.entries(map).map(([date, v]) => ({ date, ...v }));
   })();
 
@@ -287,7 +359,7 @@ export default function AdminAnalyticsDashboard() {
       pending: sequences.filter((e) => e.send_status === 'pending').length,
       skipped: sequences.filter((e) => e.send_status === 'skipped').length,
       total: sequences.length,
-      rate: sequences.length > 0 ? Math.round((sequences.filter((e) => e.send_status === 'sent').length / sequences.length) * 100) : 0,
+      rate: pct(sequences.filter((e) => e.send_status === 'sent').length, sequences.length),
     },
     {
       channel: 'Payment Reminders',
@@ -296,7 +368,7 @@ export default function AdminAnalyticsDashboard() {
       pending: reminders.filter((e) => e.send_status === 'pending').length,
       skipped: reminders.filter((e) => e.send_status === 'skipped').length,
       total: reminders.length,
-      rate: reminders.length > 0 ? Math.round((reminders.filter((e) => e.send_status === 'sent').length / reminders.length) * 100) : 0,
+      rate: pct(reminders.filter((e) => e.send_status === 'sent').length, reminders.length),
     },
     {
       channel: 'Prospect Follow-Ups',
@@ -305,7 +377,7 @@ export default function AdminAnalyticsDashboard() {
       pending: prospectEmails.filter((e) => e.send_status === 'pending').length,
       skipped: prospectEmails.filter((e) => e.send_status === 'skipped').length,
       total: prospectEmails.length,
-      rate: prospectEmails.length > 0 ? Math.round((prospectEmails.filter((e) => e.send_status === 'sent').length / prospectEmails.length) * 100) : 0,
+      rate: pct(prospectEmails.filter((e) => e.send_status === 'sent').length, prospectEmails.length),
     },
     {
       channel: 'Intake Nurture',
@@ -314,7 +386,7 @@ export default function AdminAnalyticsDashboard() {
       pending: intakeNurture.filter((e) => e.send_status === 'pending').length,
       skipped: intakeNurture.filter((e) => e.send_status === 'skipped').length,
       total: intakeNurture.length,
-      rate: intakeNurture.length > 0 ? Math.round((intakeNurture.filter((e) => e.send_status === 'sent').length / intakeNurture.length) * 100) : 0,
+      rate: pct(intakeNurture.filter((e) => e.send_status === 'sent').length, intakeNurture.length),
     },
   ].filter((ch) => ch.total > 0);
 
@@ -330,6 +402,21 @@ export default function AdminAnalyticsDashboard() {
       });
     return Object.entries(map).map(([type, amount]) => ({ type, amount })).sort((a, b) => b.amount - a.amount);
   })();
+
+  // Payment status pie
+  const paymentStatusPie = [
+    { name: 'Collected', value: payments.filter((p) => p.payment_status === 'succeeded' || p.payment_status === 'paid').length },
+    { name: 'Pending', value: payments.filter((p) => p.payment_status === 'pending' || p.payment_status === 'processing').length },
+    { name: 'Failed', value: payments.filter((p) => p.payment_status === 'failed').length },
+  ].filter((d) => d.value > 0);
+
+  // Lead stage funnel
+  const leadFunnelData = [
+    { stage: 'New Leads', count: totalLeads },
+    { stage: 'Consultation', count: consultationLeads },
+    { stage: 'Proposal Sent', count: proposalLeads },
+    { stage: 'Active Client', count: activeLeads },
+  ];
 
   // ── Loading skeleton ─────────────────────────────────────────────────────────
 
@@ -364,6 +451,14 @@ export default function AdminAnalyticsDashboard() {
     );
   }
 
+  const TABS = [
+    { key: 'overview', label: 'Overview' },
+    { key: 'bookings', label: 'Bookings' },
+    { key: 'revenue', label: 'Revenue' },
+    { key: 'email', label: 'Email' },
+    { key: 'leads', label: 'Leads' },
+  ] as const;
+
   return (
     <div className="space-y-6">
 
@@ -375,7 +470,7 @@ export default function AdminAnalyticsDashboard() {
             ? `Updated ${lastRefreshed.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`
             : 'Live data'}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           {([7, 14, 30] as const).map((r) => (
             <button
               key={r}
@@ -399,28 +494,37 @@ export default function AdminAnalyticsDashboard() {
         </div>
       </div>
 
-      {/* ── KPI Cards ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* ── Tab Navigation ── */}
+      <div className="flex items-center gap-1 bg-secondary/30 rounded-2xl p-1 overflow-x-auto">
+        {TABS.map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            className={`flex-shrink-0 px-4 py-2 rounded-xl text-xs font-semibold uppercase tracking-widest transition-all ${
+              activeTab === tab.key
+                ? 'bg-card text-foreground shadow-sm border border-border'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* ── KPI Summary Cards (always visible) ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
         <StatCard
-          label={`Total Bookings (${range}d)`}
+          label={`Bookings (${range}d)`}
           value={totalAllBookings.toString()}
           sub={`${bookings.length} Calendly · ${consultationBookings.length} portal`}
-          icon={
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect width="18" height="18" x="3" y="4" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
-            </svg>
-          }
+          icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>}
         />
         <StatCard
           label={`Revenue (${range}d)`}
           value={fmt(collectedRevenue)}
-          sub={pendingRevenue > 0 ? `${fmt(pendingRevenue)} pending` : avgPayment > 0 ? `Avg ${fmt(avgPayment)} / payment` : 'No payments yet'}
+          sub={pendingRevenue > 0 ? `${fmt(pendingRevenue)} pending` : `Avg ${fmt(avgPayment)}`}
           accent={collectedRevenue > 0}
-          icon={
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-            </svg>
-          }
+          icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>}
         />
         <StatCard
           label="Email Delivery"
@@ -428,335 +532,519 @@ export default function AdminAnalyticsDashboard() {
           sub={`${totalEmailSent} sent · ${totalEmailFailed} failed`}
           accent={overallDeliveryRate >= 80}
           warn={overallDeliveryRate < 80 && overallDeliveryRate >= 50}
-          icon={
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect width="20" height="16" x="2" y="4" rx="2" /><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-            </svg>
-          }
+          icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="16" x="2" y="4" rx="2" /><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" /></svg>}
         />
         <StatCard
-          label="Portal Bookings"
-          value={consultationBookings.length.toString()}
-          sub={`${confirmationsSent} emails sent · ${portalCancelRate}% cancel`}
-          accent={consultationBookings.length > 0}
-          icon={
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
-            </svg>
-          }
+          label={`New Leads (${range}d)`}
+          value={totalLeads.toString()}
+          sub={`${conversionRate}% conversion rate`}
+          accent={totalLeads > 0}
+          icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>}
+        />
+        <StatCard
+          label="Cancel Rate"
+          value={`${cancelRate}%`}
+          sub={`${canceledBookings.length} of ${bookings.length} Calendly`}
+          warn={cancelRate > 20}
+          icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" /></svg>}
         />
       </div>
 
-      {/* ── Portal Booking Metrics ── */}
-      <div className="bg-card border border-border rounded-2xl p-6">
-        <div className="flex items-start justify-between gap-4 mb-5">
-          <div>
-            <h3 className="font-serif text-lg text-foreground mb-1">Portal Consultation Bookings</h3>
-            <p className="text-xs text-muted-foreground">Direct bookings from the client portal — last {range} days</p>
+      {/* ── OVERVIEW TAB ── */}
+      {activeTab === 'overview' && (
+        <div className="space-y-6">
+          {/* Key Insights */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <InsightCard
+              icon={<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={ACCENT} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2" /></svg>}
+              title="Avg Revenue / Booking"
+              value={totalAllBookings > 0 ? fmt(collectedRevenue / totalAllBookings) : '$0'}
+              detail="Collected revenue per booking"
+              color="bg-emerald-50 border-emerald-200 text-emerald-800"
+            />
+            <InsightCard
+              icon={<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" /></svg>}
+              title="Lead → Client Rate"
+              value={`${conversionRate}%`}
+              detail={`${activeLeads} active of ${totalLeads} leads`}
+              color="bg-amber-50 border-amber-200 text-amber-800"
+            />
+            <InsightCard
+              icon={<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="16" x="2" y="4" rx="2" /><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" /></svg>}
+              title="Email Engagement"
+              value={`${overallDeliveryRate}%`}
+              detail={`${allEmails.length} total emails tracked`}
+              color="bg-violet-50 border-violet-200 text-violet-800"
+            />
+            <InsightCard
+              icon={<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0369a1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>}
+              title="Confirmation Rate"
+              value={`${pct(confirmationsSent, consultationBookings.length)}%`}
+              detail={`${confirmationsSent} of ${consultationBookings.length} portal bookings`}
+              color="bg-sky-50 border-sky-200 text-sky-800"
+            />
           </div>
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-            Live
-          </span>
-        </div>
 
-        {/* Status breakdown */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-          {[
-            { label: 'Total', value: consultationBookings.length, color: 'text-foreground', bg: 'bg-secondary/30 border-border' },
-            { label: 'Confirmed', value: confirmedPortalBookings.length, color: 'text-emerald-600', bg: 'bg-emerald-50 border-emerald-200' },
-            { label: 'Pending', value: pendingPortalBookings.length, color: 'text-amber-600', bg: 'bg-amber-50 border-amber-200' },
-            { label: 'Cancelled', value: cancelledPortalBookings.length, color: 'text-red-500', bg: 'bg-red-50 border-red-200' },
-          ].map((item) => (
-            <div key={item.label} className={`border rounded-2xl p-4 text-center ${item.bg}`}>
-              <p className={`text-2xl font-bold ${item.color}`}>{item.value}</p>
-              <p className="text-xs text-muted-foreground mt-1">{item.label}</p>
+          {/* Daily Trend */}
+          <div className="bg-card border border-border rounded-2xl p-6">
+            <div className="flex items-start justify-between gap-4 mb-5">
+              <div>
+                <h3 className="font-serif text-lg text-foreground mb-1">Activity Trend</h3>
+                <p className="text-xs text-muted-foreground">Bookings, leads, and revenue — last {range} days</p>
+              </div>
             </div>
-          ))}
-        </div>
-
-        {/* Booking type breakdown */}
-        {bookingTypeBreakdown.length > 0 && (
-          <div className="mb-6">
-            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">By Appointment Type</p>
-            <ResponsiveContainer width="100%" height={160}>
-              <BarChart data={bookingTypeBreakdown} layout="vertical" margin={{ top: 0, right: 8, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" horizontal={false} />
-                <XAxis type="number" tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }} tickLine={false} axisLine={false} allowDecimals={false} />
-                <YAxis type="category" dataKey="type" tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }} tickLine={false} axisLine={false} width={130} />
-                <Tooltip contentStyle={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '12px', fontSize: '12px' }} />
-                <Bar dataKey="count" name="Bookings" fill={ACCENT} radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            {dailyData.every((d) => d.bookings === 0 && d.portalBookings === 0 && d.revenue === 0 && d.leads === 0) ? (
+              <div className="py-12 text-center text-sm text-muted-foreground">No activity in this period.</div>
+            ) : (
+              <ResponsiveContainer width="100%" height={240}>
+                <AreaChart data={dailyData} margin={{ top: 4, right: 0, left: -10, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="gradBookings" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={ACCENT} stopOpacity={0.18} />
+                      <stop offset="95%" stopColor={ACCENT} stopOpacity={0} />
+                    </linearGradient>
+                    <linearGradient id="gradLeads" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={GOLD} stopOpacity={0.18} />
+                      <stop offset="95%" stopColor={GOLD} stopOpacity={0} />
+                    </linearGradient>
+                    <linearGradient id="gradRevenue" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={CHART_COLORS[2]} stopOpacity={0.18} />
+                      <stop offset="95%" stopColor={CHART_COLORS[2]} stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                  <XAxis dataKey="date" tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }} tickLine={false} axisLine={false} interval={range === 7 ? 0 : range === 14 ? 1 : 4} />
+                  <YAxis yAxisId="left" tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }} tickLine={false} axisLine={false} width={28} allowDecimals={false} />
+                  <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }} tickLine={false} axisLine={false} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} width={40} />
+                  <Tooltip contentStyle={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '12px', fontSize: '12px' }} formatter={(value: number, name: string) => name === 'Revenue' ? [fmt(value), name] : [value, name]} />
+                  <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '12px' }} />
+                  <Area yAxisId="left" type="monotone" dataKey="bookings" name="Calendly" stroke={ACCENT} strokeWidth={2} fill="url(#gradBookings)" dot={false} />
+                  <Area yAxisId="left" type="monotone" dataKey="leads" name="Leads" stroke={GOLD} strokeWidth={2} fill="url(#gradLeads)" dot={false} />
+                  <Area yAxisId="right" type="monotone" dataKey="revenue" name="Revenue" stroke={CHART_COLORS[2]} strokeWidth={2} fill="url(#gradRevenue)" dot={false} />
+                </AreaChart>
+              </ResponsiveContainer>
+            )}
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Confirmation email rate */}
-        <div className="flex items-center justify-between p-4 rounded-xl" style={{ background: 'rgba(53,94,59,0.05)', border: '1px solid rgba(53,94,59,0.15)' }}>
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(53,94,59,0.12)' }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#355E3B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect width="20" height="16" x="2" y="4" rx="2" /><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-              </svg>
+      {/* ── BOOKINGS TAB ── */}
+      {activeTab === 'bookings' && (
+        <div className="space-y-6">
+          {/* Portal Booking Metrics */}
+          <div className="bg-card border border-border rounded-2xl p-6">
+            <div className="flex items-start justify-between gap-4 mb-5">
+              <div>
+                <h3 className="font-serif text-lg text-foreground mb-1">Portal Consultation Bookings</h3>
+                <p className="text-xs text-muted-foreground">Direct bookings from the client portal — last {range} days</p>
+              </div>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />Live
+              </span>
             </div>
-            <div>
-              <p className="text-sm font-semibold text-foreground">Confirmation Emails Sent</p>
-              <p className="text-xs text-muted-foreground">{confirmationsSent} of {consultationBookings.length} bookings</p>
-            </div>
-          </div>
-          <p className="text-2xl font-bold" style={{ color: '#355E3B' }}>
-            {consultationBookings.length > 0 ? Math.round((confirmationsSent / consultationBookings.length) * 100) : 0}%
-          </p>
-        </div>
-
-        {/* Recent portal bookings table */}
-        {consultationBookings.length > 0 && (
-          <div className="mt-5">
-            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">Recent Portal Bookings</p>
-            <div className="overflow-x-auto rounded-xl border border-border">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border bg-secondary/30">
-                    <th className="text-left px-4 py-2.5 text-xs uppercase tracking-widest text-muted-foreground font-semibold">Client</th>
-                    <th className="text-left px-4 py-2.5 text-xs uppercase tracking-widest text-muted-foreground font-semibold hidden sm:table-cell">Type</th>
-                    <th className="text-left px-4 py-2.5 text-xs uppercase tracking-widest text-muted-foreground font-semibold">Date</th>
-                    <th className="text-left px-4 py-2.5 text-xs uppercase tracking-widest text-muted-foreground font-semibold">Status</th>
-                    <th className="text-center px-4 py-2.5 text-xs uppercase tracking-widest text-muted-foreground font-semibold hidden md:table-cell">Email</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[...consultationBookings].reverse().slice(0, 8).map((b, i) => {
-                    const statusColor =
-                      b.status === 'confirmed' || b.status === 'completed' ? 'bg-emerald-100 text-emerald-700 border-emerald-200'
-                        : b.status === 'pending'? 'bg-amber-100 text-amber-700 border-amber-200' :'bg-red-100 text-red-600 border-red-200';
-                    const typeLabel = BOOKING_TYPES_LIST.find((t) => t.key === b.booking_type)?.label ?? b.booking_type;
-                    return (
-                      <tr key={b.id} className={`border-b border-border last:border-0 ${i % 2 === 0 ? '' : 'bg-secondary/10'}`}>
-                        <td className="px-4 py-3 font-medium text-foreground">{b.client_name}</td>
-                        <td className="px-4 py-3 text-muted-foreground hidden sm:table-cell text-xs">{typeLabel}</td>
-                        <td className="px-4 py-3 text-muted-foreground text-xs">
-                          {new Date(b.booking_date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border capitalize ${statusColor}`}>
-                            {b.status}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-center hidden md:table-cell">
-                          {b.confirmation_sent ? (
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#355E3B" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="mx-auto">
-                              <polyline points="20 6 9 17 4 12" />
-                            </svg>
-                          ) : (
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mx-auto">
-                              <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
-                            </svg>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* ── Daily Trend: Bookings & Revenue ── */}
-      <div className="bg-card border border-border rounded-2xl p-6">
-        <div className="flex items-start justify-between gap-4 mb-5">
-          <div>
-            <h3 className="font-serif text-lg text-foreground mb-1">Bookings & Revenue Trend</h3>
-            <p className="text-xs text-muted-foreground">Calendly bookings, portal bookings, and collected revenue — last {range} days</p>
-          </div>
-        </div>
-        {dailyData.every((d) => d.bookings === 0 && d.portalBookings === 0 && d.revenue === 0) ? (
-          <div className="py-12 text-center text-sm text-muted-foreground">No bookings or payments in this period.</div>
-        ) : (
-          <ResponsiveContainer width="100%" height={240}>
-            <AreaChart data={dailyData} margin={{ top: 4, right: 0, left: -10, bottom: 0 }}>
-              <defs>
-                <linearGradient id="gradBookings" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={ACCENT} stopOpacity={0.18} />
-                  <stop offset="95%" stopColor={ACCENT} stopOpacity={0} />
-                </linearGradient>
-                <linearGradient id="gradPortal" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={CHART_COLORS[1]} stopOpacity={0.18} />
-                  <stop offset="95%" stopColor={CHART_COLORS[1]} stopOpacity={0} />
-                </linearGradient>
-                <linearGradient id="gradRevenue" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={CHART_COLORS[2]} stopOpacity={0.18} />
-                  <stop offset="95%" stopColor={CHART_COLORS[2]} stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-              <XAxis
-                dataKey="date"
-                tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }}
-                tickLine={false}
-                axisLine={false}
-                interval={range === 7 ? 0 : range === 14 ? 1 : 4}
-              />
-              <YAxis
-                yAxisId="left"
-                tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }}
-                tickLine={false}
-                axisLine={false}
-                width={28}
-                allowDecimals={false}
-              />
-              <YAxis
-                yAxisId="right"
-                orientation="right"
-                tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }}
-                tickLine={false}
-                axisLine={false}
-                tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`}
-                width={40}
-              />
-              <Tooltip
-                contentStyle={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '12px', fontSize: '12px' }}
-                formatter={(value: number, name: string) =>
-                  name === 'Revenue' ? [fmt(value), name] : [value, name]
-                }
-              />
-              <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '12px' }} />
-              <Area yAxisId="left" type="monotone" dataKey="bookings" name="Calendly" stroke={ACCENT} strokeWidth={2} fill="url(#gradBookings)" dot={false} />
-              <Area yAxisId="left" type="monotone" dataKey="portalBookings" name="Portal" stroke={CHART_COLORS[1]} strokeWidth={2} fill="url(#gradPortal)" dot={false} />
-              <Area yAxisId="right" type="monotone" dataKey="revenue" name="Revenue" stroke={CHART_COLORS[2]} strokeWidth={2} fill="url(#gradRevenue)" dot={false} />
-            </AreaChart>
-          </ResponsiveContainer>
-        )}
-      </div>
-
-      {/* ── Revenue by Type + Email Delivery Rate ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Revenue by payment type */}
-        <div className="bg-card border border-border rounded-2xl p-6">
-          <h3 className="font-serif text-lg text-foreground mb-1">Revenue by Type</h3>
-          <p className="text-xs text-muted-foreground mb-5">Collected payments broken down by category</p>
-          {revenueByType.length === 0 ? (
-            <div className="py-10 text-center text-sm text-muted-foreground">No payments collected in this period.</div>
-          ) : (
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={revenueByType} layout="vertical" margin={{ top: 0, right: 8, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" horizontal={false} />
-                <XAxis type="number" tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }} tickLine={false} axisLine={false} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
-                <YAxis type="category" dataKey="type" tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }} tickLine={false} axisLine={false} width={90} />
-                <Tooltip contentStyle={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '12px', fontSize: '12px' }} formatter={(v: number) => [fmt(v), 'Revenue']} />
-                <Bar dataKey="amount" name="Revenue" fill={ACCENT} radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          )}
-          <div className="mt-4 pt-4 border-t border-border flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">Total collected</span>
-            <span className="text-sm font-bold text-foreground">{fmt(collectedRevenue)}</span>
-          </div>
-        </div>
-
-        {/* Email delivery rate by channel */}
-        <div className="bg-card border border-border rounded-2xl p-6">
-          <h3 className="font-serif text-lg text-foreground mb-1">Email Delivery by Channel</h3>
-          <p className="text-xs text-muted-foreground mb-5">Sent, pending, and failed per email type</p>
-          {channels.length === 0 ? (
-            <div className="py-10 text-center text-sm text-muted-foreground">No emails scheduled in this period.</div>
-          ) : (
-            <div className="divide-y divide-border">
-              {channels.map((ch) => (
-                <ChannelRow key={ch.channel} ch={ch} />
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+              {[
+                { label: 'Total', value: consultationBookings.length, color: 'text-foreground', bg: 'bg-secondary/30 border-border' },
+                { label: 'Confirmed', value: confirmedPortalBookings.length, color: 'text-emerald-600', bg: 'bg-emerald-50 border-emerald-200' },
+                { label: 'Pending', value: pendingPortalBookings.length, color: 'text-amber-600', bg: 'bg-amber-50 border-amber-200' },
+                { label: 'Cancelled', value: cancelledPortalBookings.length, color: 'text-red-500', bg: 'bg-red-50 border-red-200' },
+              ].map((item) => (
+                <div key={item.label} className={`border rounded-2xl p-4 text-center ${item.bg}`}>
+                  <p className={`text-2xl font-bold ${item.color}`}>{item.value}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{item.label}</p>
+                </div>
               ))}
             </div>
-          )}
-          <div className="mt-4 pt-4 border-t border-border flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">Overall delivery rate</span>
-            <span className={`text-sm font-bold ${overallDeliveryRate >= 80 ? 'text-emerald-600' : overallDeliveryRate >= 50 ? 'text-amber-600' : 'text-red-500'}`}>
-              {overallDeliveryRate}%
-            </span>
+            {bookingTypeBreakdown.length > 0 && (
+              <div className="mb-6">
+                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">By Appointment Type</p>
+                <ResponsiveContainer width="100%" height={160}>
+                  <BarChart data={bookingTypeBreakdown} layout="vertical" margin={{ top: 0, right: 8, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" horizontal={false} />
+                    <XAxis type="number" tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }} tickLine={false} axisLine={false} allowDecimals={false} />
+                    <YAxis type="category" dataKey="type" tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }} tickLine={false} axisLine={false} width={130} />
+                    <Tooltip contentStyle={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '12px', fontSize: '12px' }} />
+                    <Bar dataKey="count" name="Bookings" fill={ACCENT} radius={[0, 4, 4, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+            <div className="flex items-center justify-between p-4 rounded-xl" style={{ background: 'rgba(53,94,59,0.05)', border: '1px solid rgba(53,94,59,0.15)' }}>
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(53,94,59,0.12)' }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#355E3B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="16" x="2" y="4" rx="2" /><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" /></svg>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-foreground">Confirmation Emails Sent</p>
+                  <p className="text-xs text-muted-foreground">{confirmationsSent} of {consultationBookings.length} bookings</p>
+                </div>
+              </div>
+              <p className="text-2xl font-bold" style={{ color: '#355E3B' }}>
+                {pct(confirmationsSent, consultationBookings.length)}%
+              </p>
+            </div>
+            {consultationBookings.length > 0 && (
+              <div className="mt-5">
+                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">Recent Portal Bookings</p>
+                <div className="overflow-x-auto rounded-xl border border-border">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-border bg-secondary/30">
+                        <th className="text-left px-4 py-2.5 text-xs uppercase tracking-widest text-muted-foreground font-semibold">Client</th>
+                        <th className="text-left px-4 py-2.5 text-xs uppercase tracking-widest text-muted-foreground font-semibold hidden sm:table-cell">Type</th>
+                        <th className="text-left px-4 py-2.5 text-xs uppercase tracking-widest text-muted-foreground font-semibold">Date</th>
+                        <th className="text-left px-4 py-2.5 text-xs uppercase tracking-widest text-muted-foreground font-semibold">Status</th>
+                        <th className="text-center px-4 py-2.5 text-xs uppercase tracking-widest text-muted-foreground font-semibold hidden md:table-cell">Email</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[...consultationBookings].reverse().slice(0, 8).map((b, i) => {
+                        const statusColor =
+                          b.status === 'confirmed' || b.status === 'completed' ? 'bg-emerald-100 text-emerald-700 border-emerald-200'
+                            : b.status === 'pending' ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-red-100 text-red-600 border-red-200';
+                        const typeLabel = BOOKING_TYPES_LIST.find((t) => t.key === b.booking_type)?.label ?? b.booking_type;
+                        return (
+                          <tr key={b.id} className={`border-b border-border last:border-0 ${i % 2 === 0 ? '' : 'bg-secondary/10'}`}>
+                            <td className="px-4 py-3 font-medium text-foreground">{b.client_name}</td>
+                            <td className="px-4 py-3 text-muted-foreground hidden sm:table-cell text-xs">{typeLabel}</td>
+                            <td className="px-4 py-3 text-muted-foreground text-xs">{new Date(b.booking_date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</td>
+                            <td className="px-4 py-3"><span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border capitalize ${statusColor}`}>{b.status}</span></td>
+                            <td className="px-4 py-3 text-center hidden md:table-cell">
+                              {b.confirmation_sent ? (
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#355E3B" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="mx-auto"><polyline points="20 6 9 17 4 12" /></svg>
+                              ) : (
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mx-auto"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </div>
-        </div>
-      </div>
 
-      {/* ── Booking Status Breakdown (Calendly) ── */}
-      <div className="bg-card border border-border rounded-2xl p-6">
-        <h3 className="font-serif text-lg text-foreground mb-1">Calendly Booking Status</h3>
-        <p className="text-xs text-muted-foreground mb-5">Confirmed vs. canceled — last {range} days</p>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          {[
-            { label: 'Total', value: bookings.length, color: 'text-foreground', bg: 'bg-secondary/30 border-border' },
-            { label: 'Confirmed', value: confirmedBookings.length, color: 'text-emerald-600', bg: 'bg-emerald-50 border-emerald-200' },
-            { label: 'Canceled', value: canceledBookings.length, color: 'text-red-500', bg: 'bg-red-50 border-red-200' },
-            { label: 'Cancel Rate', value: `${cancelRate}%`, color: cancelRate > 20 ? 'text-red-500' : 'text-foreground', bg: 'bg-secondary/30 border-border' },
-          ].map((item) => (
-            <div key={item.label} className={`border rounded-2xl p-4 text-center ${item.bg}`}>
-              <p className={`text-2xl font-bold ${item.color}`}>{item.value}</p>
-              <p className="text-xs text-muted-foreground mt-1">{item.label}</p>
+          {/* Calendly Status */}
+          <div className="bg-card border border-border rounded-2xl p-6">
+            <h3 className="font-serif text-lg text-foreground mb-1">Calendly Booking Status</h3>
+            <p className="text-xs text-muted-foreground mb-5">Confirmed vs. canceled — last {range} days</p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              {[
+                { label: 'Total', value: bookings.length, color: 'text-foreground', bg: 'bg-secondary/30 border-border' },
+                { label: 'Confirmed', value: confirmedBookings.length, color: 'text-emerald-600', bg: 'bg-emerald-50 border-emerald-200' },
+                { label: 'Canceled', value: canceledBookings.length, color: 'text-red-500', bg: 'bg-red-50 border-red-200' },
+                { label: 'Cancel Rate', value: `${cancelRate}%`, color: cancelRate > 20 ? 'text-red-500' : 'text-foreground', bg: 'bg-secondary/30 border-border' },
+              ].map((item) => (
+                <div key={item.label} className={`border rounded-2xl p-4 text-center ${item.bg}`}>
+                  <p className={`text-2xl font-bold ${item.color}`}>{item.value}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{item.label}</p>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-        {bookings.length > 0 && (
-          <div className="mt-5">
-            <div className="h-3 rounded-full bg-secondary/40 overflow-hidden flex">
-              <div className="h-full bg-emerald-500 transition-all duration-700" style={{ width: `${(confirmedBookings.length / bookings.length) * 100}%` }} />
-              <div className="h-full bg-red-400 transition-all duration-700" style={{ width: `${(canceledBookings.length / bookings.length) * 100}%` }} />
-            </div>
-            <div className="flex items-center gap-4 mt-2">
-              <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-500" /><span className="text-xs text-muted-foreground">Confirmed</span></div>
-              <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-red-400" /><span className="text-xs text-muted-foreground">Canceled</span></div>
-            </div>
+            {bookings.length > 0 && (
+              <div className="mt-5">
+                <div className="h-3 rounded-full bg-secondary/40 overflow-hidden flex">
+                  <div className="h-full bg-emerald-500 transition-all duration-700" style={{ width: `${(confirmedBookings.length / bookings.length) * 100}%` }} />
+                  <div className="h-full bg-red-400 transition-all duration-700" style={{ width: `${(canceledBookings.length / bookings.length) * 100}%` }} />
+                </div>
+                <div className="flex items-center gap-4 mt-2">
+                  <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-500" /><span className="text-xs text-muted-foreground">Confirmed</span></div>
+                  <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-red-400" /><span className="text-xs text-muted-foreground">Canceled</span></div>
+                </div>
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
-      {/* ── Recent Payments Table ── */}
-      <div className="bg-card border border-border rounded-2xl overflow-hidden">
-        <div className="px-6 pt-5 pb-4 flex items-center justify-between gap-4">
-          <div>
-            <h3 className="font-serif text-lg text-foreground">Recent Payments</h3>
-            <p className="text-xs text-muted-foreground mt-0.5">Last {range} days — most recent first</p>
+      {/* ── REVENUE TAB ── */}
+      {activeTab === 'revenue' && (
+        <div className="space-y-6">
+          {/* Revenue summary */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {[
+              { label: 'Collected', value: fmt(collectedRevenue), color: 'text-emerald-600', bg: 'bg-emerald-50 border-emerald-200' },
+              { label: 'Pending', value: fmt(pendingRevenue), color: 'text-amber-600', bg: 'bg-amber-50 border-amber-200' },
+              { label: 'Failed', value: fmt(failedRevenue), color: 'text-red-500', bg: 'bg-red-50 border-red-200' },
+            ].map((item) => (
+              <div key={item.label} className={`border rounded-2xl p-5 ${item.bg}`}>
+                <p className="text-xs uppercase tracking-widest text-muted-foreground font-semibold mb-2">{item.label}</p>
+                <p className={`text-3xl font-bold ${item.color}`}>{item.value}</p>
+              </div>
+            ))}
           </div>
-          <span className="text-xs text-muted-foreground">{payments.length} total</span>
-        </div>
-        {payments.length === 0 ? (
-          <div className="px-6 pb-6 text-sm text-muted-foreground">No payments in this period.</div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-t border-b border-border bg-secondary/30">
-                  <th className="text-left px-6 py-3 text-xs uppercase tracking-widest text-muted-foreground font-semibold">Customer</th>
-                  <th className="text-right px-6 py-3 text-xs uppercase tracking-widest text-muted-foreground font-semibold">Amount</th>
-                  <th className="text-left px-6 py-3 text-xs uppercase tracking-widest text-muted-foreground font-semibold hidden sm:table-cell">Type</th>
-                  <th className="text-left px-6 py-3 text-xs uppercase tracking-widest text-muted-foreground font-semibold">Status</th>
-                  <th className="text-right px-6 py-3 text-xs uppercase tracking-widest text-muted-foreground font-semibold hidden md:table-cell">Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                {[...payments].reverse().slice(0, 10).map((p, i) => {
-                  const statusColor =
-                    p.payment_status === 'succeeded' || p.payment_status === 'paid' ? 'bg-emerald-100 text-emerald-700 border-emerald-200'
-                      : p.payment_status === 'pending'|| p.payment_status === 'processing' ? 'bg-amber-100 text-amber-700 border-amber-200' :'bg-red-100 text-red-600 border-red-200';
-                  return (
-                    <tr key={p.id} className={`border-b border-border last:border-0 ${i % 2 === 0 ? '' : 'bg-secondary/10'}`}>
-                      <td className="px-6 py-3.5 font-medium text-foreground">{p.customer_name || '—'}</td>
-                      <td className="px-6 py-3.5 text-right font-semibold text-foreground">{fmt(p.amount / 100)}</td>
-                      <td className="px-6 py-3.5 text-muted-foreground capitalize hidden sm:table-cell">{p.payment_type || '—'}</td>
-                      <td className="px-6 py-3.5">
-                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border capitalize ${statusColor}`}>
-                          {p.payment_status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-3.5 text-muted-foreground text-right hidden md:table-cell">
-                        {new Date(p.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                      </td>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Revenue by type */}
+            <div className="bg-card border border-border rounded-2xl p-6">
+              <h3 className="font-serif text-lg text-foreground mb-1">Revenue by Type</h3>
+              <p className="text-xs text-muted-foreground mb-5">Collected payments broken down by category</p>
+              {revenueByType.length === 0 ? (
+                <div className="py-10 text-center text-sm text-muted-foreground">No payments collected in this period.</div>
+              ) : (
+                <ResponsiveContainer width="100%" height={200}>
+                  <BarChart data={revenueByType} layout="vertical" margin={{ top: 0, right: 8, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" horizontal={false} />
+                    <XAxis type="number" tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }} tickLine={false} axisLine={false} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
+                    <YAxis type="category" dataKey="type" tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }} tickLine={false} axisLine={false} width={90} />
+                    <Tooltip contentStyle={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '12px', fontSize: '12px' }} formatter={(v: number) => [fmt(v), 'Revenue']} />
+                    <Bar dataKey="amount" name="Revenue" fill={ACCENT} radius={[0, 4, 4, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+              <div className="mt-4 pt-4 border-t border-border flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">Total collected</span>
+                <span className="text-sm font-bold text-foreground">{fmt(collectedRevenue)}</span>
+              </div>
+            </div>
+
+            {/* Payment status pie */}
+            <div className="bg-card border border-border rounded-2xl p-6">
+              <h3 className="font-serif text-lg text-foreground mb-1">Payment Status Mix</h3>
+              <p className="text-xs text-muted-foreground mb-5">Distribution of payment outcomes</p>
+              {paymentStatusPie.length === 0 ? (
+                <div className="py-10 text-center text-sm text-muted-foreground">No payments in this period.</div>
+              ) : (
+                <div className="flex items-center gap-6">
+                  <ResponsiveContainer width="50%" height={180}>
+                    <PieChart>
+                      <Pie data={paymentStatusPie} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={3} dataKey="value">
+                        {paymentStatusPie.map((_, index) => (
+                          <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip contentStyle={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '12px', fontSize: '12px' }} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="flex flex-col gap-2">
+                    {paymentStatusPie.map((item, index) => (
+                      <div key={item.name} className="flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: PIE_COLORS[index % PIE_COLORS.length] }} />
+                        <span className="text-xs text-muted-foreground">{item.name}</span>
+                        <span className="text-xs font-semibold text-foreground ml-auto">{item.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Revenue trend line */}
+          <div className="bg-card border border-border rounded-2xl p-6">
+            <h3 className="font-serif text-lg text-foreground mb-1">Revenue Trend</h3>
+            <p className="text-xs text-muted-foreground mb-5">Daily collected revenue — last {range} days</p>
+            <ResponsiveContainer width="100%" height={200}>
+              <LineChart data={dailyData} margin={{ top: 4, right: 0, left: -10, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                <XAxis dataKey="date" tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }} tickLine={false} axisLine={false} interval={range === 7 ? 0 : range === 14 ? 1 : 4} />
+                <YAxis tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }} tickLine={false} axisLine={false} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} width={40} />
+                <Tooltip contentStyle={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '12px', fontSize: '12px' }} formatter={(v: number) => [fmt(v), 'Revenue']} />
+                <Line type="monotone" dataKey="revenue" name="Revenue" stroke={GOLD} strokeWidth={2.5} dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Recent Payments Table */}
+          <div className="bg-card border border-border rounded-2xl overflow-hidden">
+            <div className="px-6 pt-5 pb-4 flex items-center justify-between gap-4">
+              <div>
+                <h3 className="font-serif text-lg text-foreground">Recent Payments</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">Last {range} days — most recent first</p>
+              </div>
+              <span className="text-xs text-muted-foreground">{payments.length} total</span>
+            </div>
+            {payments.length === 0 ? (
+              <div className="px-6 pb-6 text-sm text-muted-foreground">No payments in this period.</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-t border-b border-border bg-secondary/30">
+                      <th className="text-left px-6 py-3 text-xs uppercase tracking-widest text-muted-foreground font-semibold">Customer</th>
+                      <th className="text-right px-6 py-3 text-xs uppercase tracking-widest text-muted-foreground font-semibold">Amount</th>
+                      <th className="text-left px-6 py-3 text-xs uppercase tracking-widest text-muted-foreground font-semibold hidden sm:table-cell">Type</th>
+                      <th className="text-left px-6 py-3 text-xs uppercase tracking-widest text-muted-foreground font-semibold">Status</th>
+                      <th className="text-right px-6 py-3 text-xs uppercase tracking-widest text-muted-foreground font-semibold hidden md:table-cell">Date</th>
                     </tr>
+                  </thead>
+                  <tbody>
+                    {[...payments].reverse().slice(0, 10).map((p, i) => {
+                      const statusColor =
+                        p.payment_status === 'succeeded' || p.payment_status === 'paid' ? 'bg-emerald-100 text-emerald-700 border-emerald-200'
+                          : p.payment_status === 'pending' || p.payment_status === 'processing' ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-red-100 text-red-600 border-red-200';
+                      return (
+                        <tr key={p.id} className={`border-b border-border last:border-0 ${i % 2 === 0 ? '' : 'bg-secondary/10'}`}>
+                          <td className="px-6 py-3.5 font-medium text-foreground">{p.customer_name || '—'}</td>
+                          <td className="px-6 py-3.5 text-right font-semibold text-foreground">{fmt(p.amount / 100)}</td>
+                          <td className="px-6 py-3.5 text-muted-foreground capitalize hidden sm:table-cell">{p.payment_type || '—'}</td>
+                          <td className="px-6 py-3.5"><span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border capitalize ${statusColor}`}>{p.payment_status}</span></td>
+                          <td className="px-6 py-3.5 text-muted-foreground text-right hidden md:table-cell">{new Date(p.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── EMAIL TAB ── */}
+      {activeTab === 'email' && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {[
+              { label: 'Total Sent', value: totalEmailSent.toString(), color: 'text-emerald-600', bg: 'bg-emerald-50 border-emerald-200' },
+              { label: 'Failed', value: totalEmailFailed.toString(), color: 'text-red-500', bg: 'bg-red-50 border-red-200' },
+              { label: 'Delivery Rate', value: `${overallDeliveryRate}%`, color: overallDeliveryRate >= 80 ? 'text-emerald-600' : 'text-amber-600', bg: 'bg-secondary/30 border-border' },
+            ].map((item) => (
+              <div key={item.label} className={`border rounded-2xl p-5 ${item.bg}`}>
+                <p className="text-xs uppercase tracking-widest text-muted-foreground font-semibold mb-2">{item.label}</p>
+                <p className={`text-3xl font-bold ${item.color}`}>{item.value}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="bg-card border border-border rounded-2xl p-6">
+            <h3 className="font-serif text-lg text-foreground mb-1">Email Delivery by Channel</h3>
+            <p className="text-xs text-muted-foreground mb-5">Sent, pending, and failed per email type</p>
+            {channels.length === 0 ? (
+              <div className="py-10 text-center text-sm text-muted-foreground">No emails scheduled in this period.</div>
+            ) : (
+              <div className="divide-y divide-border">
+                {channels.map((ch) => (
+                  <ChannelRow key={ch.channel} ch={ch} />
+                ))}
+              </div>
+            )}
+            <div className="mt-4 pt-4 border-t border-border flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">Overall delivery rate</span>
+              <span className={`text-sm font-bold ${overallDeliveryRate >= 80 ? 'text-emerald-600' : overallDeliveryRate >= 50 ? 'text-amber-600' : 'text-red-500'}`}>
+                {overallDeliveryRate}%
+              </span>
+            </div>
+          </div>
+
+          {/* Email volume bar chart */}
+          {channels.length > 0 && (
+            <div className="bg-card border border-border rounded-2xl p-6">
+              <h3 className="font-serif text-lg text-foreground mb-1">Channel Volume Comparison</h3>
+              <p className="text-xs text-muted-foreground mb-5">Total emails per channel</p>
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={channels} margin={{ top: 0, right: 8, left: -10, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                  <XAxis dataKey="channel" tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }} tickLine={false} axisLine={false} />
+                  <YAxis tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }} tickLine={false} axisLine={false} width={28} allowDecimals={false} />
+                  <Tooltip contentStyle={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '12px', fontSize: '12px' }} />
+                  <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '12px' }} />
+                  <Bar dataKey="sent" name="Sent" fill={ACCENT} radius={[4, 4, 0, 0]} stackId="a" />
+                  <Bar dataKey="pending" name="Pending" fill="#f59e0b" radius={[0, 0, 0, 0]} stackId="a" />
+                  <Bar dataKey="failed" name="Failed" fill="#ef4444" radius={[0, 0, 4, 4]} stackId="a" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── LEADS TAB ── */}
+      {activeTab === 'leads' && (
+        <div className="space-y-6">
+          {/* Lead funnel */}
+          <div className="bg-card border border-border rounded-2xl p-6">
+            <h3 className="font-serif text-lg text-foreground mb-1">Lead Conversion Funnel</h3>
+            <p className="text-xs text-muted-foreground mb-5">From inquiry to active client — last {range} days</p>
+            {totalLeads === 0 ? (
+              <div className="py-10 text-center text-sm text-muted-foreground">No leads in this period.</div>
+            ) : (
+              <div className="space-y-3">
+                {leadFunnelData.map((stage, i) => {
+                  const width = totalLeads > 0 ? pct(stage.count, totalLeads) : 0;
+                  const colors = ['bg-blue-500', 'bg-violet-500', 'bg-amber-500', 'bg-emerald-500'];
+                  return (
+                    <div key={stage.stage} className="flex items-center gap-4">
+                      <div className="w-28 flex-shrink-0 text-xs font-medium text-muted-foreground text-right">{stage.stage}</div>
+                      <div className="flex-1 h-8 bg-secondary/30 rounded-xl overflow-hidden">
+                        <div
+                          className={`h-full ${colors[i]} rounded-xl transition-all duration-700 flex items-center justify-end pr-3`}
+                          style={{ width: `${Math.max(width, stage.count > 0 ? 8 : 0)}%` }}
+                        >
+                          {stage.count > 0 && <span className="text-white text-xs font-bold">{stage.count}</span>}
+                        </div>
+                      </div>
+                      <div className="w-10 flex-shrink-0 text-xs font-semibold text-foreground text-right">{width}%</div>
+                    </div>
                   );
                 })}
-              </tbody>
-            </table>
+              </div>
+            )}
           </div>
-        )}
-      </div>
+
+          {/* Practice area breakdown */}
+          {practiceAreaData.length > 0 && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="bg-card border border-border rounded-2xl p-6">
+                <h3 className="font-serif text-lg text-foreground mb-1">Leads by Practice Area</h3>
+                <p className="text-xs text-muted-foreground mb-5">Top areas driving inquiries</p>
+                <ResponsiveContainer width="100%" height={200}>
+                  <BarChart data={practiceAreaData} layout="vertical" margin={{ top: 0, right: 8, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" horizontal={false} />
+                    <XAxis type="number" tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }} tickLine={false} axisLine={false} allowDecimals={false} />
+                    <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }} tickLine={false} axisLine={false} width={100} />
+                    <Tooltip contentStyle={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '12px', fontSize: '12px' }} />
+                    <Bar dataKey="value" name="Leads" fill={GOLD} radius={[0, 4, 4, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+
+              <div className="bg-card border border-border rounded-2xl p-6">
+                <h3 className="font-serif text-lg text-foreground mb-1">Practice Area Mix</h3>
+                <p className="text-xs text-muted-foreground mb-5">Proportional breakdown</p>
+                <div className="flex items-center gap-6">
+                  <ResponsiveContainer width="50%" height={180}>
+                    <PieChart>
+                      <Pie data={practiceAreaData} cx="50%" cy="50%" innerRadius={45} outerRadius={75} paddingAngle={3} dataKey="value">
+                        {practiceAreaData.map((_, index) => (
+                          <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip contentStyle={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '12px', fontSize: '12px' }} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="flex flex-col gap-2 flex-1 min-w-0">
+                    {practiceAreaData.map((item, index) => (
+                      <div key={item.name} className="flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: PIE_COLORS[index % PIE_COLORS.length] }} />
+                        <span className="text-xs text-muted-foreground truncate">{item.name}</span>
+                        <span className="text-xs font-semibold text-foreground ml-auto flex-shrink-0">{item.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Lead stage summary */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            {[
+              { label: 'Total Leads', value: totalLeads, color: 'text-foreground', bg: 'bg-secondary/30 border-border' },
+              { label: 'Consultation Booked', value: consultationLeads, color: 'text-violet-600', bg: 'bg-violet-50 border-violet-200' },
+              { label: 'Proposal Sent', value: proposalLeads, color: 'text-amber-600', bg: 'bg-amber-50 border-amber-200' },
+              { label: 'Active Clients', value: activeLeads, color: 'text-emerald-600', bg: 'bg-emerald-50 border-emerald-200' },
+            ].map((item) => (
+              <div key={item.label} className={`border rounded-2xl p-4 text-center ${item.bg}`}>
+                <p className={`text-2xl font-bold ${item.color}`}>{item.value}</p>
+                <p className="text-xs text-muted-foreground mt-1">{item.label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
     </div>
   );
