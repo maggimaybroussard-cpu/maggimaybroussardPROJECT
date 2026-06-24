@@ -4,14 +4,14 @@ import { pushConversationToBroussard } from '@/lib/broussard';
 export async function POST() {
   const testConversation = {
     id: `test-${Date.now()}`,
-    userId: 'rocketai-test-user',
-    title: 'RocketAI Test Conversation',
+    userId: 'system-test-user',
+    title: 'Supabase Sync Test Conversation',
     messages: [
       { role: 'user', content: 'Hello, I need help with a legal matter.' },
       {
         role: 'assistant',
         content:
-          'Hello! I\'m Lexi, the Broussard Legal Services AI assistant. I\'d be happy to help. Could you briefly describe your legal situation?',
+          "Hello! I'm Lexi, the Broussard Legal Services AI assistant. I'd be happy to help. Could you briefly describe your legal situation?",
       },
       {
         role: 'user',
@@ -32,7 +32,7 @@ export async function POST() {
       {
         ok: false,
         message:
-          'Sync skipped or failed. Check server logs and verify BROUSSARD_API_URL and BROUSSARD_API_KEY are set.',
+          'Sync skipped or failed. Check server logs and verify NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are set.',
       },
       { status: 500 }
     );
@@ -40,7 +40,7 @@ export async function POST() {
 
   return NextResponse?.json({
     ok: true,
-    message: `Broussard sync successful — conversation ${result?.created ? 'created' : 'updated'} (ID: ${result?.conversationId}, messages: ${result?.messageCount})`,
+    message: `Supabase sync successful — conversation ${result?.created ? 'created' : 'updated'} (ID: ${result?.conversationId}, messages: ${result?.messageCount})`,
     result,
   });
 }

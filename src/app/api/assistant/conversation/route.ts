@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
+/**
+ * POST /api/assistant/conversation
+ *
+ * Internal endpoint to upsert a legal assistant conversation into Supabase.
+ * Protected by x-internal-secret header (must match LEGAL_ASSISTANT_KEY).
+ * Also callable directly from server-side code via pushConversationToBroussard().
+ */
 export async function POST(req: NextRequest) {
   // Validate x-internal-secret header
   const secret = req.headers.get('x-internal-secret');
@@ -48,7 +55,6 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Upsert into Supabase using service role key for internal writes
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseServiceKey =
     process.env.SUPABASE_SERVICE_ROLE_KEY ||
@@ -62,9 +68,16 @@ export async function POST(req: NextRequest) {
   }
 
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
   const conversationId = String(id);
-  const isNew = !!(await checkIsNew(supabase, conversationId));
+
+  // Check if new
+  const { data: existing } = await supabase
+    .from('assistant_conversations')
+    .select('conversation_id')
+    .eq('conversation_id', conversationId)
+    .maybeSingle();
+
+  const isNew = !existing;
 
   const { error } = await supabase
     .from('assistant_conversations')
@@ -95,16 +108,4 @@ export async function POST(req: NextRequest) {
     created: isNew,
     messageCount: messages.length,
   });
-}
-
-async function checkIsNew(
-  supabase: ReturnType<typeof createClient>,
-  conversationId: string
-): Promise<boolean> {
-  const { data } = await supabase
-    .from('assistant_conversations')
-    .select('conversation_id')
-    .eq('conversation_id', conversationId)
-    .maybeSingle();
-  return !data;
 }

@@ -1,3 +1,12 @@
+/**
+ * broussard.ts
+ *
+ * Saves legal assistant conversations directly to Supabase.
+ * Previously synced to an external Replit endpoint — now fully self-contained.
+ */
+
+import { createClient } from '@supabase/supabase-js';
+
 export interface BroussardConversation {
   conversationId?: string;
   clientName?: string;
@@ -22,42 +31,60 @@ export async function pushConversationToBroussard(conversation: {
   summary?: string;
   messages: { role: string; content: string }[];
 }): Promise<BroussardSyncResult | undefined> {
-  // BROUSSARD_API_URL now points to this site's own domain.
-  // Fall back to NEXT_PUBLIC_SITE_URL so it always resolves locally.
-  const url =
-    process.env.BROUSSARD_API_URL ||
-    process.env.NEXT_PUBLIC_SITE_URL ||
-    'https://broussardlegalservices.com';
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  // BROUSSARD_API_KEY should equal LEGAL_ASSISTANT_KEY (same secret, same site).
-  const key =
-    process.env.BROUSSARD_API_KEY || process.env.LEGAL_ASSISTANT_KEY;
-
-  if (!key) {
-    console.warn(
-      'Broussard sync skipped: missing BROUSSARD_API_KEY / LEGAL_ASSISTANT_KEY'
-    );
+  if (!supabaseUrl || !supabaseKey) {
+    console.warn('Broussard sync skipped: Supabase credentials not configured');
     return;
   }
 
-  try {
-    const { id, userId, title, summary, messages } = conversation;
-    const res = await fetch(`${url}/api/assistant/conversation`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-internal-secret': key,
-      },
-      body: JSON.stringify({ id, userId, title, summary, messages }),
-    });
+  const { id, userId, title, summary, messages } = conversation;
+  const conversationId = String(id);
 
-    if (!res.ok) {
-      console.error(`Conversation sync failed: ${res.status} ${await res.text()}`);
+  try {
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Check if this is a new record
+    const { data: existing } = await supabase
+      .from('assistant_conversations')
+      .select('conversation_id')
+      .eq('conversation_id', conversationId)
+      .maybeSingle();
+
+    const isNew = !existing;
+
+    const { error } = await supabase.from('assistant_conversations').upsert(
+      {
+        conversation_id: conversationId,
+        user_id: userId ? String(userId) : null,
+        title: String(title),
+        summary: summary ?? null,
+        messages: messages,
+        message_count: messages.length,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'conversation_id' }
+    );
+
+    if (error) {
+      console.error('Broussard Supabase upsert error:', error);
       return;
     }
 
-    return await res.json();
+    console.log(
+      `Broussard sync ok: conversation ${conversationId} ${isNew ? 'created' : 'updated'} (${messages.length} messages)`
+    );
+
+    return {
+      ok: true,
+      conversationId,
+      created: isNew,
+      messageCount: messages.length,
+    };
   } catch (e) {
-    console.error('Failed to sync conversation locally', e);
+    console.error('Failed to sync conversation to Supabase', e);
   }
 }
