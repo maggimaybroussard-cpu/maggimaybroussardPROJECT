@@ -521,7 +521,7 @@ export default function CaseStudiesPage() {
       <Header />
       <main>
         {/* ── Hero ── */}
-        <section className="relative min-h-[52vh] flex items-end overflow-hidden bg-primary">
+        <section id="case-studies-hero" aria-label="Case studies introduction and overview" className="relative min-h-[52vh] flex items-end overflow-hidden bg-primary">
           <div className="absolute inset-0 opacity-10" aria-hidden="true">
             <div className="absolute inset-0" style={{
               backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 60px, rgba(200,150,90,0.3) 60px, rgba(200,150,90,0.3) 61px), repeating-linear-gradient(90deg, transparent, transparent 60px, rgba(200,150,90,0.3) 60px, rgba(200,150,90,0.3) 61px)'
@@ -565,7 +565,7 @@ export default function CaseStudiesPage() {
         </section>
 
         {/* ── Stats Bar ── */}
-        <section className="bg-accent py-7 md:py-8" aria-label="Key statistics">
+        <section id="case-studies-stats" aria-label="Key statistics from case studies" className="bg-accent py-7 md:py-8">
           <div className="max-w-7xl mx-auto px-5 md:px-10">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-5 md:gap-0 md:divide-x divide-accent-foreground/20">
               {[
@@ -583,187 +583,235 @@ export default function CaseStudiesPage() {
           </div>
         </section>
 
-        {/* ── Case Studies ── */}
-        <div ref={sectionRef} className="py-14 md:py-28 bg-background">
-          <div className="max-w-7xl mx-auto px-5 md:px-10">
-
-            {/* Intro note */}
-            <div className="scroll-reveal-hidden mb-12 md:mb-16 max-w-2xl">
-              <p className="text-sm text-muted-foreground leading-relaxed border-l-2 border-accent pl-4">
-                All client names, firm names, and identifying details have been anonymized. Outcomes reflect actual engagements. Each study includes a before/after timeline, complexity rating, and documented client impact.
-              </p>
-            </div>
-
-            <div className="space-y-6 md:space-y-8">
-              {caseStudies.map((cs, i) => (
-                <article
-                  key={cs.id}
-                  className="scroll-reveal-hidden bg-card border border-border card-rounded-sm overflow-hidden"
-                  style={{ transitionDelay: `${i * 0.08}s` }}
+        {/* ── Case Studies Grid ── */}
+        <section id="case-studies-list" aria-label="Detailed case study examples and outcomes" className="max-w-7xl mx-auto px-5 md:px-10 py-16 md:py-24">
+          <div className="space-y-6 md:space-y-8">
+            {caseStudies.map((cs, i) => (
+              <article
+                key={cs.id}
+                className="scroll-reveal-hidden bg-card border border-border card-rounded-sm overflow-hidden"
+                itemScope
+                itemType="https://schema.org/CreativeWork"
+              >
+                {/* ── Card Header (always visible) ── */}
+                <button
+                  onClick={() => setExpandedId(expandedId === cs.id ? null : cs.id)}
+                  className="w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                  aria-expanded={expandedId === cs.id}
+                  aria-controls={`case-detail-${cs.id}`}
                 >
-                  {/* ── Card Header (always visible) ── */}
-                  <button
-                    onClick={() => setExpandedId(expandedId === cs.id ? null : cs.id)}
-                    className="w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-                    aria-expanded={expandedId === cs.id}
-                    aria-controls={`case-detail-${cs.id}`}
-                  >
-                    <div className="p-5 md:p-10 flex flex-col md:flex-row md:items-start gap-4 md:gap-8">
-                      {/* Number */}
-                      <span
-                        className="font-serif text-5xl md:text-7xl font-bold shrink-0 leading-none select-none"
-                        style={{ color: cs.complexityColor, opacity: 0.2 }}
+                  <div className="p-5 md:p-10 flex flex-col md:flex-row md:items-start gap-4 md:gap-8">
+                    {/* Number */}
+                    <span
+                      className="font-serif text-5xl md:text-7xl font-bold shrink-0 leading-none select-none"
+                      style={{ color: cs.complexityColor, opacity: 0.2 }}
+                      aria-hidden="true"
+                    >
+                      {cs.id}
+                    </span>
+
+                    {/* Main info */}
+                    <div className="flex-1 min-w-0">
+                      {/* Tags row */}
+                      <div className="flex flex-wrap items-center gap-2 mb-3">
+                        <span className="px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-widest bg-secondary text-muted-foreground">
+                          {cs.serviceTag}
+                        </span>
+                        {/* Complexity badge */}
+                        <span
+                          className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest"
+                          style={{ backgroundColor: `${cs.complexityColor}18`, color: cs.complexityColor }}
+                        >
+                          <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: cs.complexityColor }} aria-hidden="true" />
+                          {cs.complexity}
+                        </span>
+                        <span className="px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-widest border border-border text-muted-foreground">
+                          {cs.duration}
+                        </span>
+                      </div>
+
+                      <h2 className="text-card-heading text-foreground mb-1.5">{cs.title}</h2>
+                      <p className="text-sm text-muted-foreground mb-3">{cs.client}</p>
+                      <p className="text-sm text-muted-foreground/80 leading-relaxed max-w-2xl">{cs.summary}</p>
+                    </div>
+
+                    {/* Outcome + chevron */}
+                    <div className="flex items-center gap-3 shrink-0 md:pt-1">
+                      <div
+                        className="px-3 md:px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest"
+                        style={{ backgroundColor: `${cs.outcomeColor}20`, color: cs.outcomeColor }}
+                      >
+                        {cs.outcome}
+                      </div>
+                      <svg
+                        width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" strokeWidth="2" strokeLinecap="round"
+                        className={`text-muted-foreground transition-transform duration-300 ${expandedId === cs.id ? 'rotate-180' : ''}`}
                         aria-hidden="true"
                       >
-                        {cs.id}
-                      </span>
+                        <polyline points="6 9 12 15 18 9" />
+                      </svg>
+                    </div>
+                  </div>
+                </button>
 
-                      {/* Main info */}
-                      <div className="flex-1 min-w-0">
-                        {/* Tags row */}
-                        <div className="flex flex-wrap items-center gap-2 mb-3">
-                          <span className="px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-widest bg-secondary text-muted-foreground">
-                            {cs.serviceTag}
-                          </span>
-                          {/* Complexity badge */}
-                          <span
-                            className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest"
-                            style={{ backgroundColor: `${cs.complexityColor}18`, color: cs.complexityColor }}
-                          >
-                            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: cs.complexityColor }} aria-hidden="true" />
-                            {cs.complexity}
-                          </span>
-                          <span className="px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-widest border border-border text-muted-foreground">
-                            {cs.duration}
-                          </span>
-                        </div>
+                {/* ── Expanded Detail ── */}
+                {expandedId === cs.id && (
+                  <div id={`case-detail-${cs.id}`} className="border-t border-border">
 
-                        <h2 className="text-card-heading text-foreground mb-1.5">{cs.title}</h2>
-                        <p className="text-sm text-muted-foreground mb-3">{cs.client}</p>
-                        <p className="text-sm text-muted-foreground/80 leading-relaxed max-w-2xl">{cs.summary}</p>
-                      </div>
+                    {/* Before / After Timeline */}
+                    <div className="px-5 md:px-10 py-8 md:py-10 bg-secondary/20">
+                      <p className="text-xs font-semibold uppercase tracking-[0.3em] text-accent mb-6 flex items-center gap-2">
+                        <span className="w-4 h-px bg-accent" aria-hidden="true" />
+                        Before &amp; After Timeline
+                      </p>
 
-                      {/* Outcome + chevron */}
-                      <div className="flex items-center gap-3 shrink-0 md:pt-1">
-                        <div
-                          className="px-3 md:px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest"
-                          style={{ backgroundColor: `${cs.outcomeColor}20`, color: cs.outcomeColor }}
-                        >
-                          {cs.outcome}
-                        </div>
-                        <svg
-                          width="20" height="20" viewBox="0 0 24 24" fill="none"
-                          stroke="currentColor" strokeWidth="2" strokeLinecap="round"
-                          className={`text-muted-foreground transition-transform duration-300 ${expandedId === cs.id ? 'rotate-180' : ''}`}
-                          aria-hidden="true"
-                        >
-                          <polyline points="6 9 12 15 18 9" />
-                        </svg>
+                      <div className="space-y-0">
+                        {cs.timeline.map((event, idx) => (
+                          <div key={idx} className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-0 md:gap-4 items-stretch">
+                            {/* Before */}
+                            <div className={`p-4 md:p-5 rounded-xl md:rounded-none ${idx === 0 ? 'md:rounded-tl-xl' : ''} ${idx === cs.timeline.length - 1 ? 'md:rounded-bl-xl' : ''} bg-red-50/60 border border-red-100 mb-2 md:mb-0`}>
+                              {idx === 0 && (
+                                <p className="text-xs font-bold uppercase tracking-widest text-red-400 mb-3 flex items-center gap-1.5">
+                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                                  Before
+                                </p>
+                              )}
+                              <p className="text-xs font-semibold text-red-500/70 uppercase tracking-widest mb-1.5">{event.phase}</p>
+                              <p className="text-sm text-foreground/70 leading-relaxed">{event.before}</p>
+                            </div>
+
+                            {/* Arrow */}
+                            <div className="hidden md:flex items-center justify-center px-2">
+                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-accent shrink-0" aria-hidden="true">
+                                <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
+                              </svg>
+                            </div>
+
+                            {/* After */}
+                            <div className={`p-4 md:p-5 rounded-xl md:rounded-none ${idx === 0 ? 'md:rounded-tr-xl' : ''} ${idx === cs.timeline.length - 1 ? 'md:rounded-br-xl' : ''} bg-green-50/60 border border-green-100 mb-4 md:mb-0`}>
+                              {idx === 0 && (
+                                <p className="text-xs font-bold uppercase tracking-widest text-green-500 mb-3 flex items-center gap-1.5">
+                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12" /></svg>
+                                  After
+                                </p>
+                              )}
+                              <p className="text-xs font-semibold text-green-600/70 uppercase tracking-widest mb-1.5">{event.phase}</p>
+                              <p className="text-sm text-foreground/70 leading-relaxed">{event.after}</p>
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
-                  </button>
 
-                  {/* ── Expanded Detail ── */}
-                  {expandedId === cs.id && (
-                    <div id={`case-detail-${cs.id}`} className="border-t border-border">
-
-                      {/* Before / After Timeline */}
-                      <div className="px-5 md:px-10 py-8 md:py-10 bg-secondary/20">
-                        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-accent mb-6 flex items-center gap-2">
-                          <span className="w-4 h-px bg-accent" aria-hidden="true" />
-                          Before &amp; After Timeline
-                        </p>
-
-                        <div className="space-y-0">
-                          {cs.timeline.map((event, idx) => (
-                            <div key={idx} className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-0 md:gap-4 items-stretch">
-                              {/* Before */}
-                              <div className={`p-4 md:p-5 rounded-xl md:rounded-none ${idx === 0 ? 'md:rounded-tl-xl' : ''} ${idx === cs.timeline.length - 1 ? 'md:rounded-bl-xl' : ''} bg-red-50/60 border border-red-100 mb-2 md:mb-0`}>
-                                {idx === 0 && (
-                                  <p className="text-xs font-bold uppercase tracking-widest text-red-400 mb-3 flex items-center gap-1.5">
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-                                    Before
-                                  </p>
-                                )}
-                                <p className="text-xs font-semibold text-red-500/70 uppercase tracking-widest mb-1.5">{event.phase}</p>
-                                <p className="text-sm text-foreground/70 leading-relaxed">{event.before}</p>
-                              </div>
-
-                              {/* Arrow */}
-                              <div className="hidden md:flex items-center justify-center px-2">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-accent shrink-0" aria-hidden="true">
-                                  <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
-                                </svg>
-                              </div>
-
-                              {/* After */}
-                              <div className={`p-4 md:p-5 rounded-xl md:rounded-none ${idx === 0 ? 'md:rounded-tr-xl' : ''} ${idx === cs.timeline.length - 1 ? 'md:rounded-br-xl' : ''} bg-green-50/60 border border-green-100 mb-4 md:mb-0`}>
-                                {idx === 0 && (
-                                  <p className="text-xs font-bold uppercase tracking-widest text-green-500 mb-3 flex items-center gap-1.5">
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12" /></svg>
-                                    After
-                                  </p>
-                                )}
-                                <p className="text-xs font-semibold text-green-600/70 uppercase tracking-widest mb-1.5">{event.phase}</p>
-                                <p className="text-sm text-foreground/70 leading-relaxed">{event.after}</p>
-                              </div>
+                    {/* Metrics: Before vs After */}
+                    <div className="px-5 md:px-10 py-7 md:py-9 border-t border-border/60 bg-background">
+                      <p className="text-xs font-semibold uppercase tracking-[0.3em] text-accent mb-5 flex items-center gap-2">
+                        <span className="w-4 h-px bg-accent" aria-hidden="true" />
+                        Key Metrics
+                      </p>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+                        {cs.metrics.map((m) => (
+                          <div key={m.label} className="bg-secondary/50 rounded-xl p-4">
+                            <p className="text-xs text-muted-foreground uppercase tracking-widest mb-2">{m.label}</p>
+                            <div className="flex flex-col gap-1">
+                              <span className="text-xs text-red-400 line-through leading-snug">{m.before}</span>
+                              <span className="text-sm font-semibold text-foreground leading-snug">{m.after}</span>
                             </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Metrics: Before vs After */}
-                      <div className="px-5 md:px-10 py-7 md:py-9 border-t border-border/60 bg-background">
-                        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-accent mb-5 flex items-center gap-2">
-                          <span className="w-4 h-px bg-accent" aria-hidden="true" />
-                          Key Metrics
-                        </p>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-                          {cs.metrics.map((m) => (
-                            <div key={m.label} className="bg-secondary/50 rounded-xl p-4">
-                              <p className="text-xs text-muted-foreground uppercase tracking-widest mb-2">{m.label}</p>
-                              <div className="flex flex-col gap-1">
-                                <span className="text-xs text-red-400 line-through leading-snug">{m.before}</span>
-                                <span className="text-sm font-semibold text-foreground leading-snug">{m.after}</span>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Client Impact */}
-                      <div className="px-5 md:px-10 py-7 md:py-9 border-t border-border/60 bg-secondary/10">
-                        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-accent mb-5 flex items-center gap-2">
-                          <span className="w-4 h-px bg-accent" aria-hidden="true" />
-                          Client Impact
-                        </p>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5">
-                          {cs.clientImpact.map((impact, idx) => (
-                            <div key={idx} className="flex gap-3.5 p-4 bg-card border border-border rounded-xl">
-                              <div
-                                className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center mt-0.5"
-                                style={{ backgroundColor: `${cs.complexityColor}18`, color: cs.complexityColor }}
-                              >
-                                {iconMap[impact.icon]}
-                              </div>
-                              <div>
-                                <p className="text-sm font-semibold text-foreground mb-1">{impact.headline}</p>
-                                <p className="text-xs text-muted-foreground leading-relaxed">{impact.detail}</p>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
-                  )}
-                </article>
-              ))}
+
+                    {/* Client Impact */}
+                    <div className="px-5 md:px-10 py-7 md:py-9 border-t border-border/60 bg-secondary/10">
+                      <p className="text-xs font-semibold uppercase tracking-[0.3em] text-accent mb-5 flex items-center gap-2">
+                        <span className="w-4 h-px bg-accent" aria-hidden="true" />
+                        Client Impact
+                      </p>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5">
+                        {cs.clientImpact.map((impact, idx) => (
+                          <div key={idx} className="flex gap-3.5 p-4 bg-card border border-border rounded-xl">
+                            <div
+                              className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center mt-0.5"
+                              style={{ backgroundColor: `${cs.complexityColor}18`, color: cs.complexityColor }}
+                            >
+                              {iconMap[impact.icon]}
+                            </div>
+                            <div>
+                              <p className="text-sm font-semibold text-foreground mb-1">{impact.headline}</p>
+                              <p className="text-xs text-muted-foreground leading-relaxed">{impact.detail}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </article>
+            ))}
+          </div>
+        </section>
+
+        {/* ── Comparison Section ── */}
+        <section id="case-studies-comparison" aria-label="Before and after comparison of paralegal impact" className="max-w-7xl mx-auto px-5 md:px-10 py-16 md:py-24 bg-secondary/30 rounded-2xl">
+          <h2 className="font-serif text-3xl md:text-4xl text-primary mb-12 text-center">The Paralegal Difference: Before & After</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-primary mb-6">Without Professional Paralegal Support</h3>
+              <ul className="space-y-3 text-sm text-muted-foreground">
+                <li className="flex gap-3">
+                  <span className="text-red-500 font-bold">✗</span>
+                  <span>Attorneys spending 15-20 hours/week on administrative tasks</span>
+                </li>
+                <li className="flex gap-3">
+                  <span className="text-red-500 font-bold">✗</span>
+                  <span>Missed filing deadlines and compliance issues</span>
+                </li>
+                <li className="flex gap-3">
+                  <span className="text-red-500 font-bold">✗</span>
+                  <span>Disorganized case files and document management</span>
+                </li>
+                <li className="flex gap-3">
+                  <span className="text-red-500 font-bold">✗</span>
+                  <span>Higher operational costs and reduced billable hours</span>
+                </li>
+                <li className="flex gap-3">
+                  <span className="text-red-500 font-bold">✗</span>
+                  <span>Client communication delays and follow-up gaps</span>
+                </li>
+              </ul>
+            </div>
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-primary mb-6">With Broussard Legal Services</h3>
+              <ul className="space-y-3 text-sm text-muted-foreground">
+                <li className="flex gap-3">
+                  <span className="text-green-600 font-bold">✓</span>
+                  <span>Attorneys reclaim 15-20 hours/week for billable work</span>
+                </li>
+                <li className="flex gap-3">
+                  <span className="text-green-600 font-bold">✓</span>
+                  <span>100% deadline compliance with automated tracking</span>
+                </li>
+                <li className="flex gap-3">
+                  <span className="text-green-600 font-bold">✓</span>
+                  <span>Centralized, searchable case file management</span>
+                </li>
+                <li className="flex gap-3">
+                  <span className="text-green-600 font-bold">✓</span>
+                  <span>Reduced overhead with remote, scalable support</span>
+                </li>
+                <li className="flex gap-3">
+                  <span className="text-green-600 font-bold">✓</span>
+                  <span>Proactive client communication and status updates</span>
+                </li>
+              </ul>
             </div>
           </div>
-        </div>
+        </section>
 
         {/* ── CTA ── */}
-        <section className="py-16 md:py-28 bg-primary">
+        <section id="case-studies-cta" aria-label="Call to action for consultation" className="py-16 md:py-28 bg-primary">
           <div className="max-w-7xl mx-auto px-5 md:px-10 text-center">
             <p className="text-xs font-semibold uppercase tracking-[0.35em] text-accent mb-4 flex items-center justify-center gap-3">
               <span className="w-6 h-px bg-accent" aria-hidden="true" />

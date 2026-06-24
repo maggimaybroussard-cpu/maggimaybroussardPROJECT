@@ -9,6 +9,22 @@ export default function robots(): MetadataRoute.Robots {
         allow: '/',
         disallow: ['/api/', '/_next/', '/admin/', '/portal/', '/client-login/', '/payment-confirmation/', '/intake/'],
       },
+      {
+        userAgent: 'GPTBot',
+        allow: ['/', '/services', '/blog', '/case-studies', '/pricing', '/contact', '/testimonials'],
+      },
+      {
+        userAgent: 'anthropic-ai',
+        allow: ['/', '/services', '/blog', '/case-studies', '/pricing', '/contact', '/testimonials'],
+      },
+      {
+        userAgent: 'PerplexityBot',
+        allow: ['/', '/services', '/blog', '/case-studies', '/pricing', '/contact', '/testimonials'],
+      },
+      {
+        userAgent: 'Google-Extended',
+        allow: ['/', '/services', '/blog', '/case-studies', '/pricing', '/contact', '/testimonials'],
+      },
     ],
     sitemap: `${baseUrl}/sitemap.xml`,
   };

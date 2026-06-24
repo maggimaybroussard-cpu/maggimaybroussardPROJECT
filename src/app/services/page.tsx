@@ -10,7 +10,7 @@ import ServicesProcess from './components/ServicesProcess';
 import ServicesWorkCTA from './components/ServicesWorkCTA';
 import ServicesPageTracker from './components/ServicesPageTracker';
 import EmailOptInSection from '../components/EmailOptInSection';
-import FAQSection from '../components/FAQSection';
+
 import ServicesFAQ from './components/ServicesFAQ';
 
 export const metadata: Metadata = {
@@ -148,7 +148,7 @@ export default function ServicesPage() {
                 name: 'Can you handle confidential client matters?',
                 acceptedAnswer: {
                   '@type': 'Answer',
-                  text: 'Yes, all work is handled with strict confidentiality under a signed NDA. Professional standards are maintained at all times.',
+                  text: 'Yes. All work is handled under strict confidentiality agreements and attorney-client privilege protections. Broussard Legal Services maintains IOLTA compliance and secure document handling protocols.',
                 },
               },
             ],
@@ -159,13 +159,42 @@ export default function ServicesPage() {
       <main>
         <ServicesPageTracker />
         <ServicesHero />
-        <ServicesBentoGrid />
-        <ServicesWhyBroussard />
-        <ServicesPracticeAreas />
-        <ServicesProcess />
-        <ServicesFAQ />
-        <EmailOptInSection />
-        <FAQSection />
+        <section id="services-overview" aria-label="Overview of paralegal services offered">
+          <ServicesBentoGrid />
+        </section>
+        <section id="why-broussard" aria-label="Why choose Broussard Legal Services">
+          <ServicesWhyBroussard />
+        </section>
+        <section id="practice-areas" aria-label="Practice areas and legal specialties">
+          <ServicesPracticeAreas />
+        </section>
+        <section id="process" aria-label="How our service process works">
+          <ServicesProcess />
+        </section>
+        <section id="quotable-stats" aria-label="Key statistics and impact metrics">
+          <div className="max-w-7xl mx-auto px-5 md:px-10 py-16 md:py-24">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="text-center">
+                <p className="text-4xl md:text-5xl font-bold text-primary mb-2">500+</p>
+                <p className="text-sm text-muted-foreground">Legal matters handled across 50 states</p>
+              </div>
+              <div className="text-center">
+                <p className="text-4xl md:text-5xl font-bold text-primary mb-2">24-48hrs</p>
+                <p className="text-sm text-muted-foreground">Average project onboarding time</p>
+              </div>
+              <div className="text-center">
+                <p className="text-4xl md:text-5xl font-bold text-primary mb-2">12+</p>
+                <p className="text-sm text-muted-foreground">Specialized paralegal services</p>
+              </div>
+            </div>
+          </div>
+        </section>
+        <section id="faq" aria-label="Frequently asked questions about paralegal services">
+          <ServicesFAQ />
+        </section>
+        <section id="email-signup" aria-label="Subscribe to legal insights and updates">
+          <EmailOptInSection />
+        </section>
         <ServicesWorkCTA />
       </main>
       <Footer />

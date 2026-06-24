@@ -119,24 +119,23 @@ export default function BlogPage() {
       <Header />
       <main className="min-h-screen bg-background">
         {/* Hero */}
-        <section className="pt-32 pb-16 px-5 md:px-10 bg-gradient-to-b from-secondary to-background">
+        <section id="blog-hero" aria-label="Blog and legal knowledge hub header" className="pt-32 pb-16 px-5 md:px-10 bg-gradient-to-b from-secondary to-background">
           <div className="max-w-4xl mx-auto text-center">
             <p className="text-[11px] font-semibold uppercase tracking-[0.4em] text-accent mb-4 flex items-center justify-center gap-3">
-              <span className="w-8 h-px bg-accent/70" />
+              <span className="w-6 h-px bg-accent" />
               Knowledge Hub
-              <span className="w-8 h-px bg-accent/70" />
             </p>
-            <h1 className="font-serif text-4xl md:text-5xl lg:text-6xl text-foreground leading-tight mb-5">
-              Blog &amp; Resources
+            <h1 className="font-serif text-4xl md:text-5xl lg:text-6xl text-primary mb-4 leading-tight">
+              Paralegal Insights & Legal Guides
             </h1>
-            <p className="text-base md:text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed font-light">
-              Paralegal tips, plain-language legal guides, and jurisdiction-specific articles — written to help you navigate the legal system with confidence.
+            <p className="text-base md:text-lg text-muted-foreground max-w-2xl mx-auto">
+              Plain-language legal articles, paralegal tips, and jurisdiction-specific guidance for attorneys and legal professionals.
             </p>
           </div>
         </section>
 
         {/* Filters + Search */}
-        <section className="sticky top-[60px] z-30 bg-background/95 backdrop-blur-sm border-b border-border/60 px-5 md:px-10 py-4">
+        <section id="blog-filters" aria-label="Blog category filters and search" className="sticky top-[60px] z-30 bg-background/95 backdrop-blur-sm border-b border-border/60 px-5 md:px-10 py-4">
           <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-start sm:items-center gap-4">
             {/* Category tabs */}
             <div className="flex items-center gap-2 flex-wrap flex-1">
@@ -183,7 +182,7 @@ export default function BlogPage() {
         </section>
 
         {/* Content */}
-        <section className="max-w-7xl mx-auto px-5 md:px-10 py-12">
+        <section id="blog-articles" aria-label="Published blog articles and posts" className="max-w-7xl mx-auto px-5 md:px-10 py-12">
           {loading && (
             <div className="flex flex-col items-center justify-center py-24 gap-4">
               <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
@@ -329,7 +328,7 @@ export default function BlogPage() {
         </section>
 
         {/* Newsletter CTA */}
-        <section className="max-w-2xl mx-auto px-5 md:px-10 pb-20 text-center">
+        <section id="blog-newsletter" aria-label="Subscribe to legal insights newsletter" className="max-w-2xl mx-auto px-5 md:px-10 pb-20 text-center">
           <div className="p-8 rounded-2xl bg-secondary border border-accent/20">
             <h2 className="font-serif text-2xl text-primary mb-2">Stay Informed</h2>
             <p className="text-sm text-muted-foreground mb-5">
