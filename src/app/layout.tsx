@@ -4,7 +4,6 @@ import { Playfair_Display, Raleway } from 'next/font/google';
 import { Suspense } from 'react';
 import '../styles/tailwind.css';
 import GoogleAnalytics from '@/components/GoogleAnalytics';
-import ChatbotWidget from '@/components/ChatbotWidget';
 import LexiFloatingChat from '@/components/LexiFloatingChat';
 import CookieBanner from '@/components/CookieBanner';
 import { AuthProvider } from '@/contexts/AuthContext';
@@ -297,7 +296,6 @@ export default function RootLayout({
         </AuthProvider>
         <Toaster position="top-right" toastOptions={{ duration: 4000 }} />
         <CookieBanner />
-        <ChatbotWidget />
         <LexiFloatingChat />
         <PWAInstallPrompt />
       </body>

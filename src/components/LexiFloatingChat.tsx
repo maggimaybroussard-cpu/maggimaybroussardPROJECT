@@ -456,11 +456,11 @@ export default function LexiFloatingChat() {
 
   return (
     <>
-      {/* Floating toggle button */}
+      {/* Floating toggle button — right side */}
       <button
         onClick={() => setOpen((prev) => !prev)}
         aria-label={open ? 'Close Lexi AI chat' : 'Ask Lexi — AI legal assistant'}
-        className="fixed bottom-6 left-6 z-50 flex items-center gap-2.5 px-4 h-14 rounded-full bg-[#1B2A4A] text-white shadow-lg hover:opacity-90 transition-all duration-300 hover:scale-105"
+        className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 px-4 h-14 rounded-full bg-[#1B2A4A] text-white shadow-lg hover:opacity-90 transition-all duration-300 hover:scale-105"
       >
         {open ? (
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -478,13 +478,13 @@ export default function LexiFloatingChat() {
         )}
       </button>
 
-      {/* Chat panel */}
+      {/* Chat panel — anchored to right side */}
       {open && (
         <div
           role="dialog"
           aria-modal="true"
           aria-label="Lexi AI Legal Assistant"
-          className="fixed bottom-24 left-6 z-50 w-80 sm:w-96 bg-white border border-gray-200 rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+          className="fixed bottom-24 right-6 z-50 w-80 sm:w-96 bg-white border border-gray-200 rounded-2xl shadow-2xl flex flex-col overflow-hidden"
           style={{ maxHeight: '580px' }}
         >
           {/* Header */}

@@ -1,40 +1,49 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { encode } from 'uqr';
 import { trackQRCodeScan, trackEmailShare } from '@/lib/analytics';
 
 const SITE_URL = 'https://broussardlegalservices.com';
+const APP_URL = 'https://broussardlegalservices.com/mobile-download';
 
 function QRSvg({ url, size = 180 }: { url: string; size?: number }) {
-  const svgContent = useMemo(() => {
-    try {
-      const result = encode(url, { ecc: 'H' });
-      const cells = result.data;
-      const moduleCount = result.size;
-      const cellSize = size / moduleCount;
-      const rects: React.ReactElement[] = [];
-      for (let row = 0; row < moduleCount; row++) {
-        for (let col = 0; col < moduleCount; col++) {
-          if (cells[row * moduleCount + col]) {
-            rects.push(
-              <rect
-                key={`${row}-${col}`}
-                x={col * cellSize}
-                y={row * cellSize}
-                width={cellSize}
-                height={cellSize}
-                fill="#4A3728"
-              />
-            );
+  const [svgRects, setSvgRects] = useState<{ x: number; y: number; w: number; h: number }[]>([]);
+  const [moduleCount, setModuleCount] = useState(0);
+
+  useEffect(() => {
+    // Dynamically import uqr to avoid SSR issues
+    import('uqr').then(({ encode }) => {
+      try {
+        const result = encode(url, { ecc: 'H' });
+        const cells = result.data;
+        const count = result.size;
+        const cellSize = size / count;
+        const rects: { x: number; y: number; w: number; h: number }[] = [];
+        for (let row = 0; row < count; row++) {
+          for (let col = 0; col < count; col++) {
+            if (cells[row * count + col]) {
+              rects.push({ x: col * cellSize, y: row * cellSize, w: cellSize, h: cellSize });
+            }
           }
         }
+        setModuleCount(count);
+        setSvgRects(rects);
+      } catch {
+        // fallback: empty
       }
-      return rects;
-    } catch {
-      return [];
-    }
+    }).catch(() => {});
   }, [url, size]);
+
+  if (svgRects.length === 0) {
+    return (
+      <div
+        style={{ width: size, height: size, background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8 }}
+        className="flex items-center justify-center"
+      >
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <svg
@@ -43,11 +52,13 @@ function QRSvg({ url, size = 180 }: { url: string; size?: number }) {
       height={size}
       viewBox={`0 0 ${size} ${size}`}
       role="img"
-      aria-label="QR code linking to broussardlegalservices.com"
-      style={{ imageRendering: 'pixelated' }}
+      aria-label={`QR code linking to ${url}`}
+      style={{ imageRendering: 'pixelated', display: 'block' }}
     >
       <rect width={size} height={size} fill="#ffffff" />
-      {svgContent}
+      {svgRects.map((r, i) => (
+        <rect key={i} x={r.x} y={r.y} width={r.w} height={r.h} fill="#1B2A4A" />
+      ))}
     </svg>
   );
 }
@@ -127,7 +138,7 @@ export default function QRCodeSection() {
 
   return (
     <section className="py-20 md:py-28 bg-secondary/40 border-t border-border/60" aria-label="Share this site">
-      <div className="max-w-5xl mx-auto px-5 md:px-10">
+      <div className="max-w-6xl mx-auto px-5 md:px-10">
         {/* Heading */}
         <div className="text-center mb-12 md:mb-16">
           <p className="text-[11px] font-semibold uppercase tracking-[0.4em] text-accent mb-4 flex items-center justify-center gap-3">
@@ -135,41 +146,65 @@ export default function QRCodeSection() {
             Spread the Word
             <span className="w-8 h-px bg-accent/70" />
           </p>
-          <h2 className="font-serif text-3xl md:text-4xl text-foreground mb-3">Share This Site</h2>
+          <h2 className="font-serif text-3xl md:text-4xl text-foreground mb-3">Share &amp; Install</h2>
           <p className="text-muted-foreground text-base max-w-xl mx-auto font-light leading-relaxed">
-            Scan the QR code with any smartphone camera to visit instantly, or copy the link to share across your channels.
+            Scan the QR codes to visit the site or install the client portal app on your phone — no app store needed.
           </p>
         </div>
 
-        <div className="flex flex-col lg:flex-row items-center justify-center gap-10 lg:gap-16">
-          {/* QR Code Card */}
-          <div className="flex flex-col items-center gap-4">
-            <div
-              ref={qrRef}
-              className="bg-card border border-border rounded-2xl shadow-sm p-7 flex flex-col items-center gap-3"
-            >
-              <QRSvg url={SITE_URL} size={180} />
-              <p className="text-[10px] text-muted-foreground font-semibold tracking-[0.25em] uppercase">Scan to visit</p>
+        {/* Two QR codes side by side */}
+        <div className="flex flex-col lg:flex-row items-start justify-center gap-10 lg:gap-16 mb-14">
+          {/* QR 1 — Website */}
+          <div ref={qrRef} className="flex flex-col items-center gap-4">
+            <div className="bg-white border-2 border-border rounded-2xl shadow-md p-6 flex flex-col items-center gap-3">
+              <QRSvg url={SITE_URL} size={160} />
+              <p className="text-[10px] text-muted-foreground font-semibold tracking-[0.25em] uppercase">Scan to visit site</p>
             </div>
-            <p className="text-xs text-muted-foreground text-center max-w-[200px] leading-relaxed">
-              Works with iPhone Camera, Google Lens, or any QR scanner
+            <p className="text-xs text-muted-foreground text-center max-w-[180px] leading-relaxed">
+              broussardlegalservices.com
             </p>
           </div>
 
           {/* Divider */}
-          <div className="hidden lg:flex flex-col items-center gap-2">
+          <div className="hidden lg:flex flex-col items-center gap-2 self-center">
+            <div className="w-px h-16 bg-border" />
+            <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-widest">+</span>
+            <div className="w-px h-16 bg-border" />
+          </div>
+          <div className="flex lg:hidden items-center gap-4 w-full max-w-xs mx-auto">
+            <div className="flex-1 h-px bg-border" />
+            <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-widest">+</span>
+            <div className="flex-1 h-px bg-border" />
+          </div>
+
+          {/* QR 2 — Mobile App */}
+          <div className="flex flex-col items-center gap-4">
+            <div className="bg-white border-2 border-primary/30 rounded-2xl shadow-md p-6 flex flex-col items-center gap-3 relative">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground text-[9px] font-bold uppercase tracking-widest px-3 py-1 rounded-full">
+                Install App
+              </div>
+              <QRSvg url={APP_URL} size={160} />
+              <p className="text-[10px] text-muted-foreground font-semibold tracking-[0.25em] uppercase">Scan to install app</p>
+            </div>
+            <p className="text-xs text-muted-foreground text-center max-w-[180px] leading-relaxed">
+              Client portal · iOS &amp; Android
+            </p>
+          </div>
+
+          {/* Divider */}
+          <div className="hidden lg:flex flex-col items-center gap-2 self-center">
             <div className="w-px h-16 bg-border" />
             <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-widest">or</span>
             <div className="w-px h-16 bg-border" />
           </div>
-          <div className="flex lg:hidden items-center gap-4 w-full max-w-xs">
+          <div className="flex lg:hidden items-center gap-4 w-full max-w-xs mx-auto">
             <div className="flex-1 h-px bg-border" />
             <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-widest">or</span>
             <div className="flex-1 h-px bg-border" />
           </div>
 
           {/* Link + Social Share */}
-          <div className="flex flex-col gap-6 w-full max-w-sm">
+          <div className="flex flex-col gap-6 w-full max-w-sm self-center">
             {/* Copyable URL */}
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground mb-2.5">Direct Link</p>
