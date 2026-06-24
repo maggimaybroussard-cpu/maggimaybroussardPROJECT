@@ -165,8 +165,8 @@ export default function Header() {
                 Broussard Legal Services
               </span>
               <Image
-                src="/assets/images/initiallogo-1781843073214.png"
-                alt="Broussard Legal Services logo"
+                src="/assets/images/app_logo-1782343606167.png"
+                alt="Gold scales of justice — Broussard Legal Services"
                 width={36}
                 height={36}
                 className="flex-shrink-0 object-contain"

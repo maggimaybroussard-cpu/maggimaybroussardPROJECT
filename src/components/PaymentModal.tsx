@@ -30,7 +30,7 @@ export const PAYMENT_OPTIONS: PaymentOption[] = [
   {
     type: 'consultation_deposit',
     label: 'Consultation Deposit',
-    amount: 150,
+    amount: 200,
     description: 'Secures your consultation slot — applied toward your first invoice.',
   },
   {

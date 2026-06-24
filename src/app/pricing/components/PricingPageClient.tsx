@@ -180,7 +180,7 @@ const FAQS: FAQ[] = [
   },
   {
     q: 'What if I need more hours than my retainer includes?',
-    a: 'Overage hours are billed at $85/hour. You\'ll always be notified before any overage charges are applied so there are no surprises on your invoice.',
+    a: 'Overage hours are billed at $95/hour. You\'ll always be notified before any overage charges are applied so there are no surprises on your invoice.',
   },
   {
     q: 'How quickly can I get started after signing up?',
@@ -307,7 +307,7 @@ const VALUE_PROPS = [
 const SERVICE_BUNDLES = [
   {
     name: 'Deposition Bundle',
-    price: '$350',
+    price: '$400',
     unit: 'per deposition',
     desc: 'Full deposition support from prep through summary — ideal for firms without a retainer or needing surge capacity.',
     includes: [
@@ -322,7 +322,7 @@ const SERVICE_BUNDLES = [
   },
   {
     name: 'Motion Package',
-    price: '$400–$700',
+    price: '$500–$800',
     unit: 'per motion',
     desc: 'Research-backed motion drafting with table of contents, authorities, and court-rule formatting included.',
     includes: [
@@ -337,7 +337,7 @@ const SERVICE_BUNDLES = [
   },
   {
     name: 'Discovery Sprint',
-    price: '$500',
+    price: '$600',
     unit: 'flat rate',
     desc: 'A focused two-week engagement to get discovery organized, logged, and calendared for complex matters.',
     includes: [
@@ -583,7 +583,7 @@ export default function PricingPageClient() {
 
           {/* Overage note */}
           <p className="text-center text-sm text-muted-foreground font-light mt-8">
-            Need more hours? Overage billed at <strong className="font-semibold text-foreground">$85/hr</strong> — you&apos;ll always be notified before any overage applies.
+            Need more hours? Overage billed at <strong className="font-semibold text-foreground">$95/hr</strong> — you&apos;ll always be notified before any overage applies.
             <Link href="/contact" className="ml-2 underline underline-offset-2 hover:text-foreground transition-colors" style={{ color: '#355E3B' }}>
               Need a custom arrangement?
             </Link>
@@ -921,7 +921,7 @@ export default function PricingPageClient() {
                   'Discovery deadline calendaring',
                   'Discovery status reports',
                 ],
-                standalone: '$150–$400 per project',
+                standalone: '$175–$450 per project',
                 contractHref: '/contracts',
                 logHref: '/log-formats',
               },
@@ -940,7 +940,7 @@ export default function PricingPageClient() {
                   'Shepardizing / KeyCiting authorities',
                   'Jurisdiction-specific analysis',
                 ],
-                standalone: '$85/hr or flat fee by project',
+                standalone: '$95/hr or flat fee by project',
                 contractHref: '/contracts',
                 logHref: '/log-formats',
               },
@@ -959,7 +959,7 @@ export default function PricingPageClient() {
                   'Table of contents & authorities',
                   'Court-rule formatting & cite-checking',
                 ],
-                standalone: '$200–$600 per document',
+                standalone: '$250–$700 per document',
                 contractHref: '/contracts',
                 logHref: '/log-formats',
               },
@@ -1082,7 +1082,7 @@ export default function PricingPageClient() {
                   { label: 'Priority 24-hr Turnaround', values: [false, true, true] },
                   { label: 'Deposition Prep & Summaries', values: [false, false, true] },
                   { label: 'Weekly Strategy Calls', values: [false, false, true] },
-                  { label: 'Overage Rate', values: ['$85/hr', '$85/hr', '$85/hr'] },
+                  { label: 'Overage Rate', values: ['$95/hr', '$95/hr', '$95/hr'] },
                 ].map((row, i) => (
                   <tr
                     key={i}

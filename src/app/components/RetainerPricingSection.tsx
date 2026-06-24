@@ -93,7 +93,7 @@ const BILLING_NOTES = [
       </svg>
     ),
     label: 'No rollover, no penalty',
-    detail: 'Unused hours expire at month end. Overage hours billed at a discounted rate.',
+    detail: 'Unused hours expire at month end. Overage hours billed at $95/hr — always pre-approved.',
   },
   {
     icon: (
@@ -239,7 +239,7 @@ export default function RetainerPricingSection() {
           </div>
           <p className="text-sm text-primary-foreground/60 font-light leading-relaxed">
             <span className="text-primary-foreground font-semibold">Need project-based or hourly support?</span>{' '}
-            Project engagements start at $85/hr with a defined scope and deliverable. Hourly as-needed billing is available at $85/hr for overflow work without a monthly commitment.{' '}
+            Project engagements start at $95/hr with a defined scope and deliverable. Hourly as-needed billing is available at $95/hr for overflow work without a monthly commitment.{' '}
             <Link href="/book-consultation" className="text-accent underline underline-offset-2 hover:text-accent/80 transition-colors">
               Book a free consultation
             </Link>{' '}

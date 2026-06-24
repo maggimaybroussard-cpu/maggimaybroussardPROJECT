@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function MobileAppSection() {
   return (
@@ -73,15 +74,33 @@ export default function MobileAppSection() {
               </p>
             </div>
 
-            {/* Right — Visual */}
-            <div className="relative bg-gradient-to-br from-primary/90 to-primary flex items-center justify-center p-10 md:p-14 min-h-[280px]">
+            {/* Right — Visual with attorney photo */}
+            <div className="relative bg-gradient-to-br from-primary/90 to-primary flex items-center justify-center p-10 md:p-14 min-h-[320px] overflow-hidden">
               {/* Decorative circles */}
               <div className="absolute top-6 right-6 w-32 h-32 rounded-full bg-accent/10 blur-2xl" />
               <div className="absolute bottom-6 left-6 w-24 h-24 rounded-full bg-accent/8 blur-xl" />
 
-              {/* Phone mockup */}
-              <div className="relative z-10 flex flex-col items-center gap-4">
-                <div className="w-36 h-64 bg-primary-foreground/10 border-2 border-primary-foreground/20 rounded-3xl flex flex-col overflow-hidden shadow-2xl">
+              {/* Attorney photo + phone mockup */}
+              <div className="relative z-10 flex flex-col items-center gap-4 w-full max-w-xs">
+                {/* Attorney headshot */}
+                <div className="relative w-28 h-28 rounded-full overflow-hidden border-4 shadow-2xl" style={{ borderColor: 'rgba(200,150,90,0.6)' }}>
+                  <Image
+                    src="/assets/images/HEADSHOT-1779495779687.png"
+                    alt="Maggi May Broussard — Contract Paralegal, Broussard Legal Services"
+                    fill
+                    className="object-cover object-top"
+                    sizes="112px"
+                  />
+                </div>
+
+                {/* Name + title */}
+                <div className="text-center">
+                  <p className="text-primary-foreground font-semibold text-sm">Maggi May Broussard</p>
+                  <p className="text-primary-foreground/60 text-[11px] mt-0.5">Contract Paralegal · New Orleans, LA</p>
+                </div>
+
+                {/* Phone mockup */}
+                <div className="w-36 h-60 bg-primary-foreground/10 border-2 border-primary-foreground/20 rounded-3xl flex flex-col overflow-hidden shadow-2xl">
                   {/* Phone notch */}
                   <div className="flex justify-center pt-3 pb-2">
                     <div className="w-12 h-1.5 bg-primary-foreground/30 rounded-full" />
@@ -105,12 +124,6 @@ export default function MobileAppSection() {
                   </div>
                 </div>
 
-                {/* Labels */}
-                <div className="text-center">
-                  <p className="text-primary-foreground/90 text-sm font-semibold">Broussard Legal</p>
-                  <p className="text-primary-foreground/50 text-[11px] mt-0.5">Client Portal · iOS &amp; Android</p>
-                </div>
-
                 {/* Platform badges */}
                 <div className="flex gap-2">
                   {['iOS', 'Android', 'Desktop']?.map((platform) => (
@@ -127,7 +140,7 @@ export default function MobileAppSection() {
                 {/* CTA */}
                 <Link
                   href="/mobile-download"
-                  className="mt-2 px-5 py-2 bg-white/15 hover:bg-white/25 border border-white/20 rounded-full text-[11px] font-semibold text-primary-foreground uppercase tracking-wider transition-all duration-200"
+                  className="mt-1 px-5 py-2 bg-white/15 hover:bg-white/25 border border-white/20 rounded-full text-[11px] font-semibold text-primary-foreground uppercase tracking-wider transition-all duration-200"
                 >
                   View Install Guide →
                 </Link>
