@@ -146,22 +146,6 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-title" content="Broussard Legal" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="msapplication-config" content="/browserconfig.xml" />
-        <style>
-          {`
-            :root {
-              ${playfairDisplay.style.fontFamily};
-              ${raleway.style.fontFamily};
-            }
-          `}
-        </style>
-        <style>
-          {`
-            :root {
-              ${playfairDisplay.style.fontFamily};
-              ${raleway.style.fontFamily};
-            }
-          `}
-        </style>
 
         {/* Organization structured data */}
         <script
