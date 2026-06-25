@@ -176,6 +176,11 @@ export default function BillingTestDashboard() {
   const [runningRetainers, setRunningRetainers] = useState(false);
   const [overallSummary, setOverallSummary] = useState<string | null>(null);
 
+  // ── Resend Test State ──────────────────────────────────────────────────────
+  const [resendTo, setResendTo] = useState('');
+  const [resendStatus, setResendStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
+  const [resendMessage, setResendMessage] = useState('');
+
   // ── Helpers ────────────────────────────────────────────────────────────────
 
   function updateTest(
@@ -188,6 +193,34 @@ export default function BillingTestDashboard() {
 
   function markRunning(setter: React.Dispatch<React.SetStateAction<TestResult[]>>, index: number) {
     updateTest(setter, index, { status: 'running', message: 'Running…', detail: undefined });
+  }
+
+  async function runResendTest() {
+    if (!resendTo.trim()) {
+      setResendStatus('error');
+      setResendMessage('Please enter a recipient email address.');
+      return;
+    }
+    setResendStatus('sending');
+    setResendMessage('');
+    try {
+      const res = await fetch('/api/admin/test-resend-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ to: resendTo.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setResendStatus('error');
+        setResendMessage(data.error || 'Failed to send test email.');
+      } else {
+        setResendStatus('success');
+        setResendMessage(`Test email sent successfully to ${resendTo.trim()}. Check your inbox!`);
+      }
+    } catch (err) {
+      setResendStatus('error');
+      setResendMessage(err instanceof Error ? err.message : 'Unknown error');
+    }
   }
 
   // ── Payment Tests ──────────────────────────────────────────────────────────
@@ -729,6 +762,60 @@ export default function BillingTestDashboard() {
               </div>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* Resend Email Test */}
+      <div className="rounded-2xl border border-border bg-card overflow-hidden">
+        <div className="flex items-center gap-3 px-5 py-4 border-b border-border">
+          <span className="text-primary">
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+              <polyline points="22,6 12,13 2,6" />
+            </svg>
+          </span>
+          <div>
+            <h3 className="font-semibold text-foreground text-sm">Resend Email Test</h3>
+            <p className="text-xs text-muted-foreground">Send a test email to verify the Resend integration is working</p>
+          </div>
+        </div>
+        <div className="p-5 space-y-4">
+          <div className="flex gap-3">
+            <input
+              type="email"
+              value={resendTo}
+              onChange={e => { setResendTo(e.target.value); setResendStatus('idle'); setResendMessage(''); }}
+              placeholder="recipient@example.com"
+              className="flex-1 px-3 py-2 text-sm rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+            />
+            <button
+              onClick={runResendTest}
+              disabled={resendStatus === 'sending'}
+              className="px-4 py-2 text-sm font-medium rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-60 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+            >
+              {resendStatus === 'sending' ? (
+                <>
+                  <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                  </svg>
+                  Sending…
+                </>
+              ) : 'Send Test Email'}
+            </button>
+          </div>
+          {resendMessage && (
+            <div className={`flex items-start gap-2 p-3 rounded-lg text-sm ${resendStatus === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
+              {resendStatus === 'success' ? (
+                <svg className="w-4 h-4 mt-0.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+              ) : (
+                <svg className="w-4 h-4 mt-0.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+              )}
+              {resendMessage}
+            </div>
+          )}
+          <p className="text-xs text-muted-foreground">
+            Make sure <span className="font-mono">RESEND_API_KEY</span> is set in your environment variables before testing.
+          </p>
         </div>
       </div>
 
