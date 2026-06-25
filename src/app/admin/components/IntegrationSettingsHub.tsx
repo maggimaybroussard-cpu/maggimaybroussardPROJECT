@@ -287,6 +287,11 @@ export default function IntegrationSettingsHub() {
   const [smsSending, setSmsSending] = useState(false);
   const [smsResult, setSmsResult] = useState<{ success: boolean; message: string } | null>(null);
 
+  // Resend email test state
+  const [resendTestEmail, setResendTestEmail] = useState('');
+  const [resendSending, setResendSending] = useState(false);
+  const [resendResult, setResendResult] = useState<{ success: boolean; message: string } | null>(null);
+
   // Broussard sync test state
   const [broussardTesting, setBroussardTesting] = useState(false);
   const [broussardResult, setBroussardResult] = useState<{ success: boolean; message: string } | null>(null);
@@ -394,6 +399,37 @@ export default function IntegrationSettingsHub() {
       setSmsResult({ success: false, message: err instanceof Error ? err.message : 'Network error' });
     } finally {
       setSmsSending(false);
+    }
+  }
+
+  async function handleResendTest() {
+    if (!resendTestEmail) return;
+    setResendSending(true);
+    setResendResult(null);
+    try {
+      const res = await fetch('/api/admin/send-resend-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: resendTestEmail,
+          subject: 'Resend Integration Test — Broussard Legal Services',
+          html: `<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;background:#fff;border-radius:12px;border:1px solid #e5e7eb">
+            <h2 style="margin:0 0 8px;font-size:20px;color:#111">✅ Resend is working!</h2>
+            <p style="margin:0 0 16px;color:#555;font-size:14px">This is a test email from <strong>Broussard Legal Services</strong> confirming your Resend integration is live and sending correctly.</p>
+            <p style="margin:0;color:#888;font-size:12px">Sent via Resend API · ${new Date().toLocaleString()}</p>
+          </div>`,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setResendResult({ success: true, message: `Email sent! ID: ${data.id}` });
+      } else {
+        setResendResult({ success: false, message: data.error ?? 'Failed to send email' });
+      }
+    } catch (err) {
+      setResendResult({ success: false, message: err instanceof Error ? err.message : 'Network error' });
+    } finally {
+      setResendSending(false);
     }
   }
 
@@ -621,6 +657,51 @@ export default function IntegrationSettingsHub() {
           {smsResult && (
             <p className={`mt-2 text-xs font-medium ${smsResult.success ? 'text-emerald-700' : 'text-red-700'}`}>
               {smsResult.success ? '✓' : '✗'} {smsResult.message}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Resend Email Test Panel */}
+      <div className="bg-gray-50 border border-gray-200 rounded-2xl p-5">
+        <div className="flex items-start gap-3 mb-4">
+          <div className="w-10 h-10 rounded-xl bg-white border border-gray-200 flex items-center justify-center shrink-0 shadow-sm">
+            <ResendIcon />
+          </div>
+          <div className="flex-1">
+            <h3 className="text-sm font-bold text-gray-900">Test Resend Email</h3>
+            <p className="text-xs text-gray-600 mt-0.5">Send a test email to verify your Resend integration is live. Requires <code className="bg-gray-100 px-1 rounded font-mono text-[10px]">RESEND_API_KEY</code> to be set.</p>
+          </div>
+        </div>
+        <div className="bg-white border border-gray-200 rounded-xl p-4">
+          <p className="text-xs font-semibold text-gray-800 mb-3">Send a test email</p>
+          <div className="flex gap-2 mb-2">
+            <input
+              type="email"
+              placeholder="your@email.com"
+              value={resendTestEmail}
+              onChange={(e) => setResendTestEmail(e.target.value)}
+              className="flex-1 text-xs border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-gray-400 bg-white"
+            />
+          </div>
+          <button
+            onClick={handleResendTest}
+            disabled={resendSending || !resendTestEmail}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-gray-900 text-white text-xs font-semibold hover:bg-gray-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {resendSending ? (
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="animate-spin"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+            ) : (
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                <polyline points="22,6 12,13 2,6"/>
+              </svg>
+            )}
+            Send Test Email
+          </button>
+          {resendResult && (
+            <p className={`mt-2 text-xs font-medium ${resendResult.success ? 'text-emerald-700' : 'text-red-700'}`}>
+              {resendResult.success ? '✓' : '✗'} {resendResult.message}
             </p>
           )}
         </div>
