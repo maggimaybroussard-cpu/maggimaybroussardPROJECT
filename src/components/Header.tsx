@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import AppLogo from '@/components/ui/AppLogo';
-import Image from 'next/image';
+
 
 const navLinks = [
   { label: 'Home', href: '/' },
@@ -158,13 +158,6 @@ export default function Header() {
             </div>
 
             <Link href="/" className="flex items-center gap-2.5" aria-label="Broussard Legal Services — Home">
-              <Image
-                src="/assets/images/initiallogo-1782343923794.png"
-                alt="BL monogram — Broussard Legal Services"
-                width={32}
-                height={32}
-                className="flex-shrink-0 object-contain"
-              />
               <span
                 className="font-serif text-lg tracking-tight transition-colors duration-300"
                 style={{ color: '#355E3B' }}
