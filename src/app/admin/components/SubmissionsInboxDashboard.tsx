@@ -73,6 +73,7 @@ function ContactSubmissionsPanel() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<ContactSubmission | null>(null);
+  const [isLive, setIsLive] = useState(false);
 
   // Filters
   const [search, setSearch] = useState('');
@@ -101,6 +102,39 @@ function ContactSubmissionsPanel() {
   useEffect(() => {
     fetchSubmissions();
   }, [fetchSubmissions]);
+
+  // Real-time subscription
+  useEffect(() => {
+    const channel = supabase
+      .channel('contact_inquiries_realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'contact_inquiries' },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const newRow = payload.new as ContactSubmission;
+            setSubmissions((prev) => [newRow, ...prev]);
+          } else if (payload.eventType === 'UPDATE') {
+            const updated = payload.new as ContactSubmission;
+            setSubmissions((prev) =>
+              prev.map((s) => (s.id === updated.id ? updated : s))
+            );
+            setSelected((prev) => (prev?.id === updated.id ? updated : prev));
+          } else if (payload.eventType === 'DELETE') {
+            const deleted = payload.old as { id: string };
+            setSubmissions((prev) => prev.filter((s) => s.id !== deleted.id));
+            setSelected((prev) => (prev?.id === deleted.id ? null : prev));
+          }
+        }
+      )
+      .subscribe((status) => {
+        setIsLive(status === 'SUBSCRIBED');
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [supabase]);
 
   const serviceOptions = Array.from(new Set(submissions.map((s) => s.service).filter(Boolean))).sort();
 
@@ -183,10 +217,16 @@ function ContactSubmissionsPanel() {
           )}
         </div>
 
-        {/* Count */}
-        <p className="text-xs text-muted-foreground">
-          {loading ? 'Loading…' : `${filtered.length} submission${filtered.length !== 1 ? 's' : ''}`}
-        </p>
+        {/* Count + Live indicator */}
+        <div className="flex items-center gap-3">
+          <p className="text-xs text-muted-foreground">
+            {loading ? 'Loading…' : `${filtered.length} submission${filtered.length !== 1 ? 's' : ''}`}
+          </p>
+          <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${isLive ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-gray-50 text-gray-400 border-gray-200'}`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${isLive ? 'bg-emerald-500 animate-pulse' : 'bg-gray-300'}`} />
+            {isLive ? 'Live' : 'Connecting…'}
+          </span>
+        </div>
 
         {error && (
           <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-sm text-red-700">{error}</div>
