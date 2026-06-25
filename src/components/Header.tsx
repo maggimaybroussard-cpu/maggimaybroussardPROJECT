@@ -31,8 +31,6 @@ const navLinks = [
 export default function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [emailPopupOpen, setEmailPopupOpen] = useState(false);
-  const popupRef = useRef<HTMLDivElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const hamburgerRef = useRef<HTMLButtonElement>(null);
   const pathname = usePathname();
@@ -90,18 +88,6 @@ export default function Header() {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [menuOpen]);
 
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (popupRef.current && !popupRef.current.contains(e.target as Node)) {
-        setEmailPopupOpen(false);
-      }
-    };
-    if (emailPopupOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [emailPopupOpen]);
-
   const isHeroPage = pathname === '/' || pathname === '/homepage';
 
   return (
@@ -118,43 +104,18 @@ export default function Header() {
         <div className="max-w-7xl mx-auto px-4 md:px-10 flex items-center justify-between gap-4">
           {/* Logo */}
           <div className="flex items-center gap-3 group shrink-0">
-            {/* Profile picture with email popup */}
-            <div className="relative" ref={popupRef}>
-              <button
-                onClick={() => setEmailPopupOpen(!emailPopupOpen)}
+            {/* Profile picture — navigates to Admin */}
+            <div className="relative">
+              <Link
+                href="/admin"
                 className="focus:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-full"
-                aria-label="Contact via email"
-                aria-expanded={emailPopupOpen}
-                aria-haspopup="true"
-                type="button"
+                aria-label="Go to Admin"
               >
                 <AppLogo
                   size={36}
                   className="transition-transform duration-300 group-hover:scale-105 cursor-pointer"
                 />
-              </button>
-
-              {/* Email popup */}
-              {emailPopupOpen && (
-                <div
-                  role="dialog"
-                  aria-label="Quick contact"
-                  className="absolute top-full left-0 mt-2 z-50 bg-white rounded-xl shadow-xl border border-gray-100 p-4 min-w-[220px] animate-fade-in"
-                >
-                  <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-2">Quick Contact</p>
-                  <a
-                    href="mailto:broussardlegalservices@gmail.com"
-                    className="flex items-center gap-2.5 text-sm font-medium text-gray-800 hover:text-accent transition-colors duration-200"
-                    onClick={() => setEmailPopupOpen(false)}
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                      <rect x="2" y="4" width="20" height="16" rx="2" />
-                      <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-                    </svg>
-                    Send an Email
-                  </a>
-                </div>
-              )}
+              </Link>
             </div>
 
             <Link href="/" className="flex items-center gap-2.5" aria-label="Broussard Legal Services — Home">
