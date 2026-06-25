@@ -79,8 +79,9 @@ export default function AdminLoginPage() {
         router.replace('/admin/setup-totp');
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Invalid email or password.';
-      if (msg.toLowerCase().includes('invalid api key') || msg.toLowerCase().includes('apikey')) {
+      const msg = err instanceof Error ? err.message : (typeof err === 'object' && err !== null && 'message' in err ? String((err as any).message) : 'Invalid email or password.');
+      const status = typeof err === 'object' && err !== null && 'status' in err ? (err as any).status : null;
+      if (status === 401 || msg.toLowerCase().includes('invalid api key') || msg.toLowerCase().includes('apikey') || msg.toLowerCase().includes('invalid key')) {
         setError('Authentication service configuration error. Please contact the administrator.');
       } else {
         setError(msg || 'Invalid email or password.');
@@ -128,8 +129,9 @@ export default function AdminLoginPage() {
         router.replace('/admin/setup-totp');
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Sign up failed. Please try again.';
-      if (msg.toLowerCase().includes('invalid api key') || msg.toLowerCase().includes('apikey')) {
+      const msg = err instanceof Error ? err.message : (typeof err === 'object' && err !== null && 'message' in err ? String((err as any).message) : 'Sign up failed. Please try again.');
+      const status = typeof err === 'object' && err !== null && 'status' in err ? (err as any).status : null;
+      if (status === 401 || msg.toLowerCase().includes('invalid api key') || msg.toLowerCase().includes('apikey') || msg.toLowerCase().includes('invalid key')) {
         setError('Authentication service configuration error. Please contact the administrator.');
       } else {
         setError(msg || 'Sign up failed. Please try again.');
