@@ -12,10 +12,18 @@ export async function GET(request: NextRequest) {
     const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
+      // Admin confirmation links carry next=/admin/email-confirmed
+      if (next.startsWith('/admin')) {
+        return NextResponse.redirect(`${origin}${next}`);
+      }
       return NextResponse.redirect(`${origin}${next}`);
     }
   }
 
-  // On error, redirect to portal login with error param
+  // On error — distinguish admin vs portal
+  const isAdmin = next.startsWith('/admin');
+  if (isAdmin) {
+    return NextResponse.redirect(`${origin}/admin/login?error=auth_callback_failed`);
+  }
   return NextResponse.redirect(`${origin}/portal/login?error=auth_callback_failed`);
 }

@@ -57,7 +57,17 @@ export default function AdminLoginPage() {
         throw new Error('Authentication service is not configured. Please contact the administrator.');
       }
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) throw error;
+      if (error) {
+        // Supabase returns "Email not confirmed" for unverified accounts
+        if (
+          error.message?.toLowerCase().includes('email not confirmed') ||
+          error.message?.toLowerCase().includes('not confirmed')
+        ) {
+          setError('Your admin account email has not been confirmed yet. Please check your inbox for the confirmation link and click it to activate your account.');
+          return;
+        }
+        throw error;
+      }
 
       if (!data.user) throw new Error('Login failed. Please try again.');
 
@@ -115,13 +125,13 @@ export default function AdminLoginPage() {
         email,
         password,
         options: {
-          emailRedirectTo: `${siteUrl}/auth/callback`,
+          emailRedirectTo: `${siteUrl}/auth/callback?next=/admin/email-confirmed`,
         },
       });
       if (error) throw error;
 
       if (data.user && !data.session) {
-        setSuccessMessage('Account created! Check your email to confirm your address before signing in.');
+        setSuccessMessage('Account created! A confirmation link has been sent to your email. You must click that link to activate your admin account before signing in.');
         setEmail('');
         setPassword('');
         setConfirmPassword('');
