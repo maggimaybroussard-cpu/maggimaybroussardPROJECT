@@ -98,11 +98,12 @@ export default function AdminLoginPage() {
 
     setSubmitting(true);
     try {
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://broussardlegalservices.com';
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          emailRedirectTo: `${siteUrl}/auth/callback`,
         },
       });
       if (error) throw error;
@@ -209,8 +210,7 @@ export default function AdminLoginPage() {
               {mode === 'signin' ? 'Admin Sign In' : 'Create Admin Account'}
             </h1>
             <p className="text-sm text-center mb-8" style={{ color: 'var(--muted-foreground)' }}>
-              {mode === 'signin' ? "Secure access to Maggi May's dashboard"
-                : 'Register a new admin account'}
+              {mode === 'signin' ? "Secure access to Maggi May's dashboard" :'Register a new admin account'}
             </p>
 
             {error && (
