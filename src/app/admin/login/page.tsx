@@ -53,6 +53,9 @@ export default function AdminLoginPage() {
     setError(null);
     setSubmitting(true);
     try {
+      if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+        throw new Error('Authentication service is not configured. Please contact the administrator.');
+      }
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
 
@@ -76,7 +79,12 @@ export default function AdminLoginPage() {
         router.replace('/admin/setup-totp');
       }
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Invalid email or password.');
+      const msg = err instanceof Error ? err.message : 'Invalid email or password.';
+      if (msg.toLowerCase().includes('invalid api key') || msg.toLowerCase().includes('apikey')) {
+        setError('Authentication service configuration error. Please contact the administrator.');
+      } else {
+        setError(msg || 'Invalid email or password.');
+      }
     } finally {
       setSubmitting(false);
     }
@@ -98,6 +106,9 @@ export default function AdminLoginPage() {
 
     setSubmitting(true);
     try {
+      if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+        throw new Error('Authentication service is not configured. Please contact the administrator.');
+      }
       const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://broussardlegalservices.com';
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -117,7 +128,12 @@ export default function AdminLoginPage() {
         router.replace('/admin/setup-totp');
       }
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Sign up failed. Please try again.');
+      const msg = err instanceof Error ? err.message : 'Sign up failed. Please try again.';
+      if (msg.toLowerCase().includes('invalid api key') || msg.toLowerCase().includes('apikey')) {
+        setError('Authentication service configuration error. Please contact the administrator.');
+      } else {
+        setError(msg || 'Sign up failed. Please try again.');
+      }
     } finally {
       setSubmitting(false);
     }
