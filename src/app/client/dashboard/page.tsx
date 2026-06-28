@@ -221,7 +221,8 @@ const NAV_ITEMS = [
   { href: '/portal/dashboard', label: 'Overview' },
   { href: '/portal/cases', label: 'My Cases' },
   { href: '/portal/documents', label: 'Documents' },
-  { href: '/portal/invoices', label: 'Invoices' },
+  { href: '/client/invoices', label: 'Invoices' },
+  { href: '/client/contracts', label: 'Contracts' },
   { href: '/portal/messages', label: 'Messages' },
 ];
 
@@ -884,7 +885,7 @@ export default function ClientDashboardPage() {
             <div className="px-5 pt-5 pb-4 flex items-center justify-between border-b border-border/60">
               <h2 className="text-sm font-semibold text-foreground">Invoice Balance</h2>
               <Link
-                href="/portal/invoices"
+                href="/client/invoices"
                 className="text-xs text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1"
               >
                 View all
@@ -1201,6 +1202,8 @@ export default function ClientDashboardPage() {
         {/* ── Quick links footer ── */}
         <div className="mt-6 flex flex-wrap gap-2">
           {[
+            { href: '/client/invoices', label: 'Invoices & Billing' },
+            { href: '/client/contracts', label: 'Contract Repository' },
             { href: '/portal/messages', label: 'Messages' },
             { href: '/portal/book', label: 'Book Appointment' },
             { href: '/portal/signatures', label: 'Signatures' },
