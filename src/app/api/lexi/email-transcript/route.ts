@@ -25,7 +25,9 @@ function buildEmailHtml(transcript: string, visitorEmail: string): string {
   const rows = transcript
     .split('\n\n---\n\n')
     .map((block) => {
-      const [speakerLine, ...rest] = block.split('\n');
+      const parts = block.split('\n');
+      const speakerLine = parts[0];
+      const rest = parts.slice(1);
       const isUser = speakerLine?.startsWith('You');
       const bgColor = isUser ? '#F0F4FF' : '#FFFFFF';
       const labelColor = isUser ? '#1B2A4A' : '#6B7280';
