@@ -1192,6 +1192,24 @@ export default function PricingPageClient() {
           <p className="text-white/50 text-xs font-light mt-8">
             Not sure which tier fits? <Link href="/contact" className="underline underline-offset-2 text-white/70 hover:text-white transition-colors">Book a free 15-min call</Link> and we&apos;ll figure it out together.
           </p>
+
+          {/* One-time services link */}
+          <div className="mt-10 pt-8 border-t border-white/10">
+            <p className="text-white/60 text-sm font-light mb-4">
+              Not ready for a retainer? Purchase a single service instead.
+            </p>
+            <Link
+              href="/services/purchase"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-sm font-semibold uppercase tracking-widest transition-all duration-200 hover:opacity-90"
+              style={{ background: 'rgba(255,255,255,0.12)', color: '#fff', border: '1px solid rgba(255,255,255,0.25)' }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" />
+                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+              </svg>
+              Browse À La Carte Services
+            </Link>
+          </div>
         </div>
       </section>
 

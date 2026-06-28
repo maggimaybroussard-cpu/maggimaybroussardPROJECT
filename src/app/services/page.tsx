@@ -10,6 +10,7 @@ import ServicesProcess from './components/ServicesProcess';
 import ServicesWorkCTA from './components/ServicesWorkCTA';
 import ServicesPageTracker from './components/ServicesPageTracker';
 import EmailOptInSection from '../components/EmailOptInSection';
+import Link from 'next/link';
 
 import ServicesFAQ from './components/ServicesFAQ';
 
@@ -171,6 +172,61 @@ export default function ServicesPage() {
         <section id="process" aria-label="How our service process works">
           <ServicesProcess />
         </section>
+
+        {/* Purchase CTA Banner */}
+        <section id="purchase-services" aria-label="Purchase paralegal services online">
+          <div className="max-w-7xl mx-auto px-5 md:px-10 py-14 md:py-20">
+            <div
+              className="rounded-3xl p-8 md:p-12 flex flex-col md:flex-row items-center justify-between gap-8"
+              style={{ background: 'linear-gradient(135deg, #2d5a35 0%, #355E3B 60%, #4a7c52 100%)' }}
+            >
+              <div className="text-center md:text-left">
+                <span
+                  className="inline-block px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-widest mb-4"
+                  style={{ background: 'rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.9)' }}
+                >
+                  New · Buy Online
+                </span>
+                <h2 className="font-serif text-2xl md:text-3xl text-white leading-tight mb-3">
+                  Purchase Paralegal Services
+                  <br />
+                  <span className="italic opacity-80">Directly &amp; Instantly</span>
+                </h2>
+                <p className="text-white/70 font-light leading-relaxed max-w-md text-sm md:text-base">
+                  Flat-fee packages for legal research, motion drafting, discovery, contract review, and more. Pay securely via Stripe — work begins within 1 business day.
+                </p>
+                <div className="flex flex-wrap gap-3 mt-5 justify-center md:justify-start">
+                  {['Legal Research Memo · $350', 'Motion Drafting · $500', 'Discovery Package · $650'].map((item) => (
+                    <span
+                      key={item}
+                      className="px-3 py-1.5 rounded-full text-xs font-medium"
+                      style={{ background: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.85)' }}
+                    >
+                      {item}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div className="flex flex-col gap-3 shrink-0">
+                <Link
+                  href="/services/purchase"
+                  className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full text-sm font-semibold uppercase tracking-widest transition-all duration-200 hover:opacity-90 shadow-lg"
+                  style={{ background: '#fff', color: '#355E3B' }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" />
+                    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+                  </svg>
+                  Browse &amp; Buy Now
+                </Link>
+                <p className="text-center text-xs text-white/50">
+                  🔒 Stripe · SSL · PCI Compliant
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <section id="quotable-stats" aria-label="Key statistics and impact metrics">
           <div className="max-w-7xl mx-auto px-5 md:px-10 py-16 md:py-24">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
