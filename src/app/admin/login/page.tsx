@@ -140,7 +140,7 @@ export default function AdminLoginPage() {
       if (error) throw error;
 
       if (data.user && !data.session) {
-        setSuccessMessage('Account created! A confirmation link has been sent to your email. Click that link to activate your admin account before signing in.');
+        setSuccessMessage(`✉️ Verification email sent to ${email}. Please check your inbox (and spam folder) and click the confirmation link to activate your admin account before signing in.`);
         setEmail('');
         setPassword('');
         setConfirmPassword('');
@@ -171,10 +171,10 @@ export default function AdminLoginPage() {
       }
       const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://broussardlegalservices.com';
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${siteUrl}/admin/reset-password`,
+        redirectTo: `${siteUrl}/auth/callback?next=/admin/reset-password`,
       });
       if (error) throw error;
-      setSuccessMessage('Password reset link sent! Check your email inbox (and spam folder). The link expires in 1 hour.');
+      setSuccessMessage(`✉️ Password reset link sent to ${email}. Check your inbox (and spam folder) — the link expires in 1 hour.`);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : (typeof err === 'object' && err !== null && 'message' in err ? String((err as any).message) : 'Failed to send reset email. Please try again.');
       const status = typeof err === 'object' && err !== null && 'status' in err ? (err as any).status : null;
