@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import OverdueInvoiceAlerts from './OverdueInvoiceAlerts';
-
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -14,6 +14,14 @@ interface KPIData {
   unreadMessages: number;
   upcomingTasksCount: number;
   overdueTasksCount: number;
+  totalSubmissions: number;
+  newEntriesThisWeek: number;
+  avgResponseTimeHours: number | null;
+}
+
+interface ServiceBreakdown {
+  service: string;
+  count: number;
 }
 
 interface ActivityItem {
@@ -115,6 +123,8 @@ const ACTIVITY_COLORS: Record<ActivityItem['type'], string> = {
   document: 'bg-slate-100 text-slate-600',
 };
 
+const SERVICE_CHART_COLORS = ['#355E3B', '#4a7c59', '#6b9e7a', '#8dbf9a', '#afd9ba', '#d1f0d9', '#c8a96e', '#e8c98e'];
+
 // ─── KPI Card ─────────────────────────────────────────────────────────────────
 
 interface KPICardProps {
@@ -154,6 +164,78 @@ function KPICard({ label, value, sub, subColor, icon, iconBg, loading, onClick }
   );
 }
 
+// ─── Service Breakdown Chart ──────────────────────────────────────────────────
+
+function ServiceBreakdownChart({ data, loading }: { data: ServiceBreakdown[]; loading: boolean }) {
+  const total = data.reduce((s, d) => s + d.count, 0);
+  return (
+    <div className="bg-card border border-border rounded-2xl overflow-hidden">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+        <div className="flex items-center gap-2">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
+            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+          </svg>
+          <h2 className="text-sm font-semibold text-foreground">Service Request Breakdown</h2>
+        </div>
+        <span className="text-xs text-muted-foreground">{total} total</span>
+      </div>
+      {loading ? (
+        <div className="p-5 space-y-3">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="flex items-center gap-3">
+              <div className="w-3 h-3 rounded-full bg-secondary animate-pulse" />
+              <div className="flex-1 h-3 bg-secondary animate-pulse rounded" />
+              <div className="w-8 h-3 bg-secondary animate-pulse rounded" />
+            </div>
+          ))}
+        </div>
+      ) : data.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-10 text-center px-6">
+          <p className="text-sm text-muted-foreground">No service data yet</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 p-5 items-center">
+          <ResponsiveContainer width="100%" height={180}>
+            <PieChart>
+              <Pie
+                data={data}
+                dataKey="count"
+                nameKey="service"
+                cx="50%"
+                cy="50%"
+                outerRadius={80}
+                innerRadius={40}
+                paddingAngle={2}
+              >
+                {data.map((_, i) => (
+                  <Cell key={i} fill={SERVICE_CHART_COLORS[i % SERVICE_CHART_COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip
+                formatter={(value: number) => [value, 'Requests']}
+                contentStyle={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '10px', fontSize: '12px' }}
+              />
+            </PieChart>
+          </ResponsiveContainer>
+          <div className="flex flex-col gap-2">
+            {data.slice(0, 6).map((item, i) => {
+              const pct = total > 0 ? Math.round((item.count / total) * 100) : 0;
+              return (
+                <div key={item.service} className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: SERVICE_CHART_COLORS[i % SERVICE_CHART_COLORS.length] }} />
+                  <span className="text-xs text-foreground truncate flex-1">{item.service || 'Other'}</span>
+                  <span className="text-xs font-semibold text-foreground">{item.count}</span>
+                  <span className="text-xs text-muted-foreground w-8 text-right">{pct}%</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 interface AdminOverviewDashboardProps {
@@ -169,7 +251,11 @@ export default function AdminOverviewDashboard({ onNavigate }: AdminOverviewDash
     unreadMessages: 0,
     upcomingTasksCount: 0,
     overdueTasksCount: 0,
+    totalSubmissions: 0,
+    newEntriesThisWeek: 0,
+    avgResponseTimeHours: null,
   });
+  const [serviceBreakdown, setServiceBreakdown] = useState<ServiceBreakdown[]>([]);
   const [activity, setActivity] = useState<ActivityItem[]>([]);
   const [upcomingTasks, setUpcomingTasks] = useState<UpcomingTask[]>([]);
   const [loading, setLoading] = useState(true);
@@ -183,7 +269,6 @@ export default function AdminOverviewDashboard({ onNavigate }: AdminOverviewDash
       const todayStr = now.toISOString().split('T')[0];
       const sevenDaysOut = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();
 
-      // Parallel fetches
       const [
         casesRes,
         invoicesRes,
@@ -191,6 +276,10 @@ export default function AdminOverviewDashboard({ onNavigate }: AdminOverviewDash
         messagesRes,
         tasksRes,
         overdueTasksRes,
+        totalSubmissionsRes,
+        newEntriesRes,
+        recentInquiriesForAvgRes,
+        serviceBreakdownRes,
         activityCasesRes,
         activityInvoicesRes,
         activityLeadsRes,
@@ -198,7 +287,7 @@ export default function AdminOverviewDashboard({ onNavigate }: AdminOverviewDash
         activityDocsRes,
         upcomingTasksRes,
       ] = await Promise.all([
-        // Open cases (active_client stage)
+        // Open cases
         supabase
           .from('contact_inquiries')
           .select('id', { count: 'exact', head: true })
@@ -216,14 +305,14 @@ export default function AdminOverviewDashboard({ onNavigate }: AdminOverviewDash
           .select('id', { count: 'exact', head: true })
           .gte('created_at', weekAgo),
 
-        // Unread messages (admin side — messages sent by clients not yet read)
+        // Unread messages
         supabase
           .from('portal_messages')
           .select('id', { count: 'exact', head: true })
           .eq('sender_role', 'client')
           .eq('read_by_admin', false),
 
-        // Upcoming tasks (due in next 7 days, not done)
+        // Upcoming tasks
         supabase
           .from('admin_tasks')
           .select('id', { count: 'exact', head: true })
@@ -238,28 +327,52 @@ export default function AdminOverviewDashboard({ onNavigate }: AdminOverviewDash
           .not('status', 'eq', 'done')
           .lt('due_date', todayStr),
 
-        // Recent case updates
+        // Total submissions (all time)
+        supabase
+          .from('contact_inquiries')
+          .select('id', { count: 'exact', head: true }),
+
+        // New entries this week (contact_inquiries + intake_submissions combined)
+        supabase
+          .from('contact_inquiries')
+          .select('id', { count: 'exact', head: true })
+          .gte('created_at', weekAgo),
+
+        // Recent inquiries for avg response time calculation
+        supabase
+          .from('contact_inquiries')
+          .select('created_at, updated_at, status')
+          .not('status', 'eq', 'new')
+          .order('updated_at', { ascending: false })
+          .limit(50),
+
+        // Service breakdown
+        supabase
+          .from('contact_inquiries')
+          .select('service'),
+
+        // Activity: recent case updates
         supabase
           .from('contact_inquiries')
           .select('id, name, firm, booking_stage, updated_at')
           .order('updated_at', { ascending: false })
           .limit(5),
 
-        // Recent invoices
+        // Activity: recent invoices
         supabase
           .from('client_invoices')
           .select('id, invoice_number, amount_cents, status, created_at')
           .order('created_at', { ascending: false })
           .limit(5),
 
-        // Recent leads
+        // Activity: recent leads
         supabase
           .from('contact_inquiries')
           .select('id, name, firm, service, created_at')
           .order('created_at', { ascending: false })
           .limit(5),
 
-        // Recent messages
+        // Activity: recent messages
         supabase
           .from('portal_messages')
           .select('id, content, sender_role, created_at, read_by_admin')
@@ -267,7 +380,7 @@ export default function AdminOverviewDashboard({ onNavigate }: AdminOverviewDash
           .order('created_at', { ascending: false })
           .limit(5),
 
-        // Recent document uploads
+        // Activity: recent document uploads
         supabase
           .from('case_documents')
           .select('id, file_name, uploaded_by, created_at')
@@ -287,6 +400,32 @@ export default function AdminOverviewDashboard({ onNavigate }: AdminOverviewDash
       // KPIs
       const pendingTotal = (invoicesRes.data ?? []).reduce((sum, inv) => sum + (inv.amount_cents ?? 0), 0);
 
+      // Average response time: diff between created_at and updated_at for responded inquiries
+      let avgResponseTimeHours: number | null = null;
+      const respondedInquiries = recentInquiriesForAvgRes.data ?? [];
+      if (respondedInquiries.length > 0) {
+        const diffs = respondedInquiries.map((inq) => {
+          const created = new Date(inq.created_at).getTime();
+          const updated = new Date(inq.updated_at).getTime();
+          return (updated - created) / (1000 * 60 * 60); // hours
+        }).filter((h) => h > 0 && h < 720); // filter out outliers > 30 days
+        if (diffs.length > 0) {
+          avgResponseTimeHours = diffs.reduce((a, b) => a + b, 0) / diffs.length;
+        }
+      }
+
+      // Service breakdown
+      const serviceMap: Record<string, number> = {};
+      (serviceBreakdownRes.data ?? []).forEach((row) => {
+        const svc = row.service?.trim() || 'Other';
+        serviceMap[svc] = (serviceMap[svc] || 0) + 1;
+      });
+      const breakdownArr: ServiceBreakdown[] = Object.entries(serviceMap)
+        .map(([service, count]) => ({ service, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 8);
+      setServiceBreakdown(breakdownArr);
+
       setKpis({
         openCases: casesRes.count ?? 0,
         pendingInvoicesTotal: pendingTotal,
@@ -294,9 +433,12 @@ export default function AdminOverviewDashboard({ onNavigate }: AdminOverviewDash
         unreadMessages: messagesRes.count ?? 0,
         upcomingTasksCount: tasksRes.count ?? 0,
         overdueTasksCount: overdueTasksRes.count ?? 0,
+        totalSubmissions: totalSubmissionsRes.count ?? 0,
+        newEntriesThisWeek: newEntriesRes.count ?? 0,
+        avgResponseTimeHours,
       });
 
-      // Build activity feed — merge and sort by timestamp
+      // Build activity feed
       const items: ActivityItem[] = [];
 
       (activityCasesRes.data ?? []).forEach((c) => {
@@ -357,11 +499,9 @@ export default function AdminOverviewDashboard({ onNavigate }: AdminOverviewDash
         });
       });
 
-      // Sort by timestamp desc, take top 15
       items.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
       setActivity(items.slice(0, 15));
 
-      // Upcoming tasks
       setUpcomingTasks(
         (upcomingTasksRes.data ?? []).map((t) => ({
           id: t.id,
@@ -375,7 +515,7 @@ export default function AdminOverviewDashboard({ onNavigate }: AdminOverviewDash
 
       setLastRefreshed(new Date());
     } catch {
-      // Silent fail — KPIs stay at 0
+      // Silent fail
     } finally {
       setLoading(false);
     }
@@ -383,12 +523,56 @@ export default function AdminOverviewDashboard({ onNavigate }: AdminOverviewDash
 
   useEffect(() => {
     fetchData();
-    // Auto-refresh every 2 minutes
     const interval = setInterval(fetchData, 120000);
     return () => clearInterval(interval);
   }, [fetchData]);
 
+  // Format avg response time
+  const formatAvgResponse = (hours: number | null): string => {
+    if (hours === null) return '—';
+    if (hours < 1) return `${Math.round(hours * 60)}m`;
+    if (hours < 24) return `${hours.toFixed(1)}h`;
+    return `${(hours / 24).toFixed(1)}d`;
+  };
+
   const kpiCards = [
+    {
+      label: 'Total Submissions',
+      value: kpis.totalSubmissions,
+      icon: (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-indigo-700">
+          <polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>
+        </svg>
+      ),
+      iconBg: 'bg-indigo-50',
+      tab: 'submissions_inbox',
+    },
+    {
+      label: 'New Entries This Week',
+      value: kpis.newEntriesThisWeek,
+      sub: kpis.newEntriesThisWeek > 0 ? `+${kpis.newEntriesThisWeek}` : undefined,
+      subColor: 'bg-blue-100 text-blue-700',
+      icon: (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-700">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+      ),
+      iconBg: 'bg-blue-50',
+      tab: 'inquiries',
+    },
+    {
+      label: 'Avg. Response Time',
+      value: formatAvgResponse(kpis.avgResponseTimeHours),
+      sub: kpis.avgResponseTimeHours !== null && kpis.avgResponseTimeHours < 4 ? 'Fast' : kpis.avgResponseTimeHours !== null ? 'Moderate' : undefined,
+      subColor: kpis.avgResponseTimeHours !== null && kpis.avgResponseTimeHours < 4 ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700',
+      icon: (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-teal-700">
+          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+        </svg>
+      ),
+      iconBg: 'bg-teal-50',
+      tab: undefined,
+    },
     {
       label: 'Open Cases',
       value: kpis.openCases,
@@ -417,11 +601,11 @@ export default function AdminOverviewDashboard({ onNavigate }: AdminOverviewDash
       label: 'New Leads This Week',
       value: kpis.newLeadsThisWeek,
       icon: (
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-700">
-          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-sky-700">
+          <line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 5 5 12"/>
         </svg>
       ),
-      iconBg: 'bg-blue-50',
+      iconBg: 'bg-sky-50',
       tab: 'inquiries',
     },
     {
@@ -476,8 +660,8 @@ export default function AdminOverviewDashboard({ onNavigate }: AdminOverviewDash
         </button>
       </div>
 
-      {/* KPI Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+      {/* KPI Grid — 4 cols on large, 2 on small */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {kpiCards.map((card) => (
           <KPICard
             key={card.label}
@@ -488,7 +672,7 @@ export default function AdminOverviewDashboard({ onNavigate }: AdminOverviewDash
             icon={card.icon}
             iconBg={card.iconBg}
             loading={loading}
-            onClick={card.tab && onNavigate ? () => onNavigate(card.tab) : undefined}
+            onClick={card.tab && onNavigate ? () => onNavigate(card.tab!) : undefined}
           />
         ))}
       </div>
@@ -496,68 +680,12 @@ export default function AdminOverviewDashboard({ onNavigate }: AdminOverviewDash
       {/* Critical Alerts: Overdue Invoices */}
       <OverdueInvoiceAlerts onNavigate={onNavigate} />
 
-      {/* Two-column layout: Activity Feed + Upcoming Tasks */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        {/* Activity Feed — wider */}
-        <div className="lg:col-span-3 bg-card border border-border rounded-2xl overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-              <h2 className="text-sm font-semibold text-foreground">Recent Client Activity</h2>
-            </div>
-            <span className="text-xs text-muted-foreground">{activity.length} events</span>
-          </div>
-
-          {loading ? (
-            <div className="divide-y divide-border">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="flex items-start gap-3 px-5 py-3.5">
-                  <div className="w-8 h-8 rounded-xl bg-secondary animate-pulse shrink-0" />
-                  <div className="flex-1 space-y-1.5">
-                    <div className="h-3.5 w-32 bg-secondary animate-pulse rounded" />
-                    <div className="h-3 w-48 bg-secondary animate-pulse rounded" />
-                  </div>
-                  <div className="h-3 w-10 bg-secondary animate-pulse rounded" />
-                </div>
-              ))}
-            </div>
-          ) : activity.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-center px-6">
-              <div className="w-12 h-12 rounded-2xl bg-secondary flex items-center justify-center mb-3">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground">
-                  <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-                </svg>
-              </div>
-              <p className="text-sm font-medium text-foreground mb-1">No recent activity</p>
-              <p className="text-xs text-muted-foreground">Client events will appear here as they happen.</p>
-            </div>
-          ) : (
-            <div className="divide-y divide-border max-h-[520px] overflow-y-auto">
-              {activity.map((item) => (
-                <div key={item.id} className="flex items-start gap-3 px-5 py-3.5 hover:bg-secondary/20 transition-colors group">
-                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${ACTIVITY_COLORS[item.type]}`}>
-                    {ACTIVITY_ICONS[item.type]}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">{item.title}</p>
-                    <p className="text-xs text-muted-foreground truncate mt-0.5">{item.subtitle}</p>
-                  </div>
-                  <div className="flex flex-col items-end gap-1 shrink-0">
-                    <span className="text-[11px] text-muted-foreground whitespace-nowrap">{timeAgo(item.timestamp)}</span>
-                    {item.badge && (
-                      <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${item.badgeColor}`}>
-                        {item.badge}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+      {/* Service Breakdown + Upcoming Tasks */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <ServiceBreakdownChart data={serviceBreakdown} loading={loading} />
 
         {/* Upcoming Task Deadlines */}
-        <div className="lg:col-span-2 bg-card border border-border rounded-2xl overflow-hidden">
+        <div className="bg-card border border-border rounded-2xl overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b border-border">
             <div className="flex items-center gap-2">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
@@ -566,10 +694,7 @@ export default function AdminOverviewDashboard({ onNavigate }: AdminOverviewDash
               <h2 className="text-sm font-semibold text-foreground">Upcoming Deadlines</h2>
             </div>
             {onNavigate && (
-              <button
-                onClick={() => onNavigate('tasks')}
-                className="text-xs text-primary hover:underline font-medium"
-              >
+              <button onClick={() => onNavigate('tasks')} className="text-xs text-primary hover:underline font-medium">
                 View all
               </button>
             )}
@@ -595,7 +720,7 @@ export default function AdminOverviewDashboard({ onNavigate }: AdminOverviewDash
               <p className="text-xs text-muted-foreground">No tasks due in the next 7 days.</p>
             </div>
           ) : (
-            <div className="divide-y divide-border max-h-[520px] overflow-y-auto">
+            <div className="divide-y divide-border max-h-[340px] overflow-y-auto">
               {upcomingTasks.map((task) => {
                 const dueLabel = formatDueDate(task.due_date);
                 const isOverdue = new Date(task.due_date) < new Date();
@@ -620,6 +745,87 @@ export default function AdminOverviewDashboard({ onNavigate }: AdminOverviewDash
             </div>
           )}
         </div>
+      </div>
+
+      {/* Activity Feed */}
+      <div className="bg-card border border-border rounded-2xl overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+            <h2 className="text-sm font-semibold text-foreground">Recent Client Activity</h2>
+          </div>
+          <span className="text-xs text-muted-foreground">{activity.length} events</span>
+        </div>
+
+        {loading ? (
+          <div className="divide-y divide-border">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="flex items-start gap-3 px-5 py-3.5">
+                <div className="w-8 h-8 rounded-xl bg-secondary animate-pulse shrink-0" />
+                <div className="flex-1 space-y-1.5">
+                  <div className="h-3.5 w-32 bg-secondary animate-pulse rounded" />
+                  <div className="h-3 w-48 bg-secondary animate-pulse rounded" />
+                </div>
+                <div className="h-3 w-10 bg-secondary animate-pulse rounded" />
+              </div>
+            ))}
+          </div>
+        ) : activity.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 text-center px-6">
+            <div className="w-12 h-12 rounded-2xl bg-secondary flex items-center justify-center mb-3">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground">
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+            </div>
+            <p className="text-sm font-medium text-foreground mb-1">No recent activity</p>
+            <p className="text-xs text-muted-foreground">Client events will appear here as they happen.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-border">
+            <div className="divide-y divide-border max-h-[400px] overflow-y-auto">
+              {activity.slice(0, Math.ceil(activity.length / 2)).map((item) => (
+                <div key={item.id} className="flex items-start gap-3 px-5 py-3.5 hover:bg-secondary/20 transition-colors">
+                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${ACTIVITY_COLORS[item.type]}`}>
+                    {ACTIVITY_ICONS[item.type]}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">{item.title}</p>
+                    <p className="text-xs text-muted-foreground truncate mt-0.5">{item.subtitle}</p>
+                  </div>
+                  <div className="flex flex-col items-end gap-1 shrink-0">
+                    <span className="text-[11px] text-muted-foreground whitespace-nowrap">{timeAgo(item.timestamp)}</span>
+                    {item.badge && (
+                      <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${item.badgeColor}`}>
+                        {item.badge}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="divide-y divide-border max-h-[400px] overflow-y-auto">
+              {activity.slice(Math.ceil(activity.length / 2)).map((item) => (
+                <div key={item.id} className="flex items-start gap-3 px-5 py-3.5 hover:bg-secondary/20 transition-colors">
+                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${ACTIVITY_COLORS[item.type]}`}>
+                    {ACTIVITY_ICONS[item.type]}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">{item.title}</p>
+                    <p className="text-xs text-muted-foreground truncate mt-0.5">{item.subtitle}</p>
+                  </div>
+                  <div className="flex flex-col items-end gap-1 shrink-0">
+                    <span className="text-[11px] text-muted-foreground whitespace-nowrap">{timeAgo(item.timestamp)}</span>
+                    {item.badge && (
+                      <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${item.badgeColor}`}>
+                        {item.badge}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
