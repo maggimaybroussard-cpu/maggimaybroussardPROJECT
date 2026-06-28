@@ -163,6 +163,9 @@ export default function AdminLoginPage() {
     setSuccessMessage(null);
     setSubmitting(true);
     try {
+      if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+        throw new Error('Authentication service is not configured. Please contact the administrator.');
+      }
       const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://broussardlegalservices.com';
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${siteUrl}/admin/reset-password`,
@@ -170,8 +173,13 @@ export default function AdminLoginPage() {
       if (error) throw error;
       setSuccessMessage('Password reset link sent! Check your email inbox (and spam folder). The link expires in 1 hour.');
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to send reset email. Please try again.';
-      setError(msg);
+      const msg = err instanceof Error ? err.message : (typeof err === 'object' && err !== null && 'message' in err ? String((err as any).message) : 'Failed to send reset email. Please try again.');
+      const status = typeof err === 'object' && err !== null && 'status' in err ? (err as any).status : null;
+      if (status === 401 || msg.toLowerCase().includes('invalid api key') || msg.toLowerCase().includes('apikey') || msg.toLowerCase().includes('invalid key')) {
+        setError('Authentication service configuration error. Please contact the administrator.');
+      } else {
+        setError(msg || 'Failed to send reset email. Please try again.');
+      }
     } finally {
       setSubmitting(false);
     }
