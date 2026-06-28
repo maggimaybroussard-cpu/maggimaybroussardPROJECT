@@ -9,7 +9,7 @@ import { logAuditEvent } from '@/lib/auditLogger';
 
 export default function AdminLoginPage() {
   const router = useRouter();
-  const [mode, setMode] = useState<'signin' | 'signup'>('signin');
+  const [mode, setMode] = useState<'signin' | 'signup' | 'forgot'>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -25,28 +25,32 @@ export default function AdminLoginPage() {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        checkTotpAndRedirect(session.user.id);
+        // ── 2FA CHECK (commented out — re-enable when ready) ──────────────────
+        // checkTotpAndRedirect(session.user.id);
+        // ─────────────────────────────────────────────────────────────────────
+        router.replace('/admin');
       } else {
         setCheckingSession(false);
       }
     });
   }, []);
 
-  const checkTotpAndRedirect = async (userId: string) => {
-    try {
-      const { data, error } = await supabase.auth.mfa.listFactors();
-      if (error) throw error;
-
-      const totpFactor = data?.totp?.find((f: any) => f.status === 'verified');
-      if (totpFactor) {
-        router.replace('/admin/verify-totp');
-      } else {
-        router.replace('/admin/setup-totp');
-      }
-    } catch {
-      router.replace('/admin');
-    }
-  };
+  // ── 2FA redirect helper (kept for future activation) ──────────────────────
+  // const checkTotpAndRedirect = async (userId: string) => {
+  //   try {
+  //     const { data, error } = await supabase.auth.mfa.listFactors();
+  //     if (error) throw error;
+  //     const totpFactor = data?.totp?.find((f: any) => f.status === 'verified');
+  //     if (totpFactor) {
+  //       router.replace('/admin/verify-totp');
+  //     } else {
+  //       router.replace('/admin/setup-totp');
+  //     }
+  //   } catch {
+  //     router.replace('/admin');
+  //   }
+  // };
+  // ──────────────────────────────────────────────────────────────────────────
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,7 +62,6 @@ export default function AdminLoginPage() {
       }
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
-        // Supabase returns "Email not confirmed" for unverified accounts
         if (
           error.message?.toLowerCase().includes('email not confirmed') ||
           error.message?.toLowerCase().includes('not confirmed')
@@ -79,15 +82,18 @@ export default function AdminLoginPage() {
         metadata: { provider: 'email' },
       });
 
-      const { data: mfaData, error: mfaError } = await supabase.auth.mfa.listFactors();
-      if (mfaError) throw mfaError;
+      // ── 2FA MFA check (commented out — re-enable when ready) ──────────────
+      // const { data: mfaData, error: mfaError } = await supabase.auth.mfa.listFactors();
+      // if (mfaError) throw mfaError;
+      // const totpFactor = mfaData?.totp?.find((f: any) => f.status === 'verified');
+      // if (totpFactor) {
+      //   router.replace('/admin/verify-totp');
+      // } else {
+      //   router.replace('/admin/setup-totp');
+      // }
+      // ──────────────────────────────────────────────────────────────────────
 
-      const totpFactor = mfaData?.totp?.find((f: any) => f.status === 'verified');
-      if (totpFactor) {
-        router.replace('/admin/verify-totp');
-      } else {
-        router.replace('/admin/setup-totp');
-      }
+      router.replace('/admin');
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : (typeof err === 'object' && err !== null && 'message' in err ? String((err as any).message) : 'Invalid email or password.');
       const status = typeof err === 'object' && err !== null && 'status' in err ? (err as any).status : null;
@@ -131,12 +137,12 @@ export default function AdminLoginPage() {
       if (error) throw error;
 
       if (data.user && !data.session) {
-        setSuccessMessage('Account created! A confirmation link has been sent to your email. You must click that link to activate your admin account before signing in.');
+        setSuccessMessage('Account created! A confirmation link has been sent to your email. Click that link to activate your admin account before signing in.');
         setEmail('');
         setPassword('');
         setConfirmPassword('');
       } else if (data.session) {
-        router.replace('/admin/setup-totp');
+        router.replace('/admin');
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : (typeof err === 'object' && err !== null && 'message' in err ? String((err as any).message) : 'Sign up failed. Please try again.');
@@ -151,7 +157,27 @@ export default function AdminLoginPage() {
     }
   };
 
-  const switchMode = (newMode: 'signin' | 'signup') => {
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setSuccessMessage(null);
+    setSubmitting(true);
+    try {
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://broussardlegalservices.com';
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${siteUrl}/admin/reset-password`,
+      });
+      if (error) throw error;
+      setSuccessMessage('Password reset link sent! Check your email inbox (and spam folder). The link expires in 1 hour.');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to send reset email. Please try again.';
+      setError(msg);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const switchMode = (newMode: 'signin' | 'signup' | 'forgot') => {
     setMode(newMode);
     setError(null);
     setSuccessMessage(null);
@@ -194,7 +220,6 @@ export default function AdminLoginPage() {
       {/* Main */}
       <main className="relative z-10 flex-1 flex items-center justify-center px-4 py-16">
         <div className="w-full max-w-md">
-          {/* Card */}
           <div className="rounded-2xl border p-8 shadow-sm" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
             {/* Icon */}
             <div className="flex justify-center mb-6">
@@ -206,39 +231,43 @@ export default function AdminLoginPage() {
               </div>
             </div>
 
-            {/* Mode Toggle */}
-            <div className="flex rounded-xl p-1 mb-6" style={{ background: 'var(--muted)' }}>
-              <button
-                type="button"
-                onClick={() => switchMode('signin')}
-                className="flex-1 py-2 text-sm font-medium rounded-lg transition-all"
-                style={{
-                  background: mode === 'signin' ? 'var(--card)' : 'transparent',
-                  color: mode === 'signin' ? 'var(--foreground)' : 'var(--muted-foreground)',
-                  boxShadow: mode === 'signin' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-                }}
-              >
-                Sign In
-              </button>
-              <button
-                type="button"
-                onClick={() => switchMode('signup')}
-                className="flex-1 py-2 text-sm font-medium rounded-lg transition-all"
-                style={{
-                  background: mode === 'signup' ? 'var(--card)' : 'transparent',
-                  color: mode === 'signup' ? 'var(--foreground)' : 'var(--muted-foreground)',
-                  boxShadow: mode === 'signup' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-                }}
-              >
-                Sign Up
-              </button>
-            </div>
+            {/* Mode Toggle — only show for signin/signup */}
+            {mode !== 'forgot' && (
+              <div className="flex rounded-xl p-1 mb-6" style={{ background: 'var(--muted)' }}>
+                <button
+                  type="button"
+                  onClick={() => switchMode('signin')}
+                  className="flex-1 py-2 text-sm font-medium rounded-lg transition-all"
+                  style={{
+                    background: mode === 'signin' ? 'var(--card)' : 'transparent',
+                    color: mode === 'signin' ? 'var(--foreground)' : 'var(--muted-foreground)',
+                    boxShadow: mode === 'signin' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                  }}
+                >
+                  Sign In
+                </button>
+                <button
+                  type="button"
+                  onClick={() => switchMode('signup')}
+                  className="flex-1 py-2 text-sm font-medium rounded-lg transition-all"
+                  style={{
+                    background: mode === 'signup' ? 'var(--card)' : 'transparent',
+                    color: mode === 'signup' ? 'var(--foreground)' : 'var(--muted-foreground)',
+                    boxShadow: mode === 'signup' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                  }}
+                >
+                  Sign Up
+                </button>
+              </div>
+            )}
 
+            {/* Titles */}
             <h1 className="text-2xl font-bold text-center mb-1" style={{ color: 'var(--foreground)' }}>
-              {mode === 'signin' ? 'Admin Sign In' : 'Create Admin Account'}
+              {mode === 'signin' ? 'Admin Sign In' : mode === 'signup' ? 'Create Admin Account' : 'Reset Password'}
             </h1>
             <p className="text-sm text-center mb-8" style={{ color: 'var(--muted-foreground)' }}>
-              {mode === 'signin' ? "Secure access to Maggi May's dashboard" :'Register a new admin account'}
+              {mode === 'signin' ? "Secure access to Maggi May's dashboard"
+                : mode === 'signup' ?'Register a new admin account' : "Enter your email and we'll send a reset link"}
             </p>
 
             {error && (
@@ -253,7 +282,8 @@ export default function AdminLoginPage() {
               </div>
             )}
 
-            {mode === 'signin' ? (
+            {/* ── SIGN IN FORM ── */}
+            {mode === 'signin' && (
               <form onSubmit={handleSignIn} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--foreground)' }}>Email</label>
@@ -270,7 +300,17 @@ export default function AdminLoginPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--foreground)' }}>Password</label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-sm font-medium" style={{ color: 'var(--foreground)' }}>Password</label>
+                    <button
+                      type="button"
+                      onClick={() => switchMode('forgot')}
+                      className="text-xs hover:underline"
+                      style={{ color: 'var(--accent)' }}
+                    >
+                      Forgot password?
+                    </button>
+                  </div>
                   <div className="relative">
                     <input
                       type={showPassword ? 'text' : 'password'}
@@ -312,7 +352,10 @@ export default function AdminLoginPage() {
                   ) : 'Sign In'}
                 </button>
               </form>
-            ) : (
+            )}
+
+            {/* ── SIGN UP FORM ── */}
+            {mode === 'signup' && (
               <form onSubmit={handleSignUp} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--foreground)' }}>Email</label>
@@ -402,16 +445,59 @@ export default function AdminLoginPage() {
               </form>
             )}
 
+            {/* ── FORGOT PASSWORD FORM ── */}
+            {mode === 'forgot' && (
+              <form onSubmit={handleForgotPassword} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--foreground)' }}>Email Address</label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    required
+                    autoComplete="email"
+                    placeholder="admin@example.com"
+                    className="w-full px-4 py-2.5 rounded-xl border text-sm outline-none transition-colors"
+                    style={{ background: 'var(--background)', borderColor: 'var(--border)', color: 'var(--foreground)' }}
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="w-full py-2.5 rounded-xl text-sm font-semibold transition-opacity disabled:opacity-60"
+                  style={{ background: 'var(--accent)', color: 'white' }}
+                >
+                  {submitting ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="animate-spin"><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg>
+                      Sending…
+                    </span>
+                  ) : 'Send Reset Link'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => switchMode('signin')}
+                  className="w-full py-2 text-sm text-center hover:underline"
+                  style={{ color: 'var(--muted-foreground)' }}
+                >
+                  ← Back to Sign In
+                </button>
+              </form>
+            )}
+
             {/* Security note */}
-            <div className="mt-6 pt-5 border-t flex items-start gap-2.5" style={{ borderColor: 'var(--border)' }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 flex-shrink-0" style={{ color: 'var(--muted-foreground)' }}>
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-              </svg>
-              <p className="text-xs leading-relaxed" style={{ color: 'var(--muted-foreground)' }}>
-                {mode === 'signin' ?'Two-factor authentication (TOTP) is required for admin access. You\'ll be prompted to verify with your authenticator app after signing in.'
-                  : 'After creating your account, you\'ll need to confirm your email and set up two-factor authentication (TOTP) before accessing the admin dashboard.'}
-              </p>
-            </div>
+            {mode !== 'forgot' && (
+              <div className="mt-6 pt-5 border-t flex items-start gap-2.5" style={{ borderColor: 'var(--border)' }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 flex-shrink-0" style={{ color: 'var(--muted-foreground)' }}>
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                </svg>
+                <p className="text-xs leading-relaxed" style={{ color: 'var(--muted-foreground)' }}>
+                  {mode === 'signin' ?'This is a secure admin area. Only authorized personnel may access this dashboard.' :'After creating your account, you\'ll need to confirm your email before accessing the admin dashboard.'}
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </main>
