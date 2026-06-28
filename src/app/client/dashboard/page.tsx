@@ -6,6 +6,9 @@ import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { createClient } from '@/lib/supabase/client';
 import AppLogo from '@/components/ui/AppLogo';
+import dynamic from 'next/dynamic';
+
+const LexiFloatingChat = dynamic(() => import('@/components/LexiFloatingChat'), { ssr: false });
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -1214,6 +1217,9 @@ export default function ClientDashboardPage() {
         </div>
 
       </main>
+
+      {/* ── Lexi AI Assistant (floating) ── */}
+      <LexiFloatingChat />
     </div>
   );
 }

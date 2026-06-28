@@ -57,6 +57,7 @@ export default function AdminLoginPage() {
     setError(null);
     setSubmitting(true);
     try {
+      // Only block if env vars are truly missing (build-time issue)
       if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
         throw new Error('Authentication service is not configured. Please contact the administrator.');
       }
@@ -69,6 +70,7 @@ export default function AdminLoginPage() {
           setError('Your admin account email has not been confirmed yet. Please check your inbox for the confirmation link and click it to activate your account.');
           return;
         }
+        // Show the real Supabase error message for auth failures
         throw error;
       }
 
@@ -82,25 +84,26 @@ export default function AdminLoginPage() {
         metadata: { provider: 'email' },
       });
 
-      // ── 2FA MFA check (commented out — re-enable when ready) ──────────────
-      // const { data: mfaData, error: mfaError } = await supabase.auth.mfa.listFactors();
-      // if (mfaError) throw mfaError;
-      // const totpFactor = mfaData?.totp?.find((f: any) => f.status === 'verified');
-      // if (totpFactor) {
-      //   router.replace('/admin/verify-totp');
-      // } else {
-      //   router.replace('/admin/setup-totp');
-      // }
-      // ──────────────────────────────────────────────────────────────────────
-
       router.replace('/admin');
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : (typeof err === 'object' && err !== null && 'message' in err ? String((err as any).message) : 'Invalid email or password.');
       const status = typeof err === 'object' && err !== null && 'status' in err ? (err as any).status : null;
-      if (status === 401 || msg.toLowerCase().includes('invalid api key') || msg.toLowerCase().includes('apikey') || msg.toLowerCase().includes('invalid key')) {
+      // Only show config error for actual missing-key scenarios (not wrong password)
+      if (msg.toLowerCase().includes('authentication service is not configured')) {
         setError('Authentication service configuration error. Please contact the administrator.');
+      } else if (
+        msg.toLowerCase().includes('invalid login credentials') ||
+        msg.toLowerCase().includes('invalid email or password') ||
+        msg.toLowerCase().includes('wrong password') ||
+        status === 400
+      ) {
+        setError('Invalid email or password. Please check your credentials and try again.');
+      } else if (msg.toLowerCase().includes('too many requests') || status === 429) {
+        setError('Too many login attempts. Please wait a few minutes and try again.');
+      } else if (msg.toLowerCase().includes('user not found') || msg.toLowerCase().includes('no user found')) {
+        setError('No account found with this email address.');
       } else {
-        setError(msg || 'Invalid email or password.');
+        setError(msg || 'Sign in failed. Please try again.');
       }
     } finally {
       setSubmitting(false);

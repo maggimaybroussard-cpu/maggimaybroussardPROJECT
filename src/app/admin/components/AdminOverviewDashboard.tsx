@@ -747,6 +747,89 @@ export default function AdminOverviewDashboard({ onNavigate }: AdminOverviewDash
         </div>
       </div>
 
+      {/* ── Lexi & Auto-Invoice Quick Access ── */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Lexi AI Tools */}
+        <div className="bg-card border border-border rounded-2xl overflow-hidden">
+          <div className="px-5 py-4 border-b border-border flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: 'rgba(53,94,59,0.1)' }}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#355E3B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2z"/>
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-sm font-semibold text-foreground">Lexi AI Assistant</h2>
+              <p className="text-xs text-muted-foreground">Your AI-powered legal practice tools</p>
+            </div>
+          </div>
+          <div className="p-4 grid grid-cols-1 gap-2">
+            {[
+              { label: 'Lexi Task Assistant', desc: 'Chat with Lexi to manage tasks', tab: 'lexi_assistant', color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+              { label: 'Lexi Admin Tools', desc: 'Conflict checker & invoice drafts', tab: 'lexi_admin_tools', color: 'bg-blue-50 text-blue-700 border-blue-200' },
+              { label: 'Document Drafts', desc: 'AI-generated document drafts', tab: 'lexi_document_drafts', color: 'bg-violet-50 text-violet-700 border-violet-200' },
+              { label: 'Document Extractor', desc: 'Extract data from legal documents', tab: 'doc_extractor', color: 'bg-amber-50 text-amber-700 border-amber-200' },
+            ].map((item) => (
+              <button
+                key={item.tab}
+                onClick={() => onNavigate(item.tab)}
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl border hover:shadow-sm transition-all text-left group"
+                style={{ borderColor: 'var(--border)', background: 'var(--background)' }}
+              >
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${item.color}`}>AI</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold text-foreground">{item.label}</p>
+                  <p className="text-[11px] text-muted-foreground truncate">{item.desc}</p>
+                </div>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground/40 group-hover:text-muted-foreground shrink-0">
+                  <polyline points="9 18 15 12 9 6"/>
+                </svg>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Auto-Invoice Tools */}
+        <div className="bg-card border border-border rounded-2xl overflow-hidden">
+          <div className="px-5 py-4 border-b border-border flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center bg-amber-50">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#C8965A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/>
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-sm font-semibold text-foreground">Auto-Invoice Generation</h2>
+              <p className="text-xs text-muted-foreground">Generate, schedule, and track invoices</p>
+            </div>
+          </div>
+          <div className="p-4 grid grid-cols-1 gap-2">
+            {[
+              { label: 'Invoice Generator', desc: 'Create invoices from time logs & retainers', tab: 'invoice_generator', color: 'bg-amber-50 text-amber-700 border-amber-200' },
+              { label: 'Invoice Scheduler', desc: 'Auto-generate invoices on a schedule', tab: 'retainer_invoice_scheduler', color: 'bg-orange-50 text-orange-700 border-orange-200' },
+              { label: 'Matter Invoice Builder', desc: 'Build invoices from matter time entries', tab: 'matter_invoice_builder', color: 'bg-yellow-50 text-yellow-700 border-yellow-200' },
+              { label: 'Invoice Tracking', desc: 'Track sent, paid, and overdue invoices', tab: 'invoice_tracking', color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+            ].map((item) => (
+              <button
+                key={item.tab}
+                onClick={() => onNavigate(item.tab)}
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl border hover:shadow-sm transition-all text-left group"
+                style={{ borderColor: 'var(--border)', background: 'var(--background)' }}
+              >
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${item.color}`}>
+                  {item.tab === 'invoice_generator' ? 'NEW' : item.tab === 'retainer_invoice_scheduler' ? 'AUTO' : item.tab === 'matter_invoice_builder' ? 'BILL' : 'TRACK'}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold text-foreground">{item.label}</p>
+                  <p className="text-[11px] text-muted-foreground truncate">{item.desc}</p>
+                </div>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground/40 group-hover:text-muted-foreground shrink-0">
+                  <polyline points="9 18 15 12 9 6"/>
+                </svg>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
       {/* Activity Feed */}
       <div className="bg-card border border-border rounded-2xl overflow-hidden">
         <div className="flex items-center justify-between px-5 py-4 border-b border-border">
