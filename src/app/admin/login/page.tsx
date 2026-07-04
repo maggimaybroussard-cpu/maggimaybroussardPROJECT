@@ -24,7 +24,12 @@ export default function AdminLoginPage() {
   const supabase = createClient();
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) {
+        // Supabase config error (e.g. Invalid API key in preview env) — just show the form
+        setCheckingSession(false);
+        return;
+      }
       if (session) {
         // ── 2FA CHECK (commented out — re-enable when ready) ──────────────────
         // checkTotpAndRedirect(session.user.id);
@@ -33,6 +38,9 @@ export default function AdminLoginPage() {
       } else {
         setCheckingSession(false);
       }
+    }).catch(() => {
+      // Network or unexpected error — still show the form
+      setCheckingSession(false);
     });
   }, []);
 
