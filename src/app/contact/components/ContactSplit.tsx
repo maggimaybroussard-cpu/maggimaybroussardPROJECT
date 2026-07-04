@@ -586,6 +586,7 @@ export default function ContactSplit() {
         retainerTier: formState.retainerTier || undefined,
         inquiryId: result.inquiryId || null,
       });
+      showToast('success', 'Your message has been received. I\'ll respond within one business day.');
       setSubmitted(true);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Something went wrong. Please try again.';
