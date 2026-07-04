@@ -129,17 +129,20 @@ export default function TestConnectionsPage() {
   const [state, setState] = useState<TestState>('idle');
   const [response, setResponse] = useState<TestResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [lastTested, setLastTested] = useState<string | null>(null);
 
   async function runTests() {
     setState('running');
     setResponse(null);
     setError(null);
+    setLastTested(null);
 
     try {
       const res = await fetch('/api/admin/test-connections');
       const data: TestResponse = await res.json();
       setResponse(data);
       setState('done');
+      setLastTested(new Date().toLocaleTimeString());
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unexpected error running tests');
       setState('done');
@@ -274,7 +277,7 @@ export default function TestConnectionsPage() {
 
           {state === 'done' && allPassed && (
             <p className="text-xs text-gray-400">
-              Last tested: {new Date().toLocaleTimeString()}
+              Last tested: {lastTested}
             </p>
           )}
         </div>
