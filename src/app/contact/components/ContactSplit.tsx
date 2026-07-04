@@ -702,6 +702,26 @@ export default function ContactSplit() {
               ))}
             </div>
 
+            {/* Digital Card Link */}
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center text-accent shrink-0">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>
+                </svg>
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-widest text-muted-foreground font-semibold mb-1">Digital Card</p>
+                <a
+                  href="https://mycrd.is/BroussardLegalServices"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-foreground font-medium hover:text-accent transition-colors duration-200 text-sm break-all"
+                >
+                  mycrd.is/BroussardLegalServices
+                </a>
+              </div>
+            </div>
+
             {/* Stat badges */}
             <div className="grid grid-cols-2 gap-3 md:gap-4">
               <div className="bg-secondary/60 border border-border card-rounded-sm p-4 md:p-5 text-center">
