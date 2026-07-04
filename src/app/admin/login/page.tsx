@@ -66,8 +66,18 @@ export default function AdminLoginPage() {
       });
       if (error) throw error;
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Google sign-in failed. Please try again.';
-      setError(msg);
+      const msg = err instanceof Error ? err.message : String((err as any)?.message ?? '');
+      if (
+        msg.toLowerCase().includes('provider is not enabled') ||
+        msg.toLowerCase().includes('unsupported provider') ||
+        msg.toLowerCase().includes('validation_failed')
+      ) {
+        setError(
+          'Google sign-in is not yet enabled. Please use your email and password to sign in, or contact the administrator to enable Google OAuth in the Supabase dashboard.'
+        );
+      } else {
+        setError(msg || 'Google sign-in failed. Please try again.');
+      }
       setGoogleLoading(false);
     }
   };
