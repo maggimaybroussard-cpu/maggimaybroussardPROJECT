@@ -102,6 +102,9 @@ const ContractsRepositoryDashboard = dynamic(() => import('./components/Contract
 const AssistantConversationsDashboard = dynamic(() => import('./components/AssistantConversationsDashboard'), { ssr: false });
 const LexiTaskAssistant = dynamic(() => import('./components/LexiTaskAssistant'), { ssr: false });
 const ClientTaskPortal = dynamic(() => import('./components/ClientTaskPortal'), { ssr: false });
+const AdminSummaryWidget = dynamic(() => import('./components/AdminSummaryWidget'), { ssr: false });
+const ConsultationAdminScreen = dynamic(() => import('./components/ConsultationAdminScreen'), { ssr: false });
+const CaseStudiesManager = dynamic(() => import('./components/CaseStudiesManager'), { ssr: false });
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -5102,7 +5105,7 @@ function IntegrationsDashboard() {
 // ─── Main Admin Page ──────────────────────────────────────────────────────────
 
 export default function AdminInquiriesPage() {
-  const [activeTab, setActiveTab] = useState<'overview' | 'inquiries' | 'bookings' | 'payments' | 'analytics' | 'sequences' | 'documents' | 'reminders' | 'cases' | 'emails' | 'consultations' | 'testimonials' | 'clients' | 'client_profiles' | 'integrations' | 'operations' | 'intake_nurture' | 'analytics_dashboard' | 'prospect_scoring' | 'billing_history' | 'retainer_subscriptions' | 'retainer_balance' | 'email_templates' | 'billing_test' | 'billable_hours' | 'invoice_generator' | 'invoice_reminders' | 'invoice_tracking' | 'invoices' | 'reporting' | 'practice_insights' | 'kanban' | 'tasks' | 'notification_emails' | 'messages' | 'security' | 'doc_templates' | 'client_doc_templates' | 'contracts_repository' | 'intake_analytics' | 'intake_routing' | 'audit_trail' | 'routing_admin' | 'scheduling' | 'availability' | 'growth_analytics' | 'strategic_analytics' | 'notifications' | 'roster' | 'retainer_invoice_scheduler' | 'stripe_reconciliation' | 'billing_ops_hub' | 'client_invoices_overview' | 'consultation_funnel' | 'booking_analytics' | 'financial_dashboard' | 'deliverables' | 'case_actions' | 'post_case_close' | 'lifecycle_emails' | 'realtime_feed' | 'ga4_conversion' | 'iolta_ledger' | 'lexi_admin_tools' | 'lexi_document_drafts' | 'monthly_reports' | 'referral_claims' | 'contact_leads' | 'hours_reporting' | 'paralegal_hours' | 'event_notifications' | 'practice_analytics' | 'billing' | 'matter_profitability' | 'matter_time_logger' | 'court_deadlines' | 'staff_time' | 'webhooks' | 'nps_surveys' | 'retainer_alerts' | 'secure_sharing' | 'intake_templates' | 'reporting_exports' | 'billable_allocation' | 'practice_kpi' | 'email_reminders' | 'doc_extractor' | 'matter_invoice_builder' | 'cash_position' | 'portal_adoption' | 'scheduled_consultations' | 'consultation_availability' | 'submissions_inbox' | 'assistant_conversations' | 'lexi_assistant' | 'sms_reminders' | 'client_task_portal'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'inquiries' | 'bookings' | 'payments' | 'analytics' | 'sequences' | 'documents' | 'reminders' | 'cases' | 'emails' | 'consultations' | 'testimonials' | 'clients' | 'client_profiles' | 'integrations' | 'operations' | 'intake_nurture' | 'analytics_dashboard' | 'prospect_scoring' | 'billing_history' | 'retainer_subscriptions' | 'retainer_balance' | 'email_templates' | 'billing_test' | 'billable_hours' | 'invoice_generator' | 'invoice_reminders' | 'invoice_tracking' | 'invoices' | 'reporting' | 'practice_insights' | 'kanban' | 'tasks' | 'notification_emails' | 'messages' | 'security' | 'doc_templates' | 'client_doc_templates' | 'contracts_repository' | 'intake_analytics' | 'intake_routing' | 'audit_trail' | 'routing_admin' | 'scheduling' | 'availability' | 'growth_analytics' | 'strategic_analytics' | 'notifications' | 'roster' | 'retainer_invoice_scheduler' | 'stripe_reconciliation' | 'billing_ops_hub' | 'client_invoices_overview' | 'consultation_funnel' | 'booking_analytics' | 'financial_dashboard' | 'deliverables' | 'case_actions' | 'post_case_close' | 'lifecycle_emails' | 'realtime_feed' | 'ga4_conversion' | 'iolta_ledger' | 'lexi_admin_tools' | 'lexi_document_drafts' | 'monthly_reports' | 'referral_claims' | 'contact_leads' | 'hours_reporting' | 'paralegal_hours' | 'event_notifications' | 'practice_analytics' | 'billing' | 'matter_profitability' | 'matter_time_logger' | 'court_deadlines' | 'staff_time' | 'webhooks' | 'nps_surveys' | 'retainer_alerts' | 'secure_sharing' | 'intake_templates' | 'reporting_exports' | 'billable_allocation' | 'practice_kpi' | 'email_reminders' | 'doc_extractor' | 'matter_invoice_builder' | 'cash_position' | 'portal_adoption' | 'scheduled_consultations' | 'consultation_availability' | 'submissions_inbox' | 'assistant_conversations' | 'lexi_assistant' | 'sms_reminders' | 'client_task_portal' | 'consultation_admin' | 'case_studies_manager'>('overview');
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -7462,6 +7465,30 @@ export default function AdminInquiriesPage() {
         </svg>
       ),
     },
+    {
+      id: 'consultation_admin' as const,
+      label: 'Consultation Admin',
+      description: 'Manage all consultations — update status, booking stage, notes, and send client alerts from a single view',
+      badge: 'New',
+      badgeColor: 'bg-blue-100 text-blue-700',
+      icon: (
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+      ),
+    },
+    {
+      id: 'case_studies_manager' as const,
+      label: 'Case Studies',
+      description: 'Create, edit, and publish case studies — manage title, client, service tag, complexity, outcome, and summary',
+      badge: 'New',
+      badgeColor: 'bg-amber-100 text-amber-700',
+      icon: (
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+        </svg>
+      ),
+    },
   ];
 
   const activeTabConfig = TAB_CONFIG.find((t) => t.id === activeTab);
@@ -7594,7 +7621,10 @@ export default function AdminInquiriesPage() {
 
         {/* ── Overview Tab ── */}
         {activeTab === 'overview' && (
-          <AdminOverviewDashboard onNavigate={(tab) => setActiveTab(tab as typeof activeTab)} />
+          <div className="space-y-8">
+            <AdminSummaryWidget onNavigate={(tab) => setActiveTab(tab as typeof activeTab)} />
+            <AdminOverviewDashboard onNavigate={(tab) => setActiveTab(tab as typeof activeTab)} />
+          </div>
         )}
 
         {/* ── Operations Tab ── */}
@@ -7878,6 +7908,16 @@ export default function AdminInquiriesPage() {
 
         {/* ── Client Task Portal Tab ── */}
         {activeTab === 'client_task_portal' && <ClientTaskPortal />}
+
+        {/* ── Consultation Admin Tab ── */}
+        {activeTab === 'consultation_admin' && (
+          <ConsultationAdminScreen />
+        )}
+
+        {/* ── Case Studies Manager Tab ── */}
+        {activeTab === 'case_studies_manager' && (
+          <CaseStudiesManager />
+        )}
 
         {/* ── Email Reminders Tab ── */}
         {activeTab === 'email_reminders' && <EmailRemindersDashboard />}
