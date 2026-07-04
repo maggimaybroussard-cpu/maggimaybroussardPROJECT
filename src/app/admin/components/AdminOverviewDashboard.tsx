@@ -43,6 +43,29 @@ interface UpcomingTask {
   status: string;
 }
 
+// ── Lead Score Types ──────────────────────────────────────────────────────────
+
+interface LeadScoreSummary {
+  total: number;
+  hot: number;
+  warm: number;
+  cold: number;
+  avgScore: number;
+  topLeads: TopLead[];
+  activeNurture: number;
+  convertedThisWeek: number;
+}
+
+interface TopLead {
+  id: string;
+  name: string;
+  email: string;
+  total_score: number;
+  score_tier: 'hot' | 'warm' | 'cold';
+  recommended_action: string | null;
+  scored_at: string;
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatCurrency(cents: number): string {
@@ -258,6 +281,9 @@ export default function AdminOverviewDashboard({ onNavigate }: AdminOverviewDash
   const [serviceBreakdown, setServiceBreakdown] = useState<ServiceBreakdown[]>([]);
   const [activity, setActivity] = useState<ActivityItem[]>([]);
   const [upcomingTasks, setUpcomingTasks] = useState<UpcomingTask[]>([]);
+  const [leadScores, setLeadScores] = useState<LeadScoreSummary>({
+    total: 0, hot: 0, warm: 0, cold: 0, avgScore: 0, topLeads: [], activeNurture: 0, convertedThisWeek: 0,
+  });
   const [loading, setLoading] = useState(true);
   const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
 
@@ -513,6 +539,49 @@ export default function AdminOverviewDashboard({ onNavigate }: AdminOverviewDash
         }))
       );
 
+      // ── Fetch lead scores ──────────────────────────────────────────────────
+      try {
+        const weekAgoDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+        const [scoresRes, nurtureRes] = await Promise.allSettled([
+          supabase
+            .from('prospect_scores')
+            .select('id, name, email, total_score, score_tier, recommended_action, scored_at')
+            .order('total_score', { ascending: false })
+            .limit(50),
+          supabase
+            .from('lead_nurture_sequences')
+            .select('id, sequence_status, converted_at')
+            .limit(200),
+        ]);
+
+        const scoreRows = scoresRes.status === 'fulfilled' ? (scoresRes.value.data ?? []) : [];
+        const nurtureRows = nurtureRes.status === 'fulfilled' ? (nurtureRes.value.data ?? []) : [];
+
+        const hot = scoreRows.filter((r) => r.score_tier === 'hot').length;
+        const warm = scoreRows.filter((r) => r.score_tier === 'warm').length;
+        const cold = scoreRows.filter((r) => r.score_tier === 'cold').length;
+        const avg = scoreRows.length > 0
+          ? Math.round(scoreRows.reduce((s: number, r) => s + (r.total_score ?? 0), 0) / scoreRows.length)
+          : 0;
+        const activeNurture = nurtureRows.filter((r) => r.sequence_status === 'active').length;
+        const convertedThisWeek = nurtureRows.filter(
+          (r) => r.sequence_status === 'converted' && r.converted_at && r.converted_at >= weekAgoDate
+        ).length;
+
+        setLeadScores({
+          total: scoreRows.length,
+          hot,
+          warm,
+          cold,
+          avgScore: avg,
+          topLeads: scoreRows.slice(0, 5) as TopLead[],
+          activeNurture,
+          convertedThisWeek,
+        });
+      } catch {
+        // Non-blocking
+      }
+
       setLastRefreshed(new Date());
     } catch {
       // Silent fail
@@ -749,6 +818,114 @@ export default function AdminOverviewDashboard({ onNavigate }: AdminOverviewDash
 
       {/* ── Lexi & Auto-Invoice Quick Access ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+      {/* ── Lead Scoring Panel ── */}
+      <div className="bg-card border border-border rounded-2xl overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center bg-red-50">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-sm font-semibold text-foreground">Lead Scoring Overview</h2>
+              <p className="text-xs text-muted-foreground">Prospect quality & nurture pipeline</p>
+            </div>
+          </div>
+          {onNavigate && (
+            <button
+              onClick={() => onNavigate('prospect_scoring')}
+              className="text-xs text-primary hover:underline font-medium"
+            >
+              View all
+            </button>
+          )}
+        </div>
+
+        {/* Score tier summary */}
+        <div className="grid grid-cols-4 divide-x divide-border border-b border-border">
+          {[
+            { label: 'Total', value: leadScores.total, color: 'text-foreground' },
+            { label: '🔥 Hot', value: leadScores.hot, color: 'text-red-600' },
+            { label: '🌤 Warm', value: leadScores.warm, color: 'text-amber-600' },
+            { label: '❄️ Cold', value: leadScores.cold, color: 'text-blue-500' },
+          ].map(({ label, value, color }) => (
+            <div key={label} className="px-4 py-3 text-center">
+              <p className={`text-xl font-bold ${color}`}>{loading ? '—' : value}</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">{label}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Nurture pipeline row */}
+        <div className="grid grid-cols-3 divide-x divide-border border-b border-border">
+          {[
+            { label: 'Avg Score', value: leadScores.avgScore, color: 'text-foreground' },
+            { label: 'Active Nurture', value: leadScores.activeNurture, color: 'text-emerald-600' },
+            { label: 'Converted / 7d', value: leadScores.convertedThisWeek, color: 'text-green-600' },
+          ].map(({ label, value, color }) => (
+            <div key={label} className="px-4 py-3 text-center">
+              <p className={`text-lg font-bold ${color}`}>{loading ? '—' : value}</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">{label}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Top leads */}
+        {!loading && leadScores.topLeads.length > 0 && (
+          <div className="divide-y divide-border max-h-[220px] overflow-y-auto">
+            {leadScores.topLeads.map((lead) => (
+              <div key={lead.id} className="flex items-center gap-3 px-5 py-3 hover:bg-secondary/20 transition-colors">
+                <div
+                  className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 text-white font-bold text-xs"
+                  style={{ background: lead.total_score >= 70 ? '#ef4444' : lead.total_score >= 45 ? '#f59e0b' : '#60a5fa' }}
+                >
+                  {lead.total_score}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground truncate">{lead.name}</p>
+                  <p className="text-xs text-muted-foreground truncate">{lead.email}</p>
+                </div>
+                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border shrink-0 ${
+                  lead.score_tier === 'hot' ?'bg-red-100 text-red-700 border-red-200'
+                    : lead.score_tier === 'warm' ?'bg-amber-100 text-amber-700 border-amber-200' :'bg-blue-100 text-blue-600 border-blue-200'
+                }`}>
+                  {lead.score_tier}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {!loading && leadScores.topLeads.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-8 text-center px-6">
+            <p className="text-sm text-muted-foreground">No scored leads yet.</p>
+            <p className="text-xs text-muted-foreground mt-1">Scores are generated when intake forms are submitted.</p>
+          </div>
+        )}
+
+        {/* Quick actions */}
+        <div className="px-5 py-3 border-t border-border flex items-center gap-2 flex-wrap">
+          {onNavigate && (
+            <>
+              <button
+                onClick={() => onNavigate('prospect_scoring')}
+                className="px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-all"
+              >
+                Score Dashboard
+              </button>
+              <button
+                onClick={() => onNavigate('lead_nurture')}
+                className="px-3 py-1.5 rounded-lg border border-border bg-card text-xs font-medium text-foreground hover:border-accent/50 transition-all"
+              >
+                Nurture Sequences
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+
         {/* Lexi AI Tools */}
         <div className="bg-card border border-border rounded-2xl overflow-hidden">
           <div className="px-5 py-4 border-b border-border flex items-center gap-2.5">
