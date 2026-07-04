@@ -7505,6 +7505,15 @@ export default function AdminInquiriesPage() {
                 <span className="hidden sm:inline">View Site</span>
               </a>
               <a
+                href="/admin/contact-submissions"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border border-border text-xs font-semibold text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-all"
+              >
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                <span className="hidden sm:inline">Submissions</span>
+              </a>
+              <a
                 href="/admin/account"
                 className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border border-border text-xs font-semibold text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-all"
               >
