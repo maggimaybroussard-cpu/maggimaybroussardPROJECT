@@ -49,6 +49,20 @@ interface NurtureStats {
   hotLeads: number;
 }
 
+interface GeneratedEmail {
+  subject: string;
+  preheader: string;
+  body: string;
+  cta_text: string;
+  cta_url_hint: string;
+}
+
+interface AIEmailModalProps {
+  lead: NurtureSequence | AbandonedBooking | null;
+  leadType: 'nurture' | 'abandoned';
+  onClose: () => void;
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function timeAgo(dateStr: string): string {
@@ -114,6 +128,279 @@ function StepProgress({ current, total }: { current: number; total: number }) {
   );
 }
 
+// ── AI Email Modal ────────────────────────────────────────────────────────────
+
+function AIEmailModal({ lead, leadType, onClose }: AIEmailModalProps) {
+  const [generating, setGenerating] = useState(false);
+  const [generated, setGenerated] = useState<GeneratedEmail | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState<string | null>(null);
+  const [editedBody, setEditedBody] = useState('');
+
+  const isNurture = leadType === 'nurture';
+  const nurtureSeq = isNurture ? (lead as NurtureSequence) : null;
+  const abandonedSeq = !isNurture ? (lead as AbandonedBooking) : null;
+
+  const handleGenerate = async () => {
+    if (!lead) return;
+    setGenerating(true);
+    setError(null);
+    setGenerated(null);
+
+    try {
+      const payload = isNurture && nurtureSeq
+        ? {
+            name: nurtureSeq.name,
+            email: nurtureSeq.email,
+            leadScore: nurtureSeq.lead_score,
+            scoreTier: nurtureSeq.score_tier,
+            triggerType: nurtureSeq.trigger_type,
+            serviceInterest: nurtureSeq.conversion_type,
+            currentStep: nurtureSeq.current_step,
+            totalSteps: nurtureSeq.total_steps,
+            lastEmailSentAt: nurtureSeq.last_email_sent_at,
+            conversionType: nurtureSeq.conversion_type,
+          }
+        : {
+            name: abandonedSeq!.name,
+            email: abandonedSeq!.email,
+            leadScore: abandonedSeq!.lead_score,
+            scoreTier: abandonedSeq!.lead_score >= 70 ? 'hot' : abandonedSeq!.lead_score >= 45 ? 'warm' : 'cold',
+            triggerType: 'abandoned_booking',
+            serviceInterest: abandonedSeq!.service_interest,
+            followUpCount: abandonedSeq!.follow_up_count,
+            lastEmailSentAt: abandonedSeq!.last_follow_up_at,
+          };
+
+      const res = await fetch('/api/admin/leads/generate-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Generation failed');
+      setGenerated(data);
+      setEditedBody(data.body);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Failed to generate email');
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const handleCopy = (text: string, key: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(key);
+      setTimeout(() => setCopied(null), 2000);
+    });
+  };
+
+  const handleCopyAll = () => {
+    if (!generated) return;
+    const full = `Subject: ${generated.subject}\nPreheader: ${generated.preheader}\n\n${editedBody}\n\nCTA: ${generated.cta_text}`;
+    handleCopy(full, 'all');
+  };
+
+  if (!lead) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+      <div className="bg-card border border-border rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
+        {/* Header */}
+        <div className="flex items-center justify-between p-5 border-b border-border sticky top-0 bg-card z-10">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
+                <path d="M12 2a10 10 0 1 0 10 10"/><path d="M12 8v4l3 3"/><path d="M18 2v6h6"/>
+              </svg>
+            </div>
+            <div>
+              <p className="font-semibold text-foreground text-sm">AI Email Generator</p>
+              <p className="text-xs text-muted-foreground">{lead.name} · {lead.email}</p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-lg hover:bg-secondary/60 flex items-center justify-center transition-colors"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+
+        <div className="p-5 space-y-4">
+          {/* Lead context summary */}
+          <div className="bg-secondary/30 rounded-xl p-4 grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <div>
+              <p className="text-xs text-muted-foreground mb-0.5">Lead Score</p>
+              <p className="text-sm font-bold" style={{ color: scoreFill(lead.lead_score) }}>{lead.lead_score}/100</p>
+            </div>
+            {isNurture && nurtureSeq && (
+              <>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-0.5">Tier</p>
+                  <p className="text-sm font-semibold capitalize">{nurtureSeq.score_tier === 'hot' ? '🔥' : nurtureSeq.score_tier === 'warm' ? '🌤' : '❄️'} {nurtureSeq.score_tier}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-0.5">Trigger</p>
+                  <p className="text-sm font-medium">{TRIGGER_LABELS[nurtureSeq.trigger_type] ?? nurtureSeq.trigger_type}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-0.5">Sequence Step</p>
+                  <p className="text-sm font-medium">{nurtureSeq.current_step} of {nurtureSeq.total_steps}</p>
+                </div>
+              </>
+            )}
+            {!isNurture && abandonedSeq && (
+              <>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-0.5">Service Interest</p>
+                  <p className="text-sm font-medium">{abandonedSeq.service_interest || 'Not specified'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-0.5">Follow-ups Sent</p>
+                  <p className="text-sm font-medium">{abandonedSeq.follow_up_count}</p>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Generate button */}
+          {!generated && (
+            <button
+              onClick={handleGenerate}
+              disabled={generating}
+              className="w-full py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition-all disabled:opacity-60 flex items-center justify-center gap-2"
+            >
+              {generating ? (
+                <>
+                  <div className="w-4 h-4 rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground animate-spin" />
+                  Generating personalized email…
+                </>
+              ) : (
+                <>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 2a10 10 0 1 0 10 10"/><path d="M12 8v4l3 3"/><path d="M18 2v6h6"/>
+                  </svg>
+                  Generate Personalized Email with AI
+                </>
+              )}
+            </button>
+          )}
+
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700">{error}</div>
+          )}
+
+          {/* Generated email output */}
+          {generated && (
+            <div className="space-y-4">
+              {/* Subject */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Subject Line</label>
+                  <button
+                    onClick={() => handleCopy(generated.subject, 'subject')}
+                    className="text-xs text-primary hover:underline"
+                  >
+                    {copied === 'subject' ? '✓ Copied' : 'Copy'}
+                  </button>
+                </div>
+                <div className="bg-secondary/30 rounded-xl px-4 py-3 text-sm font-medium text-foreground">
+                  {generated.subject}
+                </div>
+              </div>
+
+              {/* Preheader */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Preheader Text</label>
+                  <button
+                    onClick={() => handleCopy(generated.preheader, 'preheader')}
+                    className="text-xs text-primary hover:underline"
+                  >
+                    {copied === 'preheader' ? '✓ Copied' : 'Copy'}
+                  </button>
+                </div>
+                <div className="bg-secondary/30 rounded-xl px-4 py-3 text-sm text-muted-foreground">
+                  {generated.preheader}
+                </div>
+              </div>
+
+              {/* Body */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Email Body</label>
+                  <button
+                    onClick={() => handleCopy(editedBody, 'body')}
+                    className="text-xs text-primary hover:underline"
+                  >
+                    {copied === 'body' ? '✓ Copied' : 'Copy'}
+                  </button>
+                </div>
+                <textarea
+                  value={editedBody}
+                  onChange={(e) => setEditedBody(e.target.value)}
+                  rows={10}
+                  className="w-full bg-secondary/30 rounded-xl px-4 py-3 text-sm text-foreground leading-relaxed resize-y focus:outline-none focus:ring-2 focus:ring-accent/40 border border-transparent focus:border-accent/30 transition-all"
+                />
+                <p className="text-xs text-muted-foreground mt-1">You can edit the body above before copying.</p>
+              </div>
+
+              {/* CTA */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide block mb-1.5">CTA Button Text</label>
+                  <div className="bg-secondary/30 rounded-xl px-4 py-3 text-sm font-medium text-foreground">
+                    {generated.cta_text}
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide block mb-1.5">Suggested Destination</label>
+                  <div className="bg-secondary/30 rounded-xl px-4 py-3 text-sm text-muted-foreground">
+                    /{generated.cta_url_hint}
+                  </div>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center gap-3 pt-2">
+                <button
+                  onClick={handleCopyAll}
+                  className="flex-1 py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition-all flex items-center justify-center gap-2"
+                >
+                  {copied === 'all' ? (
+                    <>✓ Copied All</>
+                  ) : (
+                    <>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                      </svg>
+                      Copy Full Email
+                    </>
+                  )}
+                </button>
+                <button
+                  onClick={handleGenerate}
+                  disabled={generating}
+                  className="px-4 py-2.5 rounded-xl border border-border bg-card text-sm font-medium hover:border-accent/50 transition-all disabled:opacity-50 flex items-center gap-2"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+                  </svg>
+                  Regenerate
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main Component ────────────────────────────────────────────────────────────
 
 export default function LeadNurtureSequencesDashboard() {
@@ -135,10 +422,17 @@ export default function LeadNurtureSequencesDashboard() {
   const [triggerFilter, setTriggerFilter] = useState<'all' | 'form_submission' | 'abandoned_booking'>('all');
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [aiModalLead, setAiModalLead] = useState<NurtureSequence | AbandonedBooking | null>(null);
+  const [aiModalType, setAiModalType] = useState<'nurture' | 'abandoned'>('nurture');
 
   const showToast = (msg: string, type: 'success' | 'error') => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3500);
+  };
+
+  const openAIModal = (lead: NurtureSequence | AbandonedBooking, type: 'nurture' | 'abandoned') => {
+    setAiModalLead(lead);
+    setAiModalType(type);
   };
 
   const fetchData = useCallback(async () => {
@@ -289,11 +583,20 @@ export default function LeadNurtureSequencesDashboard() {
 
   return (
     <div className="space-y-6">
+      {/* AI Email Modal */}
+      {aiModalLead && (
+        <AIEmailModal
+          lead={aiModalLead}
+          leadType={aiModalType}
+          onClose={() => setAiModalLead(null)}
+        />
+      )}
+
       {/* Toast */}
       {toast && (
         <div
           className={`fixed top-5 right-5 z-50 px-5 py-3 rounded-xl shadow-lg text-sm font-medium transition-all ${
-            toast.type === 'success' ?'bg-emerald-600 text-white' :'bg-red-600 text-white'
+            toast.type === 'success' ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'
           }`}
         >
           {toast.msg}
@@ -470,24 +773,37 @@ export default function LeadNurtureSequencesDashboard() {
                       </div>
 
                       {/* Actions */}
-                      {seq.sequence_status !== 'converted' && seq.sequence_status !== 'unsubscribed' && (
-                        <div className="flex items-center gap-2 mt-3">
-                          <button
-                            onClick={() => handlePauseResume(seq.id, seq.sequence_status)}
-                            disabled={actionLoading === seq.id}
-                            className="px-3 py-1.5 rounded-lg border border-border bg-secondary/40 text-xs font-medium text-foreground hover:border-accent/50 transition-all disabled:opacity-50"
-                          >
-                            {actionLoading === seq.id ? '…' : seq.sequence_status === 'active' ? 'Pause' : 'Resume'}
-                          </button>
-                          <button
-                            onClick={() => handleMarkConverted(seq.id)}
-                            disabled={actionLoading === seq.id}
-                            className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-medium hover:bg-emerald-700 transition-all disabled:opacity-50"
-                          >
-                            Mark Converted
-                          </button>
-                        </div>
-                      )}
+                      <div className="flex items-center gap-2 mt-3 flex-wrap">
+                        {/* AI Email button — always visible */}
+                        <button
+                          onClick={() => openAIModal(seq, 'nurture')}
+                          className="px-3 py-1.5 rounded-lg border border-primary/30 bg-primary/5 text-primary text-xs font-medium hover:bg-primary/10 transition-all flex items-center gap-1.5"
+                        >
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M12 2a10 10 0 1 0 10 10"/><path d="M12 8v4l3 3"/><path d="M18 2v6h6"/>
+                          </svg>
+                          AI Email
+                        </button>
+
+                        {seq.sequence_status !== 'converted' && seq.sequence_status !== 'unsubscribed' && (
+                          <>
+                            <button
+                              onClick={() => handlePauseResume(seq.id, seq.sequence_status)}
+                              disabled={actionLoading === seq.id}
+                              className="px-3 py-1.5 rounded-lg border border-border bg-secondary/40 text-xs font-medium text-foreground hover:border-accent/50 transition-all disabled:opacity-50"
+                            >
+                              {actionLoading === seq.id ? '…' : seq.sequence_status === 'active' ? 'Pause' : 'Resume'}
+                            </button>
+                            <button
+                              onClick={() => handleMarkConverted(seq.id)}
+                              disabled={actionLoading === seq.id}
+                              className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-medium hover:bg-emerald-700 transition-all disabled:opacity-50"
+                            >
+                              Mark Converted
+                            </button>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -564,8 +880,19 @@ export default function LeadNurtureSequencesDashboard() {
                         )}
                       </div>
 
-                      {!ab.recovered_at && ab.sequence_status !== 'unsubscribed' && (
-                        <div className="flex items-center gap-2 mt-3">
+                      <div className="flex items-center gap-2 mt-3 flex-wrap">
+                        {/* AI Email button — always visible */}
+                        <button
+                          onClick={() => openAIModal(ab, 'abandoned')}
+                          className="px-3 py-1.5 rounded-lg border border-primary/30 bg-primary/5 text-primary text-xs font-medium hover:bg-primary/10 transition-all flex items-center gap-1.5"
+                        >
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M12 2a10 10 0 1 0 10 10"/><path d="M12 8v4l3 3"/><path d="M18 2v6h6"/>
+                          </svg>
+                          AI Email
+                        </button>
+
+                        {!ab.recovered_at && ab.sequence_status !== 'unsubscribed' && (
                           <button
                             onClick={() => handleRecoverAbandoned(ab.id)}
                             disabled={actionLoading === ab.id}
@@ -573,8 +900,8 @@ export default function LeadNurtureSequencesDashboard() {
                           >
                             {actionLoading === ab.id ? '…' : 'Mark Recovered'}
                           </button>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
