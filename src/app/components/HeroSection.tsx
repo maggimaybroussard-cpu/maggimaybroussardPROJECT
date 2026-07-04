@@ -91,17 +91,24 @@ export default function HeroSection() {
           {/* CTAs */}
           <div className="animate-fade-in-delay-3 flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 items-stretch sm:items-center">
             <Link
-              href="/contact"
+              href="/book-consultation"
               onClick={() => {
-                trackCTAClick('Work With Me', 'hero', '/contact');
+                trackCTAClick('Book a Consultation', 'hero', '/book-consultation');
                 trackBookConsultationClick('hero');
               }}
               className="inline-flex items-center justify-center gap-2.5 px-8 py-4 bg-accent text-white rounded-full text-xs font-semibold uppercase tracking-[0.15em] hover:opacity-90 transition-all duration-300 hover:gap-4 shadow-lg shadow-accent/20">
-              
-              Work With Me
+              Book a Consultation
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M5 12h14M12 5l7 7-7 7" />
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
               </svg>
+            </Link>
+            <Link
+              href="/contact"
+              onClick={() => {
+                trackCTAClick('Work With Me', 'hero', '/contact');
+              }}
+              className="inline-flex items-center justify-center gap-2.5 px-8 py-4 border border-primary-foreground/35 text-primary-foreground rounded-full text-xs font-semibold uppercase tracking-[0.15em] hover:bg-primary-foreground/10 hover:border-primary-foreground/60 transition-all duration-300">
+              Work With Me
             </Link>
             <Link
               href="/services"
@@ -109,8 +116,7 @@ export default function HeroSection() {
                 trackCTAClick('View Services', 'hero', '/services');
                 trackViewServicesClick('hero');
               }}
-              className="inline-flex items-center justify-center gap-2.5 px-8 py-4 border border-primary-foreground/35 text-primary-foreground rounded-full text-xs font-semibold uppercase tracking-[0.15em] hover:bg-primary-foreground/10 hover:border-primary-foreground/60 transition-all duration-300">
-              
+              className="inline-flex items-center justify-center gap-2.5 px-8 py-4 border border-primary-foreground/20 text-primary-foreground/80 rounded-full text-xs font-semibold uppercase tracking-[0.15em] hover:bg-primary-foreground/8 hover:border-primary-foreground/40 hover:text-primary-foreground transition-all duration-300">
               View Services
             </Link>
             <Link

@@ -1190,8 +1190,32 @@ export default function PricingPageClient() {
           </div>
 
           <p className="text-white/50 text-xs font-light mt-8">
-            Not sure which tier fits? <Link href="/contact" className="underline underline-offset-2 text-white/70 hover:text-white transition-colors">Book a free 15-min call</Link> and we&apos;ll figure it out together.
+            Not sure which tier fits?{' '}
+            <Link
+              href="/book-consultation"
+              className="inline-flex items-center gap-1.5 underline underline-offset-2 text-white/80 hover:text-white transition-colors font-semibold"
+            >
+              Book a free consultation
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M5 12h14M12 5l7 7-7 7" />
+              </svg>
+            </Link>{' '}
+            and we&apos;ll figure it out together.
           </p>
+
+          {/* Book a Consultation CTA */}
+          <div className="mt-8 flex justify-center">
+            <Link
+              href="/book-consultation"
+              className="inline-flex items-center gap-2.5 px-8 py-4 rounded-full text-sm font-semibold uppercase tracking-widest transition-all duration-200 hover:opacity-90 hover:shadow-lg"
+              style={{ background: 'rgba(255,255,255,0.15)', color: '#fff', border: '1px solid rgba(255,255,255,0.4)' }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+              </svg>
+              Book a Consultation
+            </Link>
+          </div>
 
           {/* One-time services link */}
           <div className="mt-10 pt-8 border-t border-white/10">
