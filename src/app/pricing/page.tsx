@@ -3,6 +3,8 @@ import React from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import PricingPageClient from './components/PricingPageClient';
+import CaseStudiesSocialProof from '../components/CaseStudiesSocialProof';
+import TestimonialsCompact from '../components/TestimonialsCompact';
 
 export default function PricingPage() {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
@@ -100,6 +102,20 @@ export default function PricingPage() {
       />
       <Header />
       <PricingPageClient />
+
+      {/* Case Studies Social Proof */}
+      <CaseStudiesSocialProof
+        heading="Outcomes That Justify the Investment"
+        subheading="See what firms like yours have accomplished with dedicated paralegal support."
+        limit={3}
+      />
+
+      {/* Client Testimonials */}
+      <TestimonialsCompact
+        heading="Trusted by Attorneys Nationwide"
+        limit={4}
+      />
+
       <Footer />
     </>
   );

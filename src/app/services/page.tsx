@@ -10,6 +10,8 @@ import ServicesProcess from './components/ServicesProcess';
 import ServicesWorkCTA from './components/ServicesWorkCTA';
 import ServicesPageTracker from './components/ServicesPageTracker';
 import EmailOptInSection from '../components/EmailOptInSection';
+import CaseStudiesSocialProof from '../components/CaseStudiesSocialProof';
+import TestimonialsCompact from '../components/TestimonialsCompact';
 import Link from 'next/link';
 
 import ServicesFAQ from './components/ServicesFAQ';
@@ -171,6 +173,23 @@ export default function ServicesPage() {
         </section>
         <section id="process" aria-label="How our service process works">
           <ServicesProcess />
+        </section>
+
+        {/* Case Studies Social Proof */}
+        <section id="case-results" aria-label="Case study results and outcomes">
+          <CaseStudiesSocialProof
+            heading="Real Results for Real Firms"
+            subheading="Outcomes from matters handled across practice areas and firm sizes — litigation, contracts, research, and more."
+            limit={3}
+          />
+        </section>
+
+        {/* Client Testimonials */}
+        <section id="client-testimonials" aria-label="What attorneys say about Broussard Legal Services">
+          <TestimonialsCompact
+            heading="What Attorneys Say"
+            limit={4}
+          />
         </section>
 
         {/* Purchase CTA Banner */}
