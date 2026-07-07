@@ -88,6 +88,9 @@ export default function ClientInvoicesPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [payingInvoiceId, setPayingInvoiceId] = useState<string | null>(null);
+  const [payError, setPayError] = useState<string | null>(null);
+  const [successBanner, setSuccessBanner] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     if (!user) return;
@@ -133,6 +136,16 @@ export default function ClientInvoicesPage() {
     if (user) fetchData();
   }, [user, fetchData]);
 
+  // Check for Stripe redirect success
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('payment') === 'success') {
+      setSuccessBanner('Payment successful! Your invoice will be updated shortly.');
+      window.history.replaceState({}, '', '/client/invoices');
+      fetchData();
+    }
+  }, [fetchData]);
+
   const handleSignOut = async () => {
     setSigningOut(true);
     try {
@@ -156,13 +169,44 @@ export default function ClientInvoicesPage() {
       } else if (data?.download_url) {
         window.open(data.download_url, '_blank');
       } else {
-        // Fallback: open portal invoices page
         router.push('/portal/invoices');
       }
     } catch {
       router.push('/portal/invoices');
     } finally {
       setDownloadingId(null);
+    }
+  };
+
+  const handlePayNow = async (invoice: Invoice) => {
+    setPayingInvoiceId(invoice.id);
+    setPayError(null);
+    try {
+      const balance = Math.max(0, invoice.amount - (invoice.amount_paid ?? 0));
+      const res = await fetch('/api/invoices/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          invoice_id: invoice.id,
+          amount: balance,
+          currency: invoice.currency || 'usd',
+          invoice_number: invoice.invoice_number,
+          success_url: `${window.location.origin}/client/invoices?payment=success`,
+          cancel_url: `${window.location.origin}/client/invoices`,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        throw new Error(data.error || 'Failed to create checkout session');
+      }
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error('No checkout URL returned');
+      }
+    } catch (err: unknown) {
+      setPayError(err instanceof Error ? err.message : 'Payment failed. Please try again.');
+      setPayingInvoiceId(null);
     }
   };
 
@@ -287,11 +331,58 @@ export default function ClientInvoicesPage() {
 
       <main className="max-w-5xl mx-auto px-5 md:px-8 py-8">
 
+        {/* Success Banner */}
+        {successBanner && (
+          <div className="mb-6 flex items-center gap-3 p-4 bg-emerald-50 border border-emerald-200 rounded-2xl">
+            <svg className="w-5 h-5 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p className="text-sm font-medium text-emerald-800">{successBanner}</p>
+            <button onClick={() => setSuccessBanner(null)} className="ml-auto text-emerald-600 hover:text-emerald-800">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        )}
+
+        {/* Error Banner */}
+        {payError && (
+          <div className="mb-6 flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-2xl">
+            <svg className="w-5 h-5 text-red-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <p className="text-sm font-medium text-red-800">{payError}</p>
+            <button onClick={() => setPayError(null)} className="ml-auto text-red-600 hover:text-red-800">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        )}
+
+        {/* Outstanding Alert */}
+        {outstanding.length > 0 && (
+          <div className="mb-6 flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-2xl">
+            <svg className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-amber-900">
+                {fmt(totalOutstanding)} outstanding across {outstanding.length} invoice{outstanding.length !== 1 ? 's' : ''}
+              </p>
+              {overdue.length > 0 && (
+                <p className="text-xs text-amber-700 mt-0.5">{overdue.length} invoice{overdue.length !== 1 ? 's are' : ' is'} overdue — please pay promptly to avoid service interruption.</p>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Page title */}
         <div className="mb-7">
           <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-1">Billing</p>
           <h1 className="text-2xl font-bold text-foreground">Invoices &amp; Payments</h1>
-          <p className="text-sm text-muted-foreground mt-1">View, download, and track all invoices for your services and retainer.</p>
+          <p className="text-sm text-muted-foreground mt-1">View, download, and pay all invoices for your services and retainer.</p>
         </div>
 
         {/* Summary cards */}
@@ -383,6 +474,8 @@ export default function ClientInvoicesPage() {
               const isExpanded = expandedId === invoice.id;
               const daysUntil = invoice.due_date ? getDaysUntil(invoice.due_date) : null;
               const isDownloading = downloadingId === invoice.id;
+              const isPaying = payingInvoiceId === invoice.id;
+              const canPay = ['sent', 'pending', 'overdue'].includes(invoice.status) && balance > 0;
 
               return (
                 <div key={invoice.id} className="bg-card border border-border rounded-2xl overflow-hidden transition-shadow hover:shadow-sm">
@@ -413,6 +506,32 @@ export default function ClientInvoicesPage() {
                         {invoice.due_date && ` · Due ${fmtDate(invoice.due_date)}`}
                       </p>
                     </div>
+
+                    {/* Pay Now quick button for outstanding */}
+                    {canPay && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handlePayNow(invoice); }}
+                        disabled={isPaying}
+                        className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-60 shrink-0"
+                      >
+                        {isPaying ? (
+                          <>
+                            <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                            </svg>
+                            Processing…
+                          </>
+                        ) : (
+                          <>
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                            </svg>
+                            Pay {fmt(balance, invoice.currency)}
+                          </>
+                        )}
+                      </button>
+                    )}
 
                     {/* Amount */}
                     <div className="text-right shrink-0">
@@ -484,7 +603,7 @@ export default function ClientInvoicesPage() {
                         <button
                           onClick={() => handleDownload(invoice)}
                           disabled={isDownloading}
-                          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-60"
+                          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium border border-border text-foreground hover:bg-muted/60 transition-colors disabled:opacity-60"
                         >
                           {isDownloading ? (
                             <>
@@ -504,16 +623,29 @@ export default function ClientInvoicesPage() {
                           )}
                         </button>
 
-                        {['sent', 'pending', 'overdue'].includes(invoice.status) && (
-                          <Link
-                            href="/portal/invoices"
-                            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium border border-border text-foreground hover:bg-muted/60 transition-colors"
+                        {canPay && (
+                          <button
+                            onClick={() => handlePayNow(invoice)}
+                            disabled={isPaying}
+                            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-60"
                           >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                            </svg>
-                            Pay Now
-                          </Link>
+                            {isPaying ? (
+                              <>
+                                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                </svg>
+                                Redirecting to payment…
+                              </>
+                            ) : (
+                              <>
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                                </svg>
+                                Pay {fmt(balance, invoice.currency)} via Stripe
+                              </>
+                            )}
+                          </button>
                         )}
                       </div>
                     </div>
@@ -530,7 +662,7 @@ export default function ClientInvoicesPage() {
             href="/portal/invoices"
             className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline font-medium"
           >
-            View full payment history &amp; pay invoices
+            View full payment history in portal
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>

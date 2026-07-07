@@ -1,89 +1,88 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
+import { createClient } from '@/lib/supabase/server';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-06-20',
-});
-
-/**
- * POST /api/invoices/create-checkout-session
- *
- * Creates a Stripe Checkout session pre-filled with invoice details.
- * Stores the session ID on the invoice row for webhook deduplication.
- * Returns { url, sessionId } — caller redirects to `url`.
- */
 export async function POST(req: NextRequest) {
   try {
-    const {
-      invoiceId,
-      invoiceNumber,
-      description,
-      amount,
-      currency,
-      customerEmail,
-      customerName,
-      dueDate,
-      successPath = '/portal/billing',
-      cancelPath = '/portal/billing',
-    } = await req.json();
-
-    if (!amount || !invoiceNumber) {
-      return NextResponse.json({ error: 'Missing required fields: amount, invoiceNumber' }, { status: 400 });
+    const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+    if (!stripeSecretKey || stripeSecretKey === 'your-stripe-secret-key-here') {
+      return NextResponse.json({ error: 'Stripe is not configured. Please add your STRIPE_SECRET_KEY.' }, { status: 503 });
     }
 
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://broussardlegalservices.com';
+    const stripe = new Stripe(stripeSecretKey, { apiVersion: '2024-06-20' });
 
+    const body = await req.json();
+    const { invoice_id, amount, currency = 'usd', invoice_number, success_url, cancel_url } = body;
+
+    if (!invoice_id || !amount || !invoice_number) {
+      return NextResponse.json({ error: 'Missing required fields: invoice_id, amount, invoice_number' }, { status: 400 });
+    }
+
+    if (amount <= 0) {
+      return NextResponse.json({ error: 'Amount must be greater than zero' }, { status: 400 });
+    }
+
+    // Verify invoice exists and get client info
+    const supabase = await createClient();
+    const { data: invoice, error: invoiceError } = await supabase
+      .from('client_invoices')
+      .select('id, invoice_number, amount, amount_paid, status, inquiry_id')
+      .eq('id', invoice_id)
+      .single();
+
+    if (invoiceError || !invoice) {
+      return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });
+    }
+
+    if (invoice.status === 'paid') {
+      return NextResponse.json({ error: 'This invoice has already been paid' }, { status: 400 });
+    }
+
+    // Get client info from inquiry if available
+    let clientEmail: string | undefined;
+    let clientName: string | undefined;
+    if (invoice.inquiry_id) {
+      const { data: inquiry } = await supabase
+        .from('contact_inquiries')
+        .select('name, email')
+        .eq('id', invoice.inquiry_id)
+        .single();
+      if (inquiry) {
+        clientEmail = inquiry.email;
+        clientName = inquiry.name;
+      }
+    }
+
+    // Create Stripe Checkout Session
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       mode: 'payment',
-      customer_email: customerEmail || undefined,
-      submit_type: 'pay',
-      billing_address_collection: 'auto',
       line_items: [
         {
           price_data: {
-            currency: (currency || 'usd').toLowerCase(),
+            currency: currency.toLowerCase(),
             product_data: {
-              name: description || `Invoice ${invoiceNumber}`,
-              description: `Invoice ${invoiceNumber}${dueDate ? ` · Due ${new Date(dueDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}` : ''}`,
-              metadata: {
-                invoice_number: invoiceNumber,
-                customer_name: customerName || '',
-              },
+              name: `Invoice ${invoice_number}`,
+              description: `Payment for legal services — Invoice ${invoice_number}`,
             },
-            unit_amount: Math.round(Number(amount) * 100),
+            unit_amount: Math.round(amount * 100),
           },
           quantity: 1,
         },
       ],
+      customer_email: clientEmail,
       metadata: {
-        invoice_id: invoiceId || '',
-        invoice_number: invoiceNumber,
-        customer_name: customerName || '',
-        customer_email: customerEmail || '',
+        invoice_id,
+        invoice_number,
+        client_name: clientName ?? '',
       },
-      success_url: `${siteUrl}${successPath}?payment=success&invoice=${invoiceNumber}`,
-      cancel_url: `${siteUrl}${cancelPath}?payment=cancelled`,
+      success_url: success_url ?? `${process.env.NEXT_PUBLIC_SITE_URL}/client/invoices?payment=success`,
+      cancel_url: cancel_url ?? `${process.env.NEXT_PUBLIC_SITE_URL}/client/invoices`,
     });
 
-    // Store the checkout session ID on the invoice for webhook deduplication
-    if (invoiceId && session.id) {
-      try {
-        const { createClient } = await import('@/lib/supabase/server');
-        const supabase = await createClient();
-        await supabase
-          .from('client_invoices')
-          .update({ stripe_checkout_session_id: session.id })
-          .eq('id', invoiceId);
-      } catch (dbErr) {
-        // Non-fatal — webhook will still mark invoice paid on completion
-        console.warn('[create-checkout-session] Could not store checkout session ID:', dbErr);
-      }
-    }
-
-    return NextResponse.json({ url: session.url, sessionId: session.id });
+    return NextResponse.json({ url: session.url, session_id: session.id });
   } catch (err: unknown) {
-    console.error('[create-checkout-session] error:', err);
+    console.error('[create-checkout-session] Error:', err);
     const message = err instanceof Error ? err.message : 'Failed to create checkout session';
     return NextResponse.json({ error: message }, { status: 500 });
   }
