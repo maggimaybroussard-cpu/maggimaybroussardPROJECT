@@ -441,6 +441,28 @@ async function handleBookingPayment(pi: Stripe.PaymentIntent): Promise<NextRespo
     );
   }
 
+  // ── 4b. Auto-generate engagement letter after deposit ─────────────────────
+  if (paymentType === 'consultation_deposit' && clientEmail) {
+    try {
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://broussardlegalservices.com';
+      await fetch(`${siteUrl}/api/engagement-letter/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          clientName: clientName || clientEmail,
+          clientEmail,
+          paymentIntentId: pi.id,
+          invoiceId: resolvedInvoiceId ?? undefined,
+          retainerAmount: amountPaid,
+        }),
+      });
+      console.log('[stripe-payment-intent-webhook] Engagement letter generated for:', clientEmail);
+    } catch (engErr) {
+      console.error('[stripe-payment-intent-webhook] Engagement letter generation error:', engErr);
+      // Non-fatal — letter can be generated manually from admin
+    }
+  }
+
   // ── 5. Notify admin ───────────────────────────────────────────────────────
   const amountFormatted = new Intl.NumberFormat('en-US', {
     style: 'currency',
