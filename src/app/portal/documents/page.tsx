@@ -556,6 +556,117 @@ function DocumentVersionHistory({
   );
 }
 
+// ── Portal Document Analyzer ─────────────────────────────────────────────────
+
+function PortalDocumentAnalyzer() {
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const handleFile = (file: File) => {
+    const allowed = ['application/pdf', 'text/plain', 'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    if (!allowed.includes(file.type) && !file.name.match(/\.(pdf|txt|doc|docx)$/i)) return;
+    if (file.size > 20 * 1024 * 1024) return;
+    setSelectedFile(file);
+    setAnalysisResult(null);
+  };
+
+  const fileToBase64 = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+    });
+
+  const fileToText = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsText(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+    });
+
+  const handleAnalyze = async () => {
+    if (!selectedFile) return;
+    setIsAnalyzing(true);
+    setAnalysisResult(null);
+    try {
+      let content: any[];
+      if (selectedFile.type === 'text/plain') {
+        const text = await fileToText(selectedFile);
+        content = [{ type: 'text', text: `Summarize this legal document for a client. Highlight: key dates, what they need to do, any deadlines, and important terms. Be clear and concise:\n\n${text}` }];
+      } else {
+        const base64 = await fileToBase64(selectedFile);
+        content = [
+          { type: 'text', text: 'Summarize this legal document for a client. Highlight: key dates, what they need to do, any deadlines, and important terms. Be clear and concise.' },
+          { type: 'file', file: { file_data: base64, filename: selectedFile.name } },
+        ];
+      }
+      const res = await fetch('/api/ai/chat-completion', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          provider: 'OPEN_AI',
+          model: 'gpt-4o',
+          messages: [
+            { role: 'system', content: 'You are a helpful legal assistant summarizing documents for clients in plain English. Be concise, use bullet points, and highlight anything urgent.' },
+            { role: 'user', content },
+          ],
+          stream: false,
+          parameters: { max_completion_tokens: 800 },
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) throw new Error(data.error || 'Analysis failed');
+      setAnalysisResult(data.choices?.[0]?.message?.content ?? 'No analysis returned.');
+    } catch {
+      setAnalysisResult('Unable to analyze document. Please try again.');
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      <div
+        onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+        onDragLeave={() => setIsDragging(false)}
+        onDrop={(e) => { e.preventDefault(); setIsDragging(false); const f = e.dataTransfer.files?.[0]; if (f) handleFile(f); }}
+        onClick={() => fileRef.current?.click()}
+        className={`border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-all ${isDragging ? 'border-primary bg-primary/10' : 'border-primary/30 hover:border-primary/60 hover:bg-primary/5'}`}
+      >
+        <input ref={fileRef} type="file" accept=".pdf,.txt,.doc,.docx" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
+        {selectedFile ? (
+          <p className="text-xs font-semibold text-foreground">{selectedFile.name} <span className="text-muted-foreground font-normal">· Click to change</span></p>
+        ) : (
+          <p className="text-xs text-muted-foreground">Drop a document here or <span className="text-primary font-semibold">browse</span> · PDF, DOC, TXT</p>
+        )}
+      </div>
+      {selectedFile && (
+        <button
+          onClick={handleAnalyze}
+          disabled={isAnalyzing}
+          className="w-full py-2.5 rounded-xl bg-primary text-white text-xs font-semibold hover:bg-primary/90 disabled:opacity-60 transition-all flex items-center justify-center gap-2"
+        >
+          {isAnalyzing ? (
+            <><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="animate-spin"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>Analyzing…</>
+          ) : 'Analyze Document with AI'}
+        </button>
+      )}
+      {analysisResult && (
+        <div className="bg-white border border-primary/20 rounded-xl p-4">
+          <p className="text-xs font-semibold text-primary uppercase tracking-widest mb-2">AI Summary</p>
+          <p className="text-xs text-foreground leading-relaxed whitespace-pre-wrap">{analysisResult}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function PortalDocumentsPage() {
   const router = useRouter();
   const { user, loading: authLoading, signOut } = useAuth();
@@ -1225,6 +1336,22 @@ export default function PortalDocumentsPage() {
                     ))}
                   </div>
                 )}
+
+                {/* AI Document Analysis Panel */}
+                <div className="bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20 rounded-2xl p-5">
+                  <div className="flex items-start gap-3 mb-4">
+                    <div className="w-9 h-9 rounded-xl bg-primary/15 flex items-center justify-center flex-shrink-0">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
+                        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-semibold text-foreground">AI Document Analysis</h3>
+                      <p className="text-xs text-muted-foreground mt-0.5">Upload a document to have AI extract key information, deadlines, and action items.</p>
+                    </div>
+                  </div>
+                  <PortalDocumentAnalyzer />
+                </div>
               </section>
             )}
 
