@@ -15,7 +15,7 @@ import Footer from '@/components/Footer';
 import { getStripe } from '@/lib/stripe/client';
 import { createClient } from '@/lib/supabase/client';
 
-const DEPOSIT_AMOUNT = 250;
+const DEPOSIT_AMOUNT = 150;
 const DEPOSIT_LABEL = 'Consultation Retainer Deposit';
 
 // ── Stripe payment form ───────────────────────────────────────────────────────
