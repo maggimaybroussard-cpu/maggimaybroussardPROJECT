@@ -136,6 +136,9 @@ function AIEmailModal({ lead, leadType, onClose }: AIEmailModalProps) {
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
   const [editedBody, setEditedBody] = useState('');
+  const [sending, setSending] = useState(false);
+  const [sendSuccess, setSendSuccess] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
 
   const isNurture = leadType === 'nurture';
   const nurtureSeq = isNurture ? (lead as NurtureSequence) : null;
@@ -146,6 +149,8 @@ function AIEmailModal({ lead, leadType, onClose }: AIEmailModalProps) {
     setGenerating(true);
     setError(null);
     setGenerated(null);
+    setSendSuccess(false);
+    setSendError(null);
 
     try {
       const payload = isNurture && nurtureSeq
@@ -186,6 +191,67 @@ function AIEmailModal({ lead, leadType, onClose }: AIEmailModalProps) {
       setError(e instanceof Error ? e.message : 'Failed to generate email');
     } finally {
       setGenerating(false);
+    }
+  };
+
+  const handleSendViaResend = async () => {
+    if (!lead || !generated) return;
+    setSending(true);
+    setSendError(null);
+    setSendSuccess(false);
+
+    try {
+      const payload = isNurture && nurtureSeq
+        ? {
+            sequenceId: nurtureSeq.id,
+            sequenceType: 'nurture',
+            name: nurtureSeq.name,
+            email: nurtureSeq.email,
+            leadScore: nurtureSeq.lead_score,
+            scoreTier: nurtureSeq.score_tier,
+            triggerType: nurtureSeq.trigger_type,
+            serviceInterest: nurtureSeq.conversion_type,
+            currentStep: nurtureSeq.current_step,
+            totalSteps: nurtureSeq.total_steps,
+            lastEmailSentAt: nurtureSeq.last_email_sent_at,
+            conversionType: nurtureSeq.conversion_type,
+            preGeneratedSubject: generated.subject,
+            preGeneratedBody: editedBody,
+            preGeneratedPreheader: generated.preheader,
+            preGeneratedCtaText: generated.cta_text,
+            preGeneratedCtaUrlHint: generated.cta_url_hint,
+          }
+        : {
+            sequenceId: abandonedSeq!.id,
+            sequenceType: 'abandoned',
+            name: abandonedSeq!.name,
+            email: abandonedSeq!.email,
+            leadScore: abandonedSeq!.lead_score,
+            scoreTier: abandonedSeq!.lead_score >= 70 ? 'hot' : abandonedSeq!.lead_score >= 45 ? 'warm' : 'cold',
+            triggerType: 'abandoned_booking',
+            serviceInterest: abandonedSeq!.service_interest,
+            followUpCount: abandonedSeq!.follow_up_count,
+            lastEmailSentAt: abandonedSeq!.last_follow_up_at,
+            preGeneratedSubject: generated.subject,
+            preGeneratedBody: editedBody,
+            preGeneratedPreheader: generated.preheader,
+            preGeneratedCtaText: generated.cta_text,
+            preGeneratedCtaUrlHint: generated.cta_url_hint,
+          };
+
+      const res = await fetch('/api/admin/leads/send-nurture-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Send failed');
+      setSendSuccess(true);
+    } catch (e: unknown) {
+      setSendError(e instanceof Error ? e.message : 'Failed to send email');
+    } finally {
+      setSending(false);
     }
   };
 
@@ -346,7 +412,7 @@ function AIEmailModal({ lead, leadType, onClose }: AIEmailModalProps) {
                   rows={10}
                   className="w-full bg-secondary/30 rounded-xl px-4 py-3 text-sm text-foreground leading-relaxed resize-y focus:outline-none focus:ring-2 focus:ring-accent/40 border border-transparent focus:border-accent/30 transition-all"
                 />
-                <p className="text-xs text-muted-foreground mt-1">You can edit the body above before copying.</p>
+                <p className="text-xs text-muted-foreground mt-1">You can edit the body above before sending or copying.</p>
               </div>
 
               {/* CTA */}
@@ -365,23 +431,65 @@ function AIEmailModal({ lead, leadType, onClose }: AIEmailModalProps) {
                 </div>
               </div>
 
+              {/* Send success banner */}
+              {sendSuccess && (
+                <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex items-center gap-3">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-600 shrink-0">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+                  </svg>
+                  <div>
+                    <p className="text-sm font-semibold text-emerald-700">Email sent successfully via Resend</p>
+                    <p className="text-xs text-emerald-600 mt-0.5">Sequence step advanced · Next email scheduled automatically</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Send error */}
+              {sendError && (
+                <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700">{sendError}</div>
+              )}
+
               {/* Actions */}
-              <div className="flex items-center gap-3 pt-2">
+              <div className="flex items-center gap-3 pt-2 flex-wrap">
+                {/* Send via Resend — primary action */}
+                <button
+                  onClick={handleSendViaResend}
+                  disabled={sending || sendSuccess}
+                  className="flex-1 py-2.5 rounded-xl bg-emerald-600 text-white font-semibold text-sm hover:bg-emerald-700 transition-all disabled:opacity-60 flex items-center justify-center gap-2 min-w-[160px]"
+                >
+                  {sending ? (
+                    <>
+                      <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                      Sending…
+                    </>
+                  ) : sendSuccess ? (
+                    <>✓ Sent via Resend</>
+                  ) : (
+                    <>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                      </svg>
+                      Send via Resend
+                    </>
+                  )}
+                </button>
+
                 <button
                   onClick={handleCopyAll}
-                  className="flex-1 py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition-all flex items-center justify-center gap-2"
+                  className="px-4 py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition-all flex items-center justify-center gap-2"
                 >
                   {copied === 'all' ? (
-                    <>✓ Copied All</>
+                    <>✓ Copied</>
                   ) : (
                     <>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
                       </svg>
-                      Copy Full Email
+                      Copy All
                     </>
                   )}
                 </button>
+
                 <button
                   onClick={handleGenerate}
                   disabled={generating}
