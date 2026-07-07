@@ -14,7 +14,7 @@ interface AppLogoProps {
 }
 
 const AppLogo = memo(function AppLogo({
-  src = '/assets/images/Gemini_Generated_Image2-1783462142389.png',
+  src = '/assets/images/BLS.LOGO-1783465508632.png',
   iconName = 'SparklesIcon',
   size = 64,
   className = '',
@@ -31,11 +31,11 @@ const AppLogo = memo(function AppLogo({
     <div className={containerClassName} onClick={onClick}>
       <AppImage
         src={src}
-        alt="Broussard Legal Services medallion logo"
+        alt="Broussard Legal Services logo"
         width={size}
         height={size}
-        className="flex-shrink-0 object-contain rounded-full"
-        style={{ mixBlendMode: 'multiply', background: 'transparent' }}
+        className="flex-shrink-0 object-contain"
+        style={{ background: 'transparent' }}
       />
     </div>
   );

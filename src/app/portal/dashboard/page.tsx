@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { createClient } from '@/lib/supabase/client';
 import AppLogo from '@/components/ui/AppLogo';
+import CaseTimeline from './components/CaseTimeline';
+import InvoiceBillingDashboard from '@/app/portal/billing/InvoiceBillingDashboard';
 import { trackPortalDashboardView } from '@/lib/analytics';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -1064,6 +1066,58 @@ export default function ClientHomePage() {
                 {link.label}
               </Link>
             ))}
+          </div>
+        </div>
+
+        {/* ── Case Timeline ── */}
+        <div className="mt-6 bg-card border border-border rounded-2xl overflow-hidden">
+          <div className="px-5 py-4 flex items-center justify-between border-b border-border/60">
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'rgba(53,94,59,0.1)' }}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#355E3B" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                </svg>
+              </div>
+              <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: '#355E3B' }}>Case Timeline</p>
+            </div>
+            <Link
+              href="/portal/cases"
+              className="inline-flex items-center gap-1 text-[11px] font-semibold text-muted-foreground hover:text-primary transition-colors"
+            >
+              View cases
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="9 18 15 12 9 6"/>
+              </svg>
+            </Link>
+          </div>
+          <div className="p-5">
+            <CaseTimeline />
+          </div>
+        </div>
+
+        {/* ── Invoice & Billing Dashboard ── */}
+        <div className="mt-6 bg-card border border-border rounded-2xl overflow-hidden">
+          <div className="px-5 py-4 flex items-center justify-between border-b border-border/60">
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'rgba(200,150,90,0.1)' }}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#C8965A" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/>
+                </svg>
+              </div>
+              <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: '#C8965A' }}>Billing & Invoices</p>
+            </div>
+            <Link
+              href="/portal/invoices"
+              className="inline-flex items-center gap-1 text-[11px] font-semibold text-muted-foreground hover:text-primary transition-colors"
+            >
+              Full billing
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="9 18 15 12 9 6"/>
+              </svg>
+            </Link>
+          </div>
+          <div className="p-5">
+            <InvoiceBillingDashboard />
           </div>
         </div>
 

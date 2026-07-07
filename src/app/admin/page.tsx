@@ -112,6 +112,8 @@ const AdminClientDashboardView = dynamic(() => import('./components/AdminClientD
 const RetainerDocAnalyzerDashboard = dynamic(() => import('./components/RetainerDocAnalyzerDashboard'), { ssr: false });
 const ClientIntakeFormsDashboard = dynamic(() => import('./components/ClientIntakeFormsDashboard'), { ssr: false });
 const EngagementLettersDashboard = dynamic(() => import('./components/EngagementLettersDashboard'), { ssr: false });
+const GeminiCaseAnalyzerDashboard = dynamic(() => import('./components/GeminiCaseAnalyzerDashboard'), { ssr: false });
+const EmailSMSTemplateManager = dynamic(() => import('./components/EmailSMSTemplateManager'), { ssr: false });
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -5112,7 +5114,7 @@ function IntegrationsDashboard() {
 // ─── Main Admin Page ──────────────────────────────────────────────────────────
 
 export default function AdminInquiriesPage() {
-  const [activeTab, setActiveTab] = useState<'overview' | 'inquiries' | 'bookings' | 'payments' | 'analytics' | 'sequences' | 'documents' | 'reminders' | 'cases' | 'emails' | 'consultations' | 'testimonials' | 'clients' | 'client_profiles' | 'integrations' | 'operations' | 'intake_nurture' | 'analytics_dashboard' | 'prospect_scoring' | 'billing_history' | 'retainer_subscriptions' | 'retainer_balance' | 'email_templates' | 'billing_test' | 'billable_hours' | 'invoice_generator' | 'invoice_reminders' | 'invoice_tracking' | 'invoices' | 'reporting' | 'practice_insights' | 'kanban' | 'tasks' | 'notification_emails' | 'messages' | 'security' | 'doc_templates' | 'client_doc_templates' | 'contracts_repository' | 'intake_analytics' | 'intake_routing' | 'audit_trail' | 'routing_admin' | 'scheduling' | 'availability' | 'growth_analytics' | 'strategic_analytics' | 'notifications' | 'roster' | 'retainer_invoice_scheduler' | 'stripe_reconciliation' | 'billing_ops_hub' | 'client_invoices_overview' | 'consultation_funnel' | 'booking_analytics' | 'financial_dashboard' | 'deliverables' | 'case_actions' | 'post_case_close' | 'lifecycle_emails' | 'realtime_feed' | 'ga4_conversion' | 'iolta_ledger' | 'lexi_admin_tools' | 'lexi_document_drafts' | 'monthly_reports' | 'referral_claims' | 'contact_leads' | 'hours_reporting' | 'paralegal_hours' | 'event_notifications' | 'practice_analytics' | 'billing' | 'matter_profitability' | 'matter_time_logger' | 'court_deadlines' | 'staff_time' | 'webhooks' | 'nps_surveys' | 'retainer_alerts' | 'secure_sharing' | 'intake_templates' | 'reporting_exports' | 'billable_allocation' | 'practice_kpi' | 'email_reminders' | 'doc_extractor' | 'matter_invoice_builder' | 'cash_position' | 'portal_adoption' | 'scheduled_consultations' | 'consultation_availability' | 'submissions_inbox' | 'assistant_conversations' | 'lexi_assistant' | 'sms_reminders' | 'client_task_portal' | 'consultation_admin' | 'case_studies_manager' | 'lead_nurture' | 'calendly_pipeline' | 'conversion_funnel' | 'client_dashboard_view' | 'retainer_doc_analyzer' | 'client_intake_forms' | 'engagement_letters'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'inquiries' | 'bookings' | 'payments' | 'analytics' | 'sequences' | 'documents' | 'reminders' | 'cases' | 'emails' | 'consultations' | 'testimonials' | 'clients' | 'client_profiles' | 'integrations' | 'operations' | 'intake_nurture' | 'analytics_dashboard' | 'prospect_scoring' | 'billing_history' | 'retainer_subscriptions' | 'retainer_balance' | 'email_templates' | 'billing_test' | 'billable_hours' | 'invoice_generator' | 'invoice_reminders' | 'invoice_tracking' | 'invoices' | 'reporting' | 'practice_insights' | 'kanban' | 'tasks' | 'notification_emails' | 'messages' | 'security' | 'doc_templates' | 'client_doc_templates' | 'contracts_repository' | 'intake_analytics' | 'intake_routing' | 'audit_trail' | 'routing_admin' | 'scheduling' | 'availability' | 'growth_analytics' | 'strategic_analytics' | 'notifications' | 'roster' | 'retainer_invoice_scheduler' | 'stripe_reconciliation' | 'billing_ops_hub' | 'client_invoices_overview' | 'consultation_funnel' | 'booking_analytics' | 'financial_dashboard' | 'deliverables' | 'case_actions' | 'post_case_close' | 'lifecycle_emails' | 'realtime_feed' | 'ga4_conversion' | 'iolta_ledger' | 'lexi_admin_tools' | 'lexi_document_drafts' | 'monthly_reports' | 'referral_claims' | 'contact_leads' | 'hours_reporting' | 'paralegal_hours' | 'event_notifications' | 'practice_analytics' | 'billing' | 'matter_profitability' | 'matter_time_logger' | 'court_deadlines' | 'staff_time' | 'webhooks' | 'nps_surveys' | 'retainer_alerts' | 'secure_sharing' | 'intake_templates' | 'reporting_exports' | 'billable_allocation' | 'practice_kpi' | 'email_reminders' | 'doc_extractor' | 'matter_invoice_builder' | 'cash_position' | 'portal_adoption' | 'scheduled_consultations' | 'consultation_availability' | 'submissions_inbox' | 'assistant_conversations' | 'lexi_assistant' | 'sms_reminders' | 'client_task_portal' | 'consultation_admin' | 'case_studies_manager' | 'lead_nurture' | 'calendly_pipeline' | 'conversion_funnel' | 'client_dashboard_view' | 'retainer_doc_analyzer' | 'client_intake_forms' | 'engagement_letters' | 'gemini_case_analyzer' | 'email_sms_templates'>('overview');
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -7579,6 +7581,30 @@ export default function AdminInquiriesPage() {
         </svg>
       ),
     },
+    {
+      id: 'gemini_case_analyzer' as const,
+      label: 'Gemini Case Analyzer',
+      description: 'AI-powered analysis of case files and retainer docs — surface deadlines, action items, retainer milestones, and auto-draft client status emails',
+      badge: 'AI',
+      badgeColor: 'bg-emerald-100 text-emerald-700',
+      icon: (
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 1 1 7.072 0l-.548.547A3.374 3.374 0 0 0 14 18.469V19a2 2 0 1 1-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+        </svg>
+      ),
+    },
+    {
+      id: 'email_sms_templates' as const,
+      label: 'Email & SMS Templates',
+      description: 'Create, edit, and send branded email and SMS communication templates — with variable substitution, preview, and test send',
+      badge: 'New',
+      badgeColor: 'bg-blue-100 text-blue-700',
+      icon: (
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
+        </svg>
+      ),
+    },
   ];
 
   const activeTabConfig = TAB_CONFIG.find((t) => t.id === activeTab);
@@ -8029,6 +8055,12 @@ export default function AdminInquiriesPage() {
 
         {/* ── Engagement Letters Tab ── */}
         {activeTab === 'engagement_letters' && <EngagementLettersDashboard />}
+
+        {/* ── Gemini Case Analyzer Tab ── */}
+        {activeTab === 'gemini_case_analyzer' && <GeminiCaseAnalyzerDashboard />}
+
+        {/* ── Email & SMS Templates Tab ── */}
+        {activeTab === 'email_sms_templates' && <EmailSMSTemplateManager />}
 
         {/* ── Email Reminders Tab ── */}
         {activeTab === 'email_reminders' && <EmailRemindersDashboard />}
