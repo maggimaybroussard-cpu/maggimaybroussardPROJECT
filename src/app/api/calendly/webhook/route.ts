@@ -154,6 +154,21 @@ export async function POST(req: NextRequest) {
         }),
       }).catch((err) => console.error('Booking confirmation email error:', err));
 
+      // Fire-and-forget: send retainer deposit payment request email
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://broussardlegalservices.com';
+      fetch(`${siteUrl}/api/booking/send-deposit-request`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          clientName: invitee.name,
+          clientEmail: invitee.email,
+          eventName,
+          startTime,
+          timezone,
+          bookingId: calendlyEventUuid ?? undefined,
+        }),
+      }).catch((err) => console.error('Deposit request email error:', err));
+
       // Fire-and-forget: schedule the 3-step Calendly confirmation email sequence
       fetch(`${supabaseUrl}/functions/v1/schedule-calendly-confirmation-sequence`, {
         method: 'POST',

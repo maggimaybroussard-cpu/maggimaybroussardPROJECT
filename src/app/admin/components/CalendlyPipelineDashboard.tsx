@@ -59,6 +59,7 @@ interface BookingRow {
   attendanceStatus: AttendanceStatus;
   noShowFlagged: boolean;
   inquiryId: string | null;
+  depositStatus: 'unpaid' | 'pending' | 'paid';
 }
 
 function computeLeadScore(invitee: CalendlyInvitee | null, event: CalendlyEvent, attendanceStatus: AttendanceStatus): number {
@@ -173,7 +174,7 @@ export default function CalendlyPipelineDashboard() {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'all' | 'hot' | 'upcoming_48h' | 'no_show'>('all');
   const [actionFeedback, setActionFeedback] = useState<Record<string, string>>({});
-  const [localState, setLocalState] = useState<Record<string, { reminderSent?: boolean; prepSent?: boolean; attendanceStatus?: AttendanceStatus }>>({});
+  const [localState, setLocalState] = useState<Record<string, { reminderSent?: boolean; prepSent?: boolean; attendanceStatus?: AttendanceStatus; depositRequested?: boolean }>>({});
   const [markingAttendance, setMarkingAttendance] = useState<Record<string, boolean>>({});
 
   const fetchData = useCallback(async () => {
@@ -259,6 +260,7 @@ export default function CalendlyPipelineDashboard() {
           attendanceStatus,
           noShowFlagged,
           inquiryId: attendanceInfo?.id ?? null,
+          depositStatus: 'unpaid',
         };
       });
 
@@ -337,6 +339,30 @@ export default function CalendlyPipelineDashboard() {
       setActionFeedback((prev) => ({ ...prev, [key]: 'error' }));
     }
     setTimeout(() => setActionFeedback((prev) => { const n = { ...prev }; delete n[key]; return n; }), 3000);
+  };
+
+  const handleSendDepositRequest = async (row: BookingRow) => {
+    const key = row.event.uuid;
+    setActionFeedback((prev) => ({ ...prev, [key]: 'sending_deposit' }));
+    try {
+      const res = await fetch('/api/booking/send-deposit-request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          clientName: row.invitee?.name ?? 'Client',
+          clientEmail: row.invitee?.email ?? '',
+          eventName: row.event.name,
+          startTime: row.event.start_time,
+          bookingId: row.event.uuid,
+        }),
+      });
+      if (!res.ok) throw new Error('Failed');
+      setLocalState((prev) => ({ ...prev, [key]: { ...prev[key], depositRequested: true } }));
+      setActionFeedback((prev) => ({ ...prev, [key]: 'deposit_sent' }));
+    } catch {
+      setActionFeedback((prev) => ({ ...prev, [key]: 'error' }));
+    }
+    setTimeout(() => setActionFeedback((prev) => { const n = { ...prev }; delete n[key]; return n; }), 4000);
   };
 
   const handleSendPrep = async (row: BookingRow) => {
@@ -621,7 +647,7 @@ export default function CalendlyPipelineDashboard() {
                       <p className="text-xs text-red-700 font-semibold py-1">🚫 Flagged no-show (-20 pts)</p>
                     )}
 
-                    {feedback === 'sending_reminder' || feedback === 'sending_prep' ? (
+                    {feedback === 'sending_reminder' || feedback === 'sending_prep' || feedback === 'sending_deposit' ? (
                       <div className="flex items-center gap-2 text-xs text-muted-foreground py-2">
                         <div className="w-3 h-3 border border-accent border-t-transparent rounded-full animate-spin" />
                         Sending…
@@ -630,10 +656,27 @@ export default function CalendlyPipelineDashboard() {
                       <p className="text-xs text-green-700 font-semibold py-1">✓ Reminder sent</p>
                     ) : feedback === 'prep_sent' ? (
                       <p className="text-xs text-green-700 font-semibold py-1">✓ Prep docs sent</p>
+                    ) : feedback === 'deposit_sent' ? (
+                      <p className="text-xs text-green-700 font-semibold py-1">💳 Deposit request sent</p>
                     ) : feedback === 'error' ? (
                       <p className="text-xs text-red-600 py-1">Failed — try again</p>
                     ) : (
                       <>
+                        {/* Deposit request button */}
+                        <button
+                          onClick={() => handleSendDepositRequest(row)}
+                          disabled={ls.depositRequested || !row.invitee?.email}
+                          className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
+                            ls.depositRequested
+                              ? 'bg-green-50 text-green-700 border border-green-200 cursor-default' :'bg-amber-600 text-white hover:bg-amber-700'
+                          }`}
+                          title="Send $250 deposit payment link to client"
+                        >
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/>
+                          </svg>
+                          {ls.depositRequested ? 'Deposit Sent ✓' : 'Send Deposit Request'}
+                        </button>
                         <button
                           onClick={() => handleSendPrep(row)}
                           disabled={ls.prepSent}
