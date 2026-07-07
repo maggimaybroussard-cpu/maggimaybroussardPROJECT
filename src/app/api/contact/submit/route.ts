@@ -391,6 +391,22 @@ export async function POST(req: NextRequest) {
       }).catch(() => {});
     }
 
+    // ── Instant SMS lead response (fire-and-forget while lead is warm) ──────
+    const submittedPhone: string | undefined = body.phone;
+    if (submittedPhone) {
+      const siteOrigin = process.env.NEXT_PUBLIC_SITE_URL || 'https://broussardlegalservices.com';
+      fetch(`${siteOrigin}/api/sms/lead-response`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: submittedPhone,
+          clientName: name,
+          service,
+          inquiryId,
+        }),
+      }).catch(() => {});
+    }
+
     return NextResponse.json({ success: true, inquiryId, emailSent: true });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Something went wrong';

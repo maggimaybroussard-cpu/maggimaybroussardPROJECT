@@ -182,6 +182,7 @@ export async function POST(req: NextRequest) {
         body: JSON.stringify({
           email: invitee.email,
           name: invitee.name,
+          phone: invitee.text_reminder_number ?? null,
           eventName,
           startTime,
           endTime,

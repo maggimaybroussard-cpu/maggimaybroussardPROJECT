@@ -38,6 +38,7 @@ serve(async (req) => {
       startTime,
       meetingLocation,
       reminderType, // '24hr' | '1hr'
+      recipientPhone: recipientPhoneFromBody,
     } = await req.json();
 
     const RESEND_API_KEY = (globalThis as any)?.Deno?.env?.get("RESEND_API_KEY");
@@ -48,6 +49,17 @@ serve(async (req) => {
     if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) throw new Error("Supabase credentials not configured");
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+    // Resolve phone: prefer body param, fall back to stored value in appointment_reminders row
+    let resolvedPhone: string | null = recipientPhoneFromBody ?? null;
+    if (!resolvedPhone && reminderId) {
+      const { data: reminderRow } = await supabase
+        .from("appointment_reminders")
+        .select("recipient_phone")
+        .eq("id", reminderId)
+        .single();
+      resolvedPhone = reminderRow?.recipient_phone ?? null;
+    }
 
     const eventDate = startTime
       ? new Date(startTime).toLocaleDateString("en-US", {
@@ -244,13 +256,14 @@ serve(async (req) => {
     const data = await res.json();
 
     // ── SMS via Twilio (non-blocking, best-effort) ──────────────────────────
-    const recipientPhone: string | undefined = (await req.clone().json().catch(() => ({}))).recipientPhone;
-    if (recipientPhone) {
+    if (resolvedPhone) {
       const TWILIO_ACCOUNT_SID = (globalThis as any)?.Deno?.env?.get("TWILIO_ACCOUNT_SID");
       const TWILIO_AUTH_TOKEN = (globalThis as any)?.Deno?.env?.get("TWILIO_AUTH_TOKEN");
       const TWILIO_PHONE_NUMBER = (globalThis as any)?.Deno?.env?.get("TWILIO_PHONE_NUMBER");
 
       if (TWILIO_ACCOUNT_SID && TWILIO_AUTH_TOKEN && TWILIO_PHONE_NUMBER) {
+        let smsSid: string | null = null;
+        let smsError: string | null = null;
         try {
           const firstName = recipientName?.split(" ")[0] ?? recipientName;
           const consultation = eventName ?? "Paralegal Consultation";
@@ -260,12 +273,34 @@ serve(async (req) => {
 
           const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`;
           const credentials = btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`);
-          const formData = new URLSearchParams({ To: recipientPhone, From: TWILIO_PHONE_NUMBER, Body: smsBody });
-          await fetch(twilioUrl, {
+          const formData = new URLSearchParams({ To: resolvedPhone, From: TWILIO_PHONE_NUMBER, Body: smsBody });
+          const smsRes = await fetch(twilioUrl, {
             method: "POST",
             headers: { Authorization: `Basic ${credentials}`, "Content-Type": "application/x-www-form-urlencoded" },
             body: formData.toString(),
           });
+          const smsData = await smsRes.json();
+          smsSid = smsData?.sid ?? null;
+
+          // Log to sms_reminder_logs
+          await supabase.from("sms_reminder_logs").insert({
+            recipient_name: recipientName ?? "Client",
+            recipient_phone: resolvedPhone,
+            recipient_type: "client",
+            message_type: "appointment_reminder",
+            message_body: smsBody,
+            status: smsRes.ok ? "sent" : "failed",
+            error: smsRes.ok ? null : (smsData?.message ?? "Twilio error"),
+            trigger_type: "calendly_booking",
+          }).catch(() => {});
+
+          // Mark SMS as sent on the reminder row
+          if (reminderId && smsRes.ok) {
+            await supabase
+              .from("appointment_reminders")
+              .update({ sms_sent: true, sms_sid: smsSid })
+              .eq("id", reminderId);
+          }
         } catch (smsErr) {
           console.error("[send-appointment-reminder] SMS send failed (non-blocking):", smsErr);
         }

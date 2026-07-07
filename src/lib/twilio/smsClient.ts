@@ -182,3 +182,30 @@ export async function sendLexiAppointmentReminderSMS(opts: {
   const body = `Broussard Legal Services\n\nHi ${firstName}, this is a reminder about your upcoming ${opts.appointmentType} on ${opts.appointmentDate} at ${opts.appointmentTime} ${tzShort}.\n\nPlease contact us if you need to reschedule.\n\nReply STOP to opt out.`;
   return sendSMS(opts.to, body);
 }
+
+/**
+ * Send instant lead response SMS when a contact form is submitted
+ */
+export async function sendLeadResponseSMS(opts: {
+  to: string;
+  clientName: string;
+  service: string;
+}): Promise<SMSResult> {
+  const firstName = opts.clientName.split(' ')[0];
+  const body = `Broussard Legal Services\n\nHi ${firstName}, we received your inquiry about ${opts.service}. Maggi May will personally follow up within 1 business day.\n\nWant to skip the wait? Book a free 30-min consultation: https://broussardlegalservices.com/availability\n\nReply STOP to opt out.`;
+  return sendSMS(opts.to, body);
+}
+
+/**
+ * Send abandoned booking nudge SMS for leads who started but didn't finish booking
+ */
+export async function sendAbandonedBookingSMS(opts: {
+  to: string;
+  clientName: string;
+  service?: string;
+}): Promise<SMSResult> {
+  const firstName = opts.clientName.split(' ')[0];
+  const serviceNote = opts.service ? ` about ${opts.service}` : '';
+  const body = `Broussard Legal Services\n\nHi ${firstName}, you started booking a consultation${serviceNote} but didn't finish. It only takes 2 minutes — grab a time that works for you: https://broussardlegalservices.com/availability\n\nReply STOP to opt out.`;
+  return sendSMS(opts.to, body);
+}

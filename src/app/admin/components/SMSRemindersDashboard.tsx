@@ -10,7 +10,7 @@ interface SMSLog {
   recipient_name: string;
   recipient_phone: string;
   recipient_type: 'client' | 'staff';
-  message_type: 'deadline' | 'overdue_payment';
+  message_type: 'deadline' | 'overdue_payment' | 'appointment_reminder' | 'lead_response' | 'abandoned_booking';
   message_body: string;
   status: 'sent' | 'failed' | 'pending';
   sent_at: string;
@@ -39,6 +39,16 @@ interface OverdueInvoice {
   due_date: string;
   days_overdue: number;
   payment_link?: string;
+}
+
+interface AbandonedLead {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  service: string;
+  created_at: string;
+  booking_stage: string;
 }
 
 interface SendResult {
@@ -81,14 +91,25 @@ function urgencyBadge(days: number, isOverdue = false) {
   return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-700"><span className="w-1.5 h-1.5 rounded-full bg-blue-400" />{days}d left</span>;
 }
 
+function timeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const hrs = Math.floor(diff / (1000 * 60 * 60));
+  if (hrs < 1) return 'Less than 1 hour ago';
+  if (hrs === 1) return '1 hour ago';
+  if (hrs < 24) return `${hrs} hours ago`;
+  const days = Math.floor(hrs / 24);
+  return `${days} day${days !== 1 ? 's' : ''} ago`;
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function SMSRemindersDashboard() {
   const supabase = createClient();
 
-  const [activeTab, setActiveTab] = useState<'deadlines' | 'overdue' | 'logs'>('deadlines');
+  const [activeTab, setActiveTab] = useState<'deadlines' | 'overdue' | 'abandoned' | 'logs'>('deadlines');
   const [deadlines, setDeadlines] = useState<DeadlineItem[]>([]);
   const [overdueInvoices, setOverdueInvoices] = useState<OverdueInvoice[]>([]);
+  const [abandonedLeads, setAbandonedLeads] = useState<AbandonedLead[]>([]);
   const [smsLogs, setSmsLogs] = useState<SMSLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState<Record<string, boolean>>({});
@@ -136,7 +157,6 @@ export default function SMSRemindersDashboard() {
       }));
       setDeadlines(items);
     } else {
-      // Fallback mock data for preview
       setDeadlines([
         { id: 'mock-1', title: 'File Motion for Summary Judgment', case_name: 'Johnson v. Smith', due_date: new Date(Date.now() + 86400000).toISOString().split('T')[0], days_until: 1, assigned_to: 'Maggi May Broussard', phone: '', email: 'staff@broussardlegalservices.com', type: 'deadline' },
         { id: 'mock-2', title: 'Court Hearing — Preliminary Injunction', case_name: 'Davis Estate Matter', due_date: new Date(Date.now() + 3 * 86400000).toISOString().split('T')[0], days_until: 3, assigned_to: 'Paralegal Team', phone: '', email: 'staff@broussardlegalservices.com', type: 'court_date' },
@@ -173,7 +193,6 @@ export default function SMSRemindersDashboard() {
       }));
       setOverdueInvoices(items);
     } else {
-      // Fallback mock data for preview
       setOverdueInvoices([
         { id: 'mock-inv-1', invoice_number: 'INV-2024-001', client_name: 'Robert Johnson', client_phone: '', client_email: 'client@example.com', amount: 1500, due_date: new Date(Date.now() - 5 * 86400000).toISOString().split('T')[0], days_overdue: 5, payment_link: 'https://broussardlegalservices.com/portal/invoices' },
         { id: 'mock-inv-2', invoice_number: 'INV-2024-002', client_name: 'Sarah Williams', client_phone: '', client_email: 'sarah@example.com', amount: 2750, due_date: new Date(Date.now() - 12 * 86400000).toISOString().split('T')[0], days_overdue: 12, payment_link: 'https://broussardlegalservices.com/portal/invoices' },
@@ -181,6 +200,18 @@ export default function SMSRemindersDashboard() {
       ]);
     }
   }, [supabase]);
+
+  const loadAbandonedLeads = useCallback(async () => {
+    try {
+      const res = await fetch('/api/sms/abandoned-booking');
+      if (res.ok) {
+        const { candidates } = await res.json();
+        setAbandonedLeads(candidates ?? []);
+      }
+    } catch {
+      setAbandonedLeads([]);
+    }
+  }, []);
 
   const loadLogs = useCallback(async () => {
     const { data } = await supabase
@@ -202,11 +233,11 @@ export default function SMSRemindersDashboard() {
   useEffect(() => {
     const load = async () => {
       setLoading(true);
-      await Promise.all([loadDeadlines(), loadOverdueInvoices(), loadLogs()]);
+      await Promise.all([loadDeadlines(), loadOverdueInvoices(), loadAbandonedLeads(), loadLogs()]);
       setLoading(false);
     };
     load();
-  }, [loadDeadlines, loadOverdueInvoices, loadLogs]);
+  }, [loadDeadlines, loadOverdueInvoices, loadAbandonedLeads, loadLogs]);
 
   // ── Send SMS ───────────────────────────────────────────────────────────────
 
@@ -239,7 +270,7 @@ export default function SMSRemindersDashboard() {
         showToast('error', `Failed: ${result.error}`);
         await logSMS({ recipientName: item.assigned_to, recipientPhone: phone, recipientType: 'staff', messageType: 'deadline', messageBody: message, status: 'failed', error: result.error });
       }
-    } catch (err) {
+    } catch {
       showToast('error', 'Network error sending SMS');
     } finally {
       setSending((prev) => ({ ...prev, [item.id]: false }));
@@ -274,10 +305,41 @@ export default function SMSRemindersDashboard() {
         showToast('error', `Failed: ${result.error}`);
         await logSMS({ recipientName: invoice.client_name, recipientPhone: phone, recipientType: 'client', messageType: 'overdue_payment', messageBody: message, status: 'failed', error: result.error });
       }
-    } catch (err) {
+    } catch {
       showToast('error', 'Network error sending SMS');
     } finally {
       setSending((prev) => ({ ...prev, [invoice.id]: false }));
+    }
+  };
+
+  const sendAbandonedSMS = async (lead: AbandonedLead) => {
+    const phone = phoneOverrides[lead.id] || lead.phone;
+    if (!phone) {
+      showToast('error', `No phone number for ${lead.name}.`);
+      return;
+    }
+
+    setSending((prev) => ({ ...prev, [lead.id]: true }));
+
+    try {
+      const res = await fetch('/api/sms/abandoned-booking', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ to: phone, clientName: lead.name, service: lead.service, inquiryId: lead.id }),
+      });
+      const result: SendResult = await res.json();
+
+      if (result.success) {
+        showToast('success', `Nudge sent to ${lead.name}`);
+        setAbandonedLeads((prev) => prev.filter((l) => l.id !== lead.id));
+        await loadLogs();
+      } else {
+        showToast('error', `Failed: ${result.error}`);
+      }
+    } catch {
+      showToast('error', 'Network error sending SMS');
+    } finally {
+      setSending((prev) => ({ ...prev, [lead.id]: false }));
     }
   };
 
@@ -321,13 +383,31 @@ export default function SMSRemindersDashboard() {
     showToast('success', `Sent ${overdueInvoices.length} overdue payment reminder${overdueInvoices.length !== 1 ? 's' : ''}`);
   };
 
+  const sendAllAbandoned = async () => {
+    setSendAll(true);
+    for (const lead of abandonedLeads) {
+      await sendAbandonedSMS(lead);
+    }
+    setSendAll(false);
+    showToast('success', `Sent ${abandonedLeads.length} abandoned booking nudge${abandonedLeads.length !== 1 ? 's' : ''}`);
+  };
+
   // ── Render ─────────────────────────────────────────────────────────────────
 
   const tabs = [
     { id: 'deadlines' as const, label: 'Matter Deadlines', count: deadlines.length, icon: '⚖️' },
     { id: 'overdue' as const, label: 'Overdue Payments', count: overdueInvoices.length, icon: '💳' },
+    { id: 'abandoned' as const, label: 'Abandoned Bookings', count: abandonedLeads.length, icon: '🔔' },
     { id: 'logs' as const, label: 'SMS Logs', count: smsLogs.length, icon: '📋' },
   ];
+
+  const messageTypeLabel: Record<string, string> = {
+    deadline: '⚖️ Deadline',
+    overdue_payment: '💳 Payment',
+    appointment_reminder: '📅 Appt Reminder',
+    lead_response: '⚡ Lead Response',
+    abandoned_booking: '🔔 Abandoned',
+  };
 
   return (
     <div className="p-6 space-y-6">
@@ -347,12 +427,40 @@ export default function SMSRemindersDashboard() {
             SMS Reminders
           </h2>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Send urgent matter deadline and overdue payment reminders via Twilio SMS to clients and staff
+            Automated appointment reminders, instant lead responses, abandoned booking nudges, and manual deadline/payment SMS
           </p>
         </div>
         <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/40 border border-border/60 rounded-lg px-3 py-2">
           <span className="w-2 h-2 rounded-full bg-emerald-500" />
           Powered by Twilio
+        </div>
+      </div>
+
+      {/* Automated Triggers Info Banner */}
+      <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+        <p className="text-xs font-semibold text-emerald-800 uppercase tracking-wide mb-2">⚡ Automated SMS Triggers Active</p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-emerald-700">
+          <div className="flex items-start gap-2">
+            <span className="text-base">📅</span>
+            <div>
+              <p className="font-semibold">Appointment Reminders</p>
+              <p className="text-emerald-600">24hr + 1hr before every Calendly consultation — fires automatically when booking is confirmed</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-2">
+            <span className="text-base">⚡</span>
+            <div>
+              <p className="font-semibold">Instant Lead Response</p>
+              <p className="text-emerald-600">SMS fires the moment a contact form is submitted (if phone provided) — catches leads while warm</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-2">
+            <span className="text-base">🔔</span>
+            <div>
+              <p className="font-semibold">Abandoned Booking Nudge</p>
+              <p className="text-emerald-600">Leads who submitted a form but never booked — send a single nudge from the tab below</p>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -375,21 +483,23 @@ export default function SMSRemindersDashboard() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 border-b border-border/60">
+      <div className="flex gap-1 border-b border-border/60 overflow-x-auto">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
               activeTab === tab.id
-                ? 'border-primary text-primary' :'border-transparent text-muted-foreground hover:text-foreground'
+                ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
             }`}
           >
             <span>{tab.icon}</span>
             {tab.label}
-            <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${activeTab === tab.id ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>
-              {tab.count}
-            </span>
+            {tab.count > 0 && (
+              <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${activeTab === tab.id ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>
+                {tab.count}
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -553,6 +663,82 @@ export default function SMSRemindersDashboard() {
             </div>
           )}
 
+          {/* ── Abandoned Bookings Tab ── */}
+          {activeTab === 'abandoned' && (
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm text-muted-foreground">
+                    {abandonedLeads.length} lead{abandonedLeads.length !== 1 ? 's' : ''} submitted a form 1–48 hours ago but never booked a consultation
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Each lead receives at most one nudge SMS — already-sent leads are excluded automatically</p>
+                </div>
+                <button
+                  onClick={sendAllAbandoned}
+                  disabled={sendAll || abandonedLeads.length === 0}
+                  className="flex items-center gap-2 px-4 py-2 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
+                >
+                  {sendAll ? (
+                    <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Sending all...</>
+                  ) : (
+                    <><span>🔔</span>Nudge All ({abandonedLeads.length})</>
+                  )}
+                </button>
+              </div>
+
+              {abandonedLeads.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <span className="text-4xl block mb-3">🎯</span>
+                  <p className="font-medium">No abandoned bookings right now</p>
+                  <p className="text-xs mt-1">Leads who submit a form but don't book within 1–48 hours will appear here</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {abandonedLeads.map((lead) => (
+                    <div key={lead.id} className="bg-card border border-amber-200 rounded-xl p-4 hover:border-amber-400 transition-colors">
+                      <div className="flex flex-col sm:flex-row sm:items-start gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-wrap items-center gap-2 mb-1">
+                            <span className="font-semibold text-foreground text-sm">{lead.name}</span>
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium">🔔 Not booked</span>
+                          </div>
+                          <p className="text-xs text-muted-foreground mb-1">
+                            <span className="font-medium">Service:</span> {lead.service} &nbsp;·&nbsp;
+                            <span className="font-medium">Email:</span> {lead.email}
+                          </p>
+                          <p className="text-xs text-muted-foreground mb-2">
+                            <span className="font-medium">Submitted:</span> {timeAgo(lead.created_at)}
+                          </p>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-muted-foreground">📱 Phone:</span>
+                            <input
+                              type="tel"
+                              placeholder="+1 (555) 000-0000"
+                              value={phoneOverrides[lead.id] ?? lead.phone ?? ''}
+                              onChange={(e) => setPhoneOverrides((prev) => ({ ...prev, [lead.id]: e.target.value }))}
+                              className="text-xs border border-border rounded-lg px-2.5 py-1.5 bg-background text-foreground w-44 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                            />
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => sendAbandonedSMS(lead)}
+                          disabled={sending[lead.id]}
+                          className="flex items-center gap-2 px-4 py-2 bg-amber-600 text-white text-xs font-semibold rounded-lg hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors whitespace-nowrap shrink-0"
+                        >
+                          {sending[lead.id] ? (
+                            <><span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />Sending...</>
+                          ) : (
+                            <><span>🔔</span>Send Nudge</>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* ── Logs Tab ── */}
           {activeTab === 'logs' && (
             <div className="space-y-4">
@@ -570,7 +756,7 @@ export default function SMSRemindersDashboard() {
                 <div className="text-center py-12 text-muted-foreground">
                   <span className="text-4xl block mb-3">📋</span>
                   <p className="font-medium">No SMS messages sent yet</p>
-                  <p className="text-xs mt-1">Sent reminders will appear here</p>
+                  <p className="text-xs mt-1">All automated and manual SMS sends will appear here</p>
                 </div>
               ) : (
                 <div className="overflow-x-auto rounded-xl border border-border/60">
@@ -592,15 +778,20 @@ export default function SMSRemindersDashboard() {
                             <div className="text-xs text-muted-foreground capitalize">{log.recipient_type}</div>
                           </td>
                           <td className="px-4 py-3">
-                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${log.message_type === 'deadline' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'}`}>
-                              {log.message_type === 'deadline' ? '⚖️ Deadline' : '💳 Payment'}
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                              log.message_type === 'deadline' ? 'bg-blue-100 text-blue-700' :
+                              log.message_type === 'overdue_payment' ? 'bg-amber-100 text-amber-700' :
+                              log.message_type === 'appointment_reminder' ? 'bg-green-100 text-green-700' :
+                              log.message_type === 'lead_response'? 'bg-purple-100 text-purple-700' : 'bg-orange-100 text-orange-700'
+                            }`}>
+                              {messageTypeLabel[log.message_type] ?? log.message_type}
                             </span>
                           </td>
                           <td className="px-4 py-3 text-muted-foreground font-mono text-xs">{log.recipient_phone}</td>
                           <td className="px-4 py-3">
                             <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${
                               log.status === 'sent' ? 'bg-emerald-100 text-emerald-700' :
-                              log.status === 'failed'? 'bg-red-100 text-red-700' : 'bg-muted text-muted-foreground'
+                              log.status === 'failed' ? 'bg-red-100 text-red-700' : 'bg-muted text-muted-foreground'
                             }`}>
                               {log.status === 'sent' ? '✓' : log.status === 'failed' ? '✕' : '⏳'} {log.status}
                             </span>

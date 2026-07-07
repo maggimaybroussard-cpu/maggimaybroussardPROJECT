@@ -29,6 +29,7 @@ serve(async (req) => {
       eventName,
       startTime,
       meetingLocation,
+      recipientPhone,
     } = await req.json();
 
     if (!inquiryId || !recipientEmail || !startTime) {
@@ -54,6 +55,7 @@ serve(async (req) => {
       inquiry_id: string;
       recipient_email: string;
       recipient_name: string;
+      recipient_phone: string | null;
       event_name: string | null;
       start_time: string;
       meeting_location: string | null;
@@ -68,12 +70,12 @@ serve(async (req) => {
       inquiry_id: inquiryId,
       recipient_email: recipientEmail,
       recipient_name: recipientName ?? "there",
+      recipient_phone: recipientPhone ?? null,
       event_name: eventName ?? null,
       start_time: startTime,
       meeting_location: meetingLocation ?? null,
       reminder_type: "24hr",
       scheduled_at: new Date(scheduled24hr).toISOString(),
-      // Skip if the appointment is less than 24 hours away
       send_status: scheduled24hr > now ? "pending" : "skipped",
     });
 
@@ -83,12 +85,12 @@ serve(async (req) => {
       inquiry_id: inquiryId,
       recipient_email: recipientEmail,
       recipient_name: recipientName ?? "there",
+      recipient_phone: recipientPhone ?? null,
       event_name: eventName ?? null,
       start_time: startTime,
       meeting_location: meetingLocation ?? null,
       reminder_type: "1hr",
       scheduled_at: new Date(scheduled1hr).toISOString(),
-      // Skip if the appointment is less than 1 hour away
       send_status: scheduled1hr > now ? "pending" : "skipped",
     });
 

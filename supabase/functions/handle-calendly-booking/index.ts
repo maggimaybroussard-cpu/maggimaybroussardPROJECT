@@ -42,6 +42,7 @@ serve(async (req) => {
       timezone,
       action,
       cancelReason,
+      phone,
     } = body;
 
     const SUPABASE_URL = (globalThis as any)?.Deno?.env?.get("SUPABASE_URL");
@@ -248,6 +249,7 @@ serve(async (req) => {
           inquiryId: inquiry.id,
           recipientEmail: email,
           recipientName: name ?? inquiry.name,
+          recipientPhone: phone ?? null,
           eventName: eventName ?? null,
           startTime: startTime ?? null,
           meetingLocation: meetingLocation ?? null,
