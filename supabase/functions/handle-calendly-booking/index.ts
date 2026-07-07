@@ -2,11 +2,12 @@ import { serve } from "https://deno.land/std@0.192.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 /**
- * Called by the Calendly webhook when a booking is created or canceled.
+ * Called by the Calendly webhook when a booking is created, canceled,
+ * marked as no-show, or rescheduled.
  *
  * On creation:
  *  - Finds the matching contact inquiry by email
- *  - Updates booking_stage → 'consultation_booked'
+ *  - Updates booking_stage → 'consultation_booked' *  - Sets attendance_status →'pending'
  *  - Stores Calendly event UUID, start/end time, meeting location on the inquiry
  *  - Writes a rich case_timeline entry
  *  - Cancels pending booking_reminder sequences
@@ -14,8 +15,24 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
  *
  * On cancellation:
  *  - Clears the Calendly fields on the inquiry
- *  - Reverts booking_stage → 'inquiry'
+ *  - Reverts booking_stage → 'inquiry' *  - Sets attendance_status →'canceled'
  *  - Writes a cancellation timeline entry
+ *
+ * On no-show:
+ *  - Sets attendance_status → 'no_show'
+ *  - Sets no_show_flagged → true
+ *  - Applies -20 score delta to prospect_scores
+ *  - Writes a no-show timeline entry
+ *
+ * On rescheduled:
+ *  - Sets attendance_status → 'rescheduled'
+ *  - Updates calendly_start_time / calendly_end_time
+ *  - Writes a rescheduled timeline entry
+ *
+ * On attended (manual mark):
+ *  - Sets attendance_status → 'attended'
+ *  - Applies +15 score delta to prospect_scores
+ *  - Writes an attended timeline entry
  */
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -73,11 +90,11 @@ serve(async (req) => {
 
     // ── CANCELLATION ─────────────────────────────────────────────────────────
     if (action === "canceled") {
-      // Clear Calendly fields and revert booking stage
       await supabase
         .from("contact_inquiries")
         .update({
           booking_stage: "inquiry",
+          attendance_status: "canceled",
           calendly_event_uuid: null,
           calendly_start_time: null,
           calendly_end_time: null,
@@ -87,7 +104,6 @@ serve(async (req) => {
         })
         .eq("id", inquiry.id);
 
-      // Write cancellation timeline entry
       await supabase.from("case_timeline").insert({
         inquiry_id: inquiry.id,
         event_title: "Consultation Canceled",
@@ -97,14 +113,12 @@ serve(async (req) => {
         event_date: new Date().toISOString(),
       });
 
-      // Skip any pending appointment reminders for this inquiry
       await supabase
         .from("appointment_reminders")
         .update({ send_status: "skipped" })
         .eq("inquiry_id", inquiry.id)
         .eq("send_status", "pending");
 
-      // Delete the Google Calendar event if one was created
       try {
         const { data: inquiryWithGcal } = await supabase
           .from("contact_inquiries")
@@ -125,7 +139,6 @@ serve(async (req) => {
             }),
           });
 
-          // Clear the stored event ID
           await supabase
             .from("contact_inquiries")
             .update({ google_calendar_event_id: null })
@@ -141,9 +154,179 @@ serve(async (req) => {
       );
     }
 
+    // ── NO-SHOW ───────────────────────────────────────────────────────────────
+    if (action === "noshow") {
+      // Flag the inquiry as no-show
+      await supabase
+        .from("contact_inquiries")
+        .update({
+          attendance_status: "no_show",
+          no_show_flagged: true,
+          attendance_scored_at: new Date().toISOString(),
+          attendance_score_delta: -20,
+        })
+        .eq("id", inquiry.id);
+
+      // Apply -20 score delta to prospect_scores
+      const { data: existingScore } = await supabase
+        .from("prospect_scores")
+        .select("id, total_score, engagement_score, signals")
+        .eq("inquiry_id", inquiry.id)
+        .order("scored_at", { ascending: false })
+        .limit(1)
+        .single();
+
+      if (existingScore) {
+        const newTotal = Math.max(0, existingScore.total_score - 20);
+        const newEngagement = Math.max(0, (existingScore.engagement_score ?? 0) - 20);
+        const newTier = newTotal >= 70 ? "hot" : newTotal >= 45 ? "warm" : "cold";
+        const existingSignals = existingScore.signals ?? {};
+        const engagementSignals: string[] = existingSignals.engagement ?? [];
+
+        await supabase
+          .from("prospect_scores")
+          .update({
+            total_score: newTotal,
+            engagement_score: newEngagement,
+            score_tier: newTier,
+            signals: {
+              ...existingSignals,
+              engagement: [...engagementSignals, "no_show: -20pts"],
+            },
+            recommended_action: "Re-engage: prospect did not attend scheduled consultation",
+            scored_at: new Date().toISOString(),
+          })
+          .eq("id", existingScore.id);
+      }
+
+      // Write no-show timeline entry
+      await supabase.from("case_timeline").insert({
+        inquiry_id: inquiry.id,
+        event_title: "🚫 No-Show — Consultation Missed",
+        event_description:
+          "Prospect did not attend the scheduled consultation. Lead score adjusted -20 pts. Follow-up recommended.",
+        event_date: new Date().toISOString(),
+      });
+
+      // Skip pending appointment reminders
+      await supabase
+        .from("appointment_reminders")
+        .update({ send_status: "skipped" })
+        .eq("inquiry_id", inquiry.id)
+        .eq("send_status", "pending");
+
+      return new Response(
+        JSON.stringify({ success: true, action: "noshow", inquiryId: inquiry.id, scoreDelta: -20 }),
+        { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } }
+      );
+    }
+
+    // ── RESCHEDULED ───────────────────────────────────────────────────────────
+    if (action === "rescheduled") {
+      let formattedDate = "";
+      if (startTime) {
+        try {
+          formattedDate = new Date(startTime).toLocaleDateString("en-US", {
+            weekday: "long",
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+            hour: "numeric",
+            minute: "2-digit",
+            timeZone: timezone ?? "America/Chicago",
+            timeZoneName: "short",
+          });
+        } catch {
+          formattedDate = startTime;
+        }
+      }
+
+      await supabase
+        .from("contact_inquiries")
+        .update({
+          attendance_status: "rescheduled",
+          calendly_start_time: startTime ?? null,
+          calendly_end_time: endTime ?? null,
+          attendance_scored_at: new Date().toISOString(),
+          attendance_score_delta: 0,
+        })
+        .eq("id", inquiry.id);
+
+      await supabase.from("case_timeline").insert({
+        inquiry_id: inquiry.id,
+        event_title: "📅 Consultation Rescheduled",
+        event_description: formattedDate
+          ? `Consultation rescheduled to ${formattedDate}.`
+          : "Consultation was rescheduled via Calendly.",
+        event_date: new Date().toISOString(),
+      });
+
+      return new Response(
+        JSON.stringify({ success: true, action: "rescheduled", inquiryId: inquiry.id }),
+        { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } }
+      );
+    }
+
+    // ── ATTENDED (manual mark from admin) ─────────────────────────────────────
+    if (action === "attended") {
+      await supabase
+        .from("contact_inquiries")
+        .update({
+          attendance_status: "attended",
+          no_show_flagged: false,
+          attendance_scored_at: new Date().toISOString(),
+          attendance_score_delta: 15,
+        })
+        .eq("id", inquiry.id);
+
+      // Apply +15 score delta to prospect_scores
+      const { data: existingScore } = await supabase
+        .from("prospect_scores")
+        .select("id, total_score, engagement_score, signals")
+        .eq("inquiry_id", inquiry.id)
+        .order("scored_at", { ascending: false })
+        .limit(1)
+        .single();
+
+      if (existingScore) {
+        const newTotal = Math.min(100, existingScore.total_score + 15);
+        const newEngagement = Math.min(100, (existingScore.engagement_score ?? 0) + 15);
+        const newTier = newTotal >= 70 ? "hot" : newTotal >= 45 ? "warm" : "cold";
+        const existingSignals = existingScore.signals ?? {};
+        const engagementSignals: string[] = existingSignals.engagement ?? [];
+
+        await supabase
+          .from("prospect_scores")
+          .update({
+            total_score: newTotal,
+            engagement_score: newEngagement,
+            score_tier: newTier,
+            signals: {
+              ...existingSignals,
+              engagement: [...engagementSignals, "attended_consultation: +15pts"],
+            },
+            recommended_action: "High intent: attended consultation — follow up with retainer proposal",
+            scored_at: new Date().toISOString(),
+          })
+          .eq("id", existingScore.id);
+      }
+
+      await supabase.from("case_timeline").insert({
+        inquiry_id: inquiry.id,
+        event_title: "✅ Consultation Attended",
+        event_description:
+          "Prospect attended the scheduled consultation. Lead score adjusted +15 pts.",
+        event_date: new Date().toISOString(),
+      });
+
+      return new Response(
+        JSON.stringify({ success: true, action: "attended", inquiryId: inquiry.id, scoreDelta: 15 }),
+        { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } }
+      );
+    }
+
     // ── NEW BOOKING ──────────────────────────────────────────────────────────
 
-    // Format the appointment date for the timeline description
     let formattedDate = "";
     if (startTime) {
       try {
@@ -162,11 +345,13 @@ serve(async (req) => {
       }
     }
 
-    // Update inquiry: booking_stage + all Calendly fields
     await supabase
       .from("contact_inquiries")
       .update({
         booking_stage: "consultation_booked",
+        attendance_status: "pending",
+        no_show_flagged: false,
+        attendance_score_delta: 0,
         calendly_event_uuid: calendlyEventUuid ?? null,
         calendly_start_time: startTime ?? null,
         calendly_end_time: endTime ?? null,
@@ -176,7 +361,6 @@ serve(async (req) => {
       })
       .eq("id", inquiry.id);
 
-    // Write a rich timeline entry for the booking
     await supabase.from("case_timeline").insert({
       inquiry_id: inquiry.id,
       event_title: eventName ?? "Consultation Booked",
@@ -189,7 +373,6 @@ serve(async (req) => {
       event_date: startTime ?? new Date().toISOString(),
     });
 
-    // Cancel pending booking_reminder sequences — lead has converted
     const { data: cancelled } = await supabase
       .from("email_sequences")
       .update({ send_status: "skipped" })
@@ -198,7 +381,6 @@ serve(async (req) => {
       .eq("send_status", "pending")
       .select("id");
 
-    // Schedule the post-booking kickoff sequence
     try {
       await fetch(`${SUPABASE_URL}/functions/v1/schedule-post-booking-sequence`, {
         method: "POST",
@@ -215,10 +397,9 @@ serve(async (req) => {
         }),
       });
     } catch {
-      // Non-blocking — post-booking sequence failure shouldn't abort the webhook response
+      // Non-blocking
     }
 
-    // Schedule the 5-day review request email
     try {
       await fetch(`${SUPABASE_URL}/functions/v1/schedule-review-request`, {
         method: "POST",
@@ -234,10 +415,9 @@ serve(async (req) => {
         }),
       });
     } catch {
-      // Non-blocking — review request scheduling failure shouldn't abort the webhook response
+      // Non-blocking
     }
 
-    // Schedule 24hr and 1hr appointment reminder emails
     try {
       await fetch(`${SUPABASE_URL}/functions/v1/schedule-appointment-reminders`, {
         method: "POST",
@@ -256,10 +436,9 @@ serve(async (req) => {
         }),
       });
     } catch {
-      // Non-blocking — reminder scheduling failure shouldn't abort the webhook response
+      // Non-blocking
     }
 
-    // Sync to Google Calendar (non-blocking)
     try {
       await fetch(`${SUPABASE_URL}/functions/v1/sync-to-google-calendar`, {
         method: "POST",
@@ -285,7 +464,7 @@ serve(async (req) => {
         }),
       });
     } catch {
-      // Non-blocking — Google Calendar sync failure shouldn't abort the webhook response
+      // Non-blocking
     }
 
     return new Response(
@@ -293,6 +472,7 @@ serve(async (req) => {
         success: true,
         inquiryId: inquiry.id,
         bookingStage: "consultation_booked",
+        attendanceStatus: "pending",
         calendlyEventUuid,
         cancelledReminders: cancelled?.length ?? 0,
       }),

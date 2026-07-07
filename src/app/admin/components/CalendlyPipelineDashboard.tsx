@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { createClient } from '@/lib/supabase/client';
 
 interface CalendlyEvent {
   uri: string;
@@ -45,6 +46,8 @@ interface CalendlyInvitee {
   text_reminder_number?: string;
 }
 
+type AttendanceStatus = 'pending' | 'attended' | 'no_show' | 'rescheduled' | 'canceled';
+
 interface BookingRow {
   event: CalendlyEvent;
   invitee: CalendlyInvitee | null;
@@ -53,47 +56,42 @@ interface BookingRow {
   isHot: boolean;
   reminderSent: boolean;
   prepSent: boolean;
+  attendanceStatus: AttendanceStatus;
+  noShowFlagged: boolean;
+  inquiryId: string | null;
 }
 
-function computeLeadScore(invitee: CalendlyInvitee | null, event: CalendlyEvent): number {
+function computeLeadScore(invitee: CalendlyInvitee | null, event: CalendlyEvent, attendanceStatus: AttendanceStatus): number {
   let score = 50; // base for booking
   if (!invitee) return score;
 
-  // Boost for answering questions (engagement signal)
   const qas = invitee.questions_and_answers ?? [];
   score += qas.length * 8;
 
-  // Boost for phone number (high intent)
   if (invitee.text_reminder_number) score += 15;
-
-  // Boost for UTM source (came from targeted campaign)
   if (invitee.tracking?.utm_source) score += 10;
   if (invitee.tracking?.utm_campaign) score += 5;
-
-  // Boost for services_page source (pre-selected service = high intent)
   if (invitee.tracking?.utm_source === 'services_page') score += 20;
 
-  // Boost for detailed answers (longer = more engaged)
   const totalAnswerLength = qas.reduce((sum, qa) => sum + (qa.answer?.length ?? 0), 0);
   if (totalAnswerLength > 100) score += 10;
   if (totalAnswerLength > 250) score += 10;
 
-  // Cap at 100
+  // Attendance outcome adjustments
+  if (attendanceStatus === 'attended') score = Math.min(100, score + 15);
+  if (attendanceStatus === 'no_show') score = Math.max(0, score - 20);
+  if (attendanceStatus === 'rescheduled') score = Math.max(0, score - 5);
+
   return Math.min(100, score);
 }
 
 function extractServiceInterest(invitee: CalendlyInvitee | null, eventName: string): string {
   if (!invitee) return eventName || 'General Consultation';
-
   const qas = invitee.questions_and_answers ?? [];
-
-  // Look for service/interest question
   const serviceQ = qas.find((qa) =>
     /service|interest|help|matter|case|practice|area|type/i.test(qa.question)
   );
   if (serviceQ?.answer) return serviceQ.answer;
-
-  // Fallback to event name
   return eventName || 'General Consultation';
 }
 
@@ -132,14 +130,51 @@ function ScoreBadge({ score }: { score: number }) {
   );
 }
 
+function AttendanceBadge({ status, noShowFlagged }: { status: AttendanceStatus; noShowFlagged: boolean }) {
+  if (status === 'attended') {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs font-semibold">
+        ✅ Attended
+      </span>
+    );
+  }
+  if (status === 'no_show' || noShowFlagged) {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-100 text-red-700 border border-red-200 text-xs font-semibold">
+        🚫 No-Show
+      </span>
+    );
+  }
+  if (status === 'rescheduled') {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 border border-blue-200 text-xs font-semibold">
+        📅 Rescheduled
+      </span>
+    );
+  }
+  if (status === 'canceled') {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 border border-gray-200 text-xs font-semibold">
+        ✕ Canceled
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 text-amber-600 border border-amber-200 text-xs font-semibold">
+      ⏳ Pending
+    </span>
+  );
+}
+
 export default function CalendlyPipelineDashboard() {
   const [rows, setRows] = useState<BookingRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
-  const [filter, setFilter] = useState<'all' | 'hot' | 'upcoming_48h'>('all');
+  const [filter, setFilter] = useState<'all' | 'hot' | 'upcoming_48h' | 'no_show'>('all');
   const [actionFeedback, setActionFeedback] = useState<Record<string, string>>({});
-  const [localState, setLocalState] = useState<Record<string, { reminderSent?: boolean; prepSent?: boolean }>>({});
+  const [localState, setLocalState] = useState<Record<string, { reminderSent?: boolean; prepSent?: boolean; attendanceStatus?: AttendanceStatus }>>({});
+  const [markingAttendance, setMarkingAttendance] = useState<Record<string, boolean>>({});
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -148,7 +183,6 @@ export default function CalendlyPipelineDashboard() {
       const now = new Date();
       const in30Days = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
 
-      // Fetch events via our API route proxy
       const eventsRes = await fetch(
         `/api/calendly/events?min_start_time=${now.toISOString()}&max_start_time=${in30Days.toISOString()}&status=active&count=50`
       );
@@ -160,7 +194,6 @@ export default function CalendlyPipelineDashboard() {
       const eventsData = await eventsRes.json();
       const events: CalendlyEvent[] = eventsData.collection ?? [];
 
-      // Fetch invitees for each event in parallel (limit to first 20 events for perf)
       const eventSlice = events.slice(0, 20);
       const inviteeResults = await Promise.allSettled(
         eventSlice.map(async (ev) => {
@@ -172,15 +205,48 @@ export default function CalendlyPipelineDashboard() {
         })
       );
 
+      // Fetch attendance status from Supabase for each invitee email
+      const supabase = createClient();
+      const emails = eventSlice
+        .map((_, i) => {
+          const r = inviteeResults[i];
+          return r.status === 'fulfilled' ? (r as PromiseFulfilledResult<CalendlyInvitee | null | undefined>).value?.email : null;
+        })
+        .filter(Boolean) as string[];
+
+      const { data: inquiryData } = emails.length > 0
+        ? await supabase
+            .from('contact_inquiries')
+            .select('id, email, attendance_status, no_show_flagged')
+            .in('email', emails)
+            .order('created_at', { ascending: false })
+        : { data: [] };
+
+      // Build a map of email → latest inquiry attendance info
+      const attendanceMap: Record<string, { id: string; attendance_status: AttendanceStatus; no_show_flagged: boolean }> = {};
+      for (const row of (inquiryData ?? [])) {
+        if (!attendanceMap[row.email]) {
+          attendanceMap[row.email] = {
+            id: row.id,
+            attendance_status: (row.attendance_status as AttendanceStatus) ?? 'pending',
+            no_show_flagged: row.no_show_flagged ?? false,
+          };
+        }
+      }
+
       const built: BookingRow[] = eventSlice.map((ev, i) => {
         const invitee =
           inviteeResults[i].status === 'fulfilled'
             ? (inviteeResults[i] as PromiseFulfilledResult<CalendlyInvitee | null | undefined>).value ?? null
             : null;
 
+        const attendanceInfo = invitee?.email ? attendanceMap[invitee.email] : null;
+        const attendanceStatus: AttendanceStatus = attendanceInfo?.attendance_status ?? 'pending';
+        const noShowFlagged = attendanceInfo?.no_show_flagged ?? false;
+
         const serviceInterest = extractServiceInterest(invitee, ev.name);
-        const leadScore = computeLeadScore(invitee, ev);
-        const isHot = leadScore >= 75 || daysUntil(ev.start_time) <= 2;
+        const leadScore = computeLeadScore(invitee, ev, attendanceStatus);
+        const isHot = (leadScore >= 75 || daysUntil(ev.start_time) <= 2) && attendanceStatus !== 'no_show';
 
         return {
           event: ev,
@@ -190,6 +256,9 @@ export default function CalendlyPipelineDashboard() {
           isHot,
           reminderSent: false,
           prepSent: false,
+          attendanceStatus,
+          noShowFlagged,
+          inquiryId: attendanceInfo?.id ?? null,
         };
       });
 
@@ -204,6 +273,48 @@ export default function CalendlyPipelineDashboard() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  const handleMarkAttendance = async (row: BookingRow, status: 'attended' | 'no_show') => {
+    const key = row.event.uuid;
+    setMarkingAttendance((prev) => ({ ...prev, [key]: true }));
+    try {
+      await fetch('/api/calendly/webhook', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          event: status === 'attended' ? '_internal_attended' : '_internal_noshow',
+          payload: {
+            invitee: { email: row.invitee?.email ?? '', name: row.invitee?.name ?? '' },
+            scheduled_event: { uri: row.event.uri },
+          },
+        }),
+      });
+
+      // Also call handle-calendly-booking directly via admin API
+      const supabase = createClient();
+      if (row.inquiryId) {
+        await supabase
+          .from('contact_inquiries')
+          .update({
+            attendance_status: status === 'attended' ? 'attended' : 'no_show',
+            no_show_flagged: status === 'no_show',
+            attendance_scored_at: new Date().toISOString(),
+            attendance_score_delta: status === 'attended' ? 15 : -20,
+          })
+          .eq('id', row.inquiryId);
+      }
+
+      setLocalState((prev) => ({
+        ...prev,
+        [key]: { ...prev[key], attendanceStatus: status === 'attended' ? 'attended' : 'no_show' },
+      }));
+      setActionFeedback((prev) => ({ ...prev, [key]: status === 'attended' ? 'marked_attended' : 'marked_noshow' }));
+    } catch {
+      setActionFeedback((prev) => ({ ...prev, [key]: 'error' }));
+    }
+    setMarkingAttendance((prev) => ({ ...prev, [key]: false }));
+    setTimeout(() => setActionFeedback((prev) => { const n = { ...prev }; delete n[key]; return n; }), 4000);
+  };
 
   const handleSendReminder = async (row: BookingRow) => {
     const key = row.event.uuid;
@@ -261,17 +372,19 @@ export default function CalendlyPipelineDashboard() {
 
     if (filter === 'hot') return matchesSearch && row.isHot;
     if (filter === 'upcoming_48h') return matchesSearch && daysUntil(row.event.start_time) <= 2;
+    if (filter === 'no_show') return matchesSearch && (row.noShowFlagged || row.attendanceStatus === 'no_show' || (localState[row.event.uuid]?.attendanceStatus === 'no_show'));
     return matchesSearch;
   });
 
   const hotCount = rows.filter((r) => r.isHot).length;
   const upcoming48h = rows.filter((r) => daysUntil(r.event.start_time) <= 2).length;
+  const noShowCount = rows.filter((r) => r.noShowFlagged || r.attendanceStatus === 'no_show').length;
   const avgScore = rows.length > 0 ? Math.round(rows.reduce((s, r) => s + r.leadScore, 0) / rows.length) : 0;
 
   return (
     <div className="space-y-6">
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
         <div className="bg-card border border-border rounded-xl p-4">
           <p className="text-2xl font-semibold text-foreground">{rows.length}</p>
           <p className="text-xs uppercase tracking-widest text-muted-foreground mt-1">Next 30 Days</p>
@@ -279,33 +392,47 @@ export default function CalendlyPipelineDashboard() {
         <div className="bg-card border border-red-200 rounded-xl p-4">
           <div className="flex items-center gap-1.5">
             <p className="text-2xl font-semibold text-red-700">{hotCount}</p>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b91c1c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 2c0 0-4 4-4 8a4 4 0 0 0 8 0c0-4-4-8-4-8z"/><path d="M12 14c-2 0-4 1-4 3s2 3 4 3 4-1 4-3-2-3-4-3z"/>
-            </svg>
           </div>
-          <p className="text-xs uppercase tracking-widest text-muted-foreground mt-1">Hot Leads</p>
+          <p className="text-xs uppercase tracking-widest text-muted-foreground mt-1">🔥 Hot Leads</p>
         </div>
         <div className="bg-card border border-amber-200 rounded-xl p-4">
           <p className="text-2xl font-semibold text-amber-700">{upcoming48h}</p>
-          <p className="text-xs uppercase tracking-widest text-muted-foreground mt-1">Within 48 Hours</p>
+          <p className="text-xs uppercase tracking-widest text-muted-foreground mt-1">Within 48h</p>
+        </div>
+        <div className="bg-card border border-red-100 rounded-xl p-4">
+          <p className="text-2xl font-semibold text-red-600">{noShowCount}</p>
+          <p className="text-xs uppercase tracking-widest text-muted-foreground mt-1">🚫 No-Shows</p>
         </div>
         <div className="bg-card border border-border rounded-xl p-4">
           <p className="text-2xl font-semibold text-foreground">{avgScore}</p>
-          <p className="text-xs uppercase tracking-widest text-muted-foreground mt-1">Avg Lead Score</p>
+          <p className="text-xs uppercase tracking-widest text-muted-foreground mt-1">Avg Score</p>
         </div>
       </div>
 
-      {/* Hot Lead Banner */}
-      {hotCount > 0 && (
+      {/* No-Show Alert Banner */}
+      {noShowCount > 0 && (
         <div className="flex items-start gap-3 p-4 rounded-xl bg-red-50 border border-red-200">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#b91c1c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 shrink-0">
-            <path d="M12 2c0 0-4 4-4 8a4 4 0 0 0 8 0c0-4-4-8-4-8z"/><path d="M12 14c-2 0-4 1-4 3s2 3 4 3 4-1 4-3-2-3-4-3z"/>
-          </svg>
+          <span className="text-lg mt-0.5">🚫</span>
           <div>
             <p className="text-sm font-semibold text-red-800">
-              {hotCount} hot {hotCount === 1 ? 'lead' : 'leads'} auto-flagged
+              {noShowCount} no-show{noShowCount > 1 ? 's' : ''} auto-flagged
             </p>
             <p className="text-xs text-red-700 mt-0.5">
+              No-show leads are automatically flagged and their lead score is reduced by 20 pts. Consider a re-engagement follow-up.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Hot Lead Banner */}
+      {hotCount > 0 && (
+        <div className="flex items-start gap-3 p-4 rounded-xl bg-amber-50 border border-amber-200">
+          <span className="text-lg mt-0.5">🔥</span>
+          <div>
+            <p className="text-sm font-semibold text-amber-800">
+              {hotCount} hot {hotCount === 1 ? 'lead' : 'leads'} auto-flagged
+            </p>
+            <p className="text-xs text-amber-700 mt-0.5">
               Leads are flagged hot when score ≥ 75 or booking is within 48 hours. Send prep docs and reminders before the session.
             </p>
           </div>
@@ -326,8 +453,8 @@ export default function CalendlyPipelineDashboard() {
             className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-input text-foreground text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent transition-all"
           />
         </div>
-        <div className="flex gap-2">
-          {(['all', 'hot', 'upcoming_48h'] as const).map((f) => (
+        <div className="flex gap-2 flex-wrap">
+          {(['all', 'hot', 'upcoming_48h', 'no_show'] as const).map((f) => (
             <button
               key={f}
               onClick={() => setFilter(f)}
@@ -337,7 +464,7 @@ export default function CalendlyPipelineDashboard() {
                   : 'bg-secondary/40 text-muted-foreground hover:bg-secondary/70'
               }`}
             >
-              {f === 'all' ? 'All' : f === 'hot' ? '🔥 Hot' : '⚡ 48h'}
+              {f === 'all' ? 'All' : f === 'hot' ? '🔥 Hot' : f === 'upcoming_48h' ? '⚡ 48h' : '🚫 No-Shows'}
             </button>
           ))}
         </div>
@@ -364,12 +491,7 @@ export default function CalendlyPipelineDashboard() {
         <div className="p-6 rounded-xl bg-red-50 border border-red-200 text-center">
           <p className="text-sm font-semibold text-red-800 mb-1">Failed to load bookings</p>
           <p className="text-xs text-red-700 mb-3">{error}</p>
-          <button
-            onClick={fetchData}
-            className="px-4 py-2 rounded-lg bg-red-700 text-white text-xs font-semibold hover:bg-red-800 transition-colors"
-          >
-            Retry
-          </button>
+          <button onClick={fetchData} className="px-4 py-2 rounded-lg bg-red-700 text-white text-xs font-semibold hover:bg-red-800 transition-colors">Retry</button>
         </div>
       ) : filtered.length === 0 ? (
         <div className="py-20 text-center">
@@ -385,31 +507,35 @@ export default function CalendlyPipelineDashboard() {
             const ls = localState[key] ?? {};
             const feedback = actionFeedback[key];
             const days = daysUntil(row.event.start_time);
+            const effectiveAttendance = ls.attendanceStatus ?? row.attendanceStatus;
+            const effectiveNoShow = effectiveAttendance === 'no_show' || row.noShowFlagged;
 
             return (
               <div
                 key={key}
                 className={`bg-card border rounded-xl p-4 transition-all ${
-                  row.isHot ? 'border-red-200 shadow-sm shadow-red-50' : 'border-border'
+                  effectiveNoShow
+                    ? 'border-red-200 bg-red-50/30'
+                    : effectiveAttendance === 'attended' ?'border-emerald-200 bg-emerald-50/20'
+                    : row.isHot
+                    ? 'border-red-200 shadow-sm shadow-red-50'
+                    : 'border-border'
                 }`}
               >
                 <div className="flex flex-col sm:flex-row sm:items-start gap-4">
                   {/* Left: attendee + time */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap mb-1">
-                      {row.isHot && (
+                      {/* Attendance badge — always shown */}
+                      <AttendanceBadge status={effectiveAttendance} noShowFlagged={effectiveNoShow} />
+                      {row.isHot && effectiveAttendance === 'pending' && (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-100 text-red-700 border border-red-200 text-xs font-bold uppercase tracking-wide">
                           🔥 Hot Lead
                         </span>
                       )}
-                      {days <= 1 && (
+                      {days <= 1 && effectiveAttendance === 'pending' && (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200 text-xs font-semibold">
                           ⚡ Today
-                        </span>
-                      )}
-                      {days === 2 && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 text-amber-600 border border-amber-100 text-xs font-semibold">
-                          Tomorrow
                         </span>
                       )}
                     </div>
@@ -444,6 +570,12 @@ export default function CalendlyPipelineDashboard() {
                     <div className="mt-2 flex items-center gap-2">
                       <p className="text-xs text-muted-foreground">Lead Score</p>
                       <ScoreBadge score={row.leadScore} />
+                      {effectiveAttendance === 'attended' && (
+                        <span className="text-xs text-emerald-600 font-semibold">+15</span>
+                      )}
+                      {effectiveNoShow && (
+                        <span className="text-xs text-red-600 font-semibold">-20</span>
+                      )}
                     </div>
                     {row.invitee?.tracking?.utm_source && (
                       <p className="text-xs text-muted-foreground mt-1">
@@ -453,7 +585,42 @@ export default function CalendlyPipelineDashboard() {
                   </div>
 
                   {/* Right: actions */}
-                  <div className="sm:w-44 shrink-0 flex flex-col gap-2">
+                  <div className="sm:w-48 shrink-0 flex flex-col gap-2">
+                    {/* Attendance marking buttons */}
+                    {effectiveAttendance === 'pending' && (
+                      <div className="flex gap-1.5">
+                        <button
+                          onClick={() => handleMarkAttendance(row, 'attended')}
+                          disabled={markingAttendance[key]}
+                          className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 transition-all disabled:opacity-60"
+                          title="Mark as Attended"
+                        >
+                          {markingAttendance[key] ? (
+                            <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin" />
+                          ) : '✅'}
+                          Attended
+                        </button>
+                        <button
+                          onClick={() => handleMarkAttendance(row, 'no_show')}
+                          disabled={markingAttendance[key]}
+                          className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg bg-red-600 text-white text-xs font-semibold hover:bg-red-700 transition-all disabled:opacity-60"
+                          title="Mark as No-Show"
+                        >
+                          {markingAttendance[key] ? (
+                            <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin" />
+                          ) : '🚫'}
+                          No-Show
+                        </button>
+                      </div>
+                    )}
+
+                    {feedback === 'marked_attended' && (
+                      <p className="text-xs text-emerald-700 font-semibold py-1">✅ Marked attended (+15 pts)</p>
+                    )}
+                    {feedback === 'marked_noshow' && (
+                      <p className="text-xs text-red-700 font-semibold py-1">🚫 Flagged no-show (-20 pts)</p>
+                    )}
+
                     {feedback === 'sending_reminder' || feedback === 'sending_prep' ? (
                       <div className="flex items-center gap-2 text-xs text-muted-foreground py-2">
                         <div className="w-3 h-3 border border-accent border-t-transparent rounded-full animate-spin" />
@@ -529,22 +696,10 @@ export default function CalendlyPipelineDashboard() {
 
       {/* Legend */}
       <div className="flex flex-wrap gap-4 pt-2 border-t border-border text-xs text-muted-foreground">
-        <span className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-red-400" />
-          Score ≥ 85 — Priority outreach
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-amber-400" />
-          Score 70–84 — Warm lead
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-blue-400" />
-          Score 55–69 — Standard
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-gray-300" />
-          Score &lt; 55 — Low signal
-        </span>
+        <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-400" />Attended: +15 pts</span>
+        <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-red-400" />No-Show: -20 pts, auto-flagged</span>
+        <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-blue-400" />Rescheduled: -5 pts</span>
+        <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-amber-400" />Score ≥ 75 or within 48h = Hot</span>
       </div>
     </div>
   );

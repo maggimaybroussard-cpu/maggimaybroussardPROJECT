@@ -931,6 +931,89 @@ export default function IntegrationSettingsHub() {
           </div>
         )}
       </div>
+
+      {/* ── Account Channels ──────────────────────────────────────────────────── */}
+      <div className="bg-card border border-border rounded-2xl p-5">
+        <div className="flex items-start gap-3 mb-5">
+          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+              <polyline points="22,6 12,13 2,6"/>
+            </svg>
+          </div>
+          <div className="flex-1">
+            <h3 className="text-sm font-bold text-foreground">Account Channels</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              All active email addresses and web channels linked to this account. The main contact email is used for lead routing, notifications, and client-facing correspondence.
+            </p>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          {/* Main contact email — highlighted */}
+          <div className="flex items-center gap-3 bg-primary/5 border border-primary/20 rounded-xl px-4 py-3">
+            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                <polyline points="22,6 12,13 2,6"/>
+              </svg>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-foreground truncate">maggimay@broussardlegalservices.com</p>
+              <p className="text-[11px] text-primary font-medium mt-0.5">Main Contact Email</p>
+            </div>
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200 text-[10px] font-bold uppercase tracking-wide shrink-0">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              Primary
+            </span>
+          </div>
+
+          {/* Additional email channels */}
+          {[
+            { address: 'admin@broussardlegalservices.com', label: 'Admin' },
+            { address: 'sales@broussardlegalservices.com', label: 'Sales' },
+            { address: 'books@broussardlegalservices.com', label: 'Bookkeeping' },
+          ].map(({ address, label }) => (
+            <div key={address} className="flex items-center gap-3 bg-secondary/30 border border-border rounded-xl px-4 py-3">
+              <div className="w-8 h-8 rounded-lg bg-secondary/60 flex items-center justify-center shrink-0">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground">
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                  <polyline points="22,6 12,13 2,6"/>
+                </svg>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm text-foreground truncate">{address}</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">{label} inbox</p>
+              </div>
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-secondary/60 border border-border text-muted-foreground text-[10px] font-semibold uppercase tracking-wide shrink-0">
+                Active
+              </span>
+            </div>
+          ))}
+
+          {/* Web channel */}
+          <div className="flex items-center gap-3 bg-secondary/30 border border-border rounded-xl px-4 py-3">
+            <div className="w-8 h-8 rounded-lg bg-secondary/60 flex items-center justify-center shrink-0">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="2" y1="12" x2="22" y2="12"/>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+              </svg>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm text-foreground truncate">online.broussardlegalservices.com</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">Web channel / online portal</p>
+            </div>
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-[10px] font-semibold uppercase tracking-wide shrink-0">
+              Web
+            </span>
+          </div>
+        </div>
+
+        <p className="text-[11px] text-muted-foreground mt-4 leading-relaxed">
+          All inbound messages and leads from these channels are routed to the admin dashboard. The main contact email <strong>maggimay@broussardlegalservices.com</strong> is used for all client-facing notifications and automated sequences.
+        </p>
+      </div>
     </div>
   );
 }

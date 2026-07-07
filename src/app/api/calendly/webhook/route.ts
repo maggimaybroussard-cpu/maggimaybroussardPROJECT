@@ -231,6 +231,78 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ received: true });
     }
 
+    // ── NO-SHOW ───────────────────────────────────────────────────────────────
+    if (eventType === 'invitee.noshow') {
+      const payload = body?.payload;
+      const invitee = payload?.invitee;
+      const scheduledEvent = payload?.scheduled_event;
+
+      if (!invitee?.email) {
+        return NextResponse.json({ received: true });
+      }
+
+      const calendlyEventUri: string = scheduledEvent?.uri ?? '';
+      const calendlyEventUuid = calendlyEventUri.split('/').pop() ?? null;
+
+      fetch(`${supabaseUrl}/functions/v1/handle-calendly-booking`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${supabaseAnonKey}`,
+        },
+        body: JSON.stringify({
+          email: invitee.email,
+          name: invitee.name ?? '',
+          action: 'noshow',
+          calendlyEventUuid,
+        }),
+      }).catch(() => {});
+
+      return NextResponse.json({ received: true });
+    }
+
+    // ── RESCHEDULED ───────────────────────────────────────────────────────────
+    if (eventType === 'invitee.rescheduled') {
+      const payload = body?.payload;
+      const invitee = payload?.invitee;
+      const scheduledEvent = payload?.scheduled_event;
+
+      if (!invitee?.email) {
+        return NextResponse.json({ received: true });
+      }
+
+      const calendlyEventUri: string = scheduledEvent?.uri ?? '';
+      const calendlyEventUuid = calendlyEventUri.split('/').pop() ?? null;
+      const startTime: string | null = scheduledEvent?.start_time ?? null;
+      const endTime: string | null = scheduledEvent?.end_time ?? null;
+      const timezone: string = invitee?.timezone ?? 'America/Chicago';
+
+      fetch(`${supabaseUrl}/functions/v1/handle-calendly-booking`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${supabaseAnonKey}`,
+        },
+        body: JSON.stringify({
+          email: invitee.email,
+          name: invitee.name ?? '',
+          action: 'rescheduled',
+          calendlyEventUuid,
+          startTime,
+          endTime,
+          timezone,
+        }),
+      }).catch(() => {});
+
+      return NextResponse.json({ received: true });
+    }
+
+    // ── ATTENDED (routing.form_submitted used as attended signal) ─────────────
+    if (eventType === 'routing_form_submission.created') {
+      // Not a direct attended signal — skip
+      return NextResponse.json({ received: true });
+    }
+
     // All other events — acknowledge silently
     return NextResponse.json({ received: true });
   } catch (err) {
