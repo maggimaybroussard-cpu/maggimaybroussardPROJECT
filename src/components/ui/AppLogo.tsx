@@ -6,21 +6,20 @@ import AppImage from './AppImage';
 
 
 interface AppLogoProps {
-  src?: string; // Image source (optional)
-  iconName?: string; // Icon name when no image
-  size?: number; // Size for icon/image
-  className?: string; // Additional classes
-  onClick?: () => void; // Click handler
+  src?: string;
+  iconName?: string;
+  size?: number;
+  className?: string;
+  onClick?: () => void;
 }
 
 const AppLogo = memo(function AppLogo({
-  src = '/assets/images/initiallogo-1781843073214.png',
+  src = '/assets/images/Gemini_Generated_Image2-1783462142389.png',
   iconName = 'SparklesIcon',
   size = 64,
   className = '',
   onClick,
 }: AppLogoProps) {
-  // Memoize className calculation
   const containerClassName = useMemo(() => {
     const classes = ['flex items-center'];
     if (onClick) classes.push('cursor-pointer hover:opacity-80 transition-opacity');
@@ -30,7 +29,14 @@ const AppLogo = memo(function AppLogo({
 
   return (
     <div className={containerClassName} onClick={onClick}>
-      <AppImage src={src} alt="Broussard Legal Services logo" width={size} height={size} className="flex-shrink-0 object-contain" />
+      <AppImage
+        src={src}
+        alt="Broussard Legal Services medallion logo"
+        width={size}
+        height={size}
+        className="flex-shrink-0 object-contain rounded-full"
+        style={{ mixBlendMode: 'multiply', background: 'transparent' }}
+      />
     </div>
   );
 });
