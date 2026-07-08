@@ -98,6 +98,364 @@ const STAGE_COLORS: Record<string, string> = {
 
 const SERVICE_COLORS = ['#355E3B', '#4a7c59', '#6b9e7a', '#8dbf9a', '#f59e0b', '#3b82f6', '#8b5cf6'];
 
+// ─── Export Helpers ───────────────────────────────────────────────────────────
+
+function buildCSV(metrics: KPIMetrics, revenueChart: RevenuePoint[], stageBreakdown: StageBreakdown[]): string {
+  const now = new Date();
+  const monthLabel = now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  const rows: string[][] = [];
+
+  rows.push([`Broussard Legal Services — KPI Report — ${monthLabel}`]);
+  rows.push([]);
+  rows.push(['REVENUE SUMMARY']);
+  rows.push(['Metric', 'Value']);
+  rows.push(['Revenue MTD', `$${metrics.revenueMTD.toFixed(2)}`]);
+  rows.push(['Revenue Last Month', `$${metrics.revenueLastMonth.toFixed(2)}`]);
+  rows.push(['Revenue YTD', `$${metrics.revenueYTD.toFixed(2)}`]);
+  rows.push(['Revenue Growth %', `${metrics.revenueGrowthPct.toFixed(1)}%`]);
+  rows.push(['Monthly Forecast', `$${metrics.monthlyForecast.toFixed(2)}`]);
+  rows.push(['Quarterly Revenue', `$${metrics.quarterlyRevenue.toFixed(2)}`]);
+  rows.push(['Quarterly Forecast', `$${metrics.quarterlyForecast.toFixed(2)}`]);
+  rows.push([]);
+  rows.push(['PRACTICE ANALYTICS']);
+  rows.push(['Metric', 'Value']);
+  rows.push(['Active Cases', String(metrics.activeCases)]);
+  rows.push(['New Cases MTD', String(metrics.newCasesThisMonth)]);
+  rows.push(['Closed MTD', String(metrics.closedThisMonth)]);
+  rows.push(['Avg Case Value', `$${metrics.avgCaseValue.toFixed(2)}`]);
+  rows.push(['Case Completion Rate', `${metrics.caseCompletionRate.toFixed(1)}%`]);
+  rows.push(['Collection Rate', `${metrics.collectionRate.toFixed(1)}%`]);
+  rows.push(['Overdue Invoices', String(metrics.overdueCount)]);
+  rows.push(['Overdue Amount', `$${metrics.overdueAmount.toFixed(2)}`]);
+  rows.push(['Pending Amount', `$${metrics.pendingAmount.toFixed(2)}`]);
+  rows.push([]);
+  rows.push(['LEAD & CONVERSION']);
+  rows.push(['Metric', 'Value']);
+  rows.push(['New Leads This Week', String(metrics.newLeadsThisWeek)]);
+  rows.push(['New Leads MTD', String(metrics.newLeadsThisMonth)]);
+  rows.push(['Conversion Rate', `${metrics.conversionRate.toFixed(1)}%`]);
+  rows.push(['Avg Days to Convert', `${metrics.avgDaysToConvert.toFixed(0)} days`]);
+  rows.push([]);
+  rows.push(['ATTORNEY UTILIZATION']);
+  rows.push(['Metric', 'Value']);
+  rows.push(['Utilization Rate', `${metrics.utilizationRate.toFixed(1)}%`]);
+  rows.push(['Billable Hours MTD', `${metrics.totalBillableHours.toFixed(1)} hrs`]);
+  rows.push(['Active Retainers', String(metrics.activeRetainers)]);
+  rows.push([]);
+  rows.push(['MONTHLY REVENUE TREND']);
+  rows.push(['Month', 'Billed', 'Collected', 'Forecast']);
+  revenueChart.forEach((r) => rows.push([r.month, `$${r.billed}`, `$${r.collected}`, r.forecast ? `$${r.forecast}` : '']));
+  rows.push([]);
+  rows.push(['CASE PIPELINE']);
+  rows.push(['Stage', 'Count']);
+  stageBreakdown.forEach((s) => rows.push([s.label, String(s.count)]));
+  rows.push([]);
+  rows.push(['AVG CASE VALUE BY SERVICE']);
+  rows.push(['Service', 'Avg Value', 'Count']);
+  metrics.avgCaseValueByService.forEach((s) => rows.push([s.service, `$${s.avgValue.toFixed(2)}`, String(s.count)]));
+
+  return rows.map((r) => r.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n');
+}
+
+function buildPDFHTML(metrics: KPIMetrics, revenueChart: RevenuePoint[], stageBreakdown: StageBreakdown[], reportType: string): string {
+  const now = new Date();
+  const monthLabel = now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  const fmt = (n: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n);
+  const fmtPct = (n: number) => `${Math.round(n)}%`;
+
+  const sections: Record<string, string> = {
+    monthly: `
+      <h2>Revenue Summary — ${monthLabel}</h2>
+      <table><tr><th>Metric</th><th>Value</th></tr>
+        <tr><td>Revenue MTD</td><td>${fmt(metrics.revenueMTD)}</td></tr>
+        <tr><td>Revenue Last Month</td><td>${fmt(metrics.revenueLastMonth)}</td></tr>
+        <tr><td>Revenue YTD</td><td>${fmt(metrics.revenueYTD)}</td></tr>
+        <tr><td>Growth vs Last Month</td><td>${metrics.revenueGrowthPct > 0 ? '+' : ''}${fmtPct(metrics.revenueGrowthPct)}</td></tr>
+        <tr><td>Monthly Forecast</td><td>${fmt(metrics.monthlyForecast)}</td></tr>
+        <tr><td>Collection Rate</td><td>${fmtPct(metrics.collectionRate)}</td></tr>
+        <tr><td>Overdue Amount</td><td>${fmt(metrics.overdueAmount)}</td></tr>
+      </table>`,
+    revenue: `
+      <h2>Revenue Summaries</h2>
+      <table><tr><th>Month</th><th>Billed</th><th>Collected</th><th>Forecast</th></tr>
+        ${revenueChart.map((r) => `<tr><td>${r.month}</td><td>${fmt(r.billed)}</td><td>${fmt(r.collected)}</td><td>${r.forecast ? fmt(r.forecast) : '—'}</td></tr>`).join('')}
+      </table>
+      <h2>Avg Case Value by Service</h2>
+      <table><tr><th>Service</th><th>Avg Value</th><th>Cases</th></tr>
+        ${metrics.avgCaseValueByService.map((s) => `<tr><td>${s.service}</td><td>${fmt(s.avgValue)}</td><td>${s.count}</td></tr>`).join('')}
+      </table>`,
+    practice: `
+      <h2>Practice Analytics — ${monthLabel}</h2>
+      <table><tr><th>Metric</th><th>Value</th></tr>
+        <tr><td>Active Cases</td><td>${metrics.activeCases}</td></tr>
+        <tr><td>New Cases MTD</td><td>${metrics.newCasesThisMonth}</td></tr>
+        <tr><td>Closed MTD</td><td>${metrics.closedThisMonth}</td></tr>
+        <tr><td>Avg Case Value</td><td>${fmt(metrics.avgCaseValue)}</td></tr>
+        <tr><td>Case Completion Rate</td><td>${fmtPct(metrics.caseCompletionRate)}</td></tr>
+        <tr><td>Conversion Rate</td><td>${fmtPct(metrics.conversionRate)}</td></tr>
+        <tr><td>Utilization Rate</td><td>${fmtPct(metrics.utilizationRate)}</td></tr>
+        <tr><td>Billable Hours MTD</td><td>${metrics.totalBillableHours.toFixed(1)} hrs</td></tr>
+        <tr><td>Active Retainers</td><td>${metrics.activeRetainers}</td></tr>
+      </table>
+      <h2>Case Pipeline</h2>
+      <table><tr><th>Stage</th><th>Count</th></tr>
+        ${stageBreakdown.map((s) => `<tr><td>${s.label}</td><td>${s.count}</td></tr>`).join('')}
+      </table>`,
+  };
+
+  return `<!DOCTYPE html><html><head><meta charset="utf-8">
+    <title>Broussard Legal Services — KPI Report</title>
+    <style>
+      body { font-family: Georgia, serif; color: #1a1a1a; margin: 40px; }
+      h1 { color: #355E3B; border-bottom: 2px solid #355E3B; padding-bottom: 8px; }
+      h2 { color: #355E3B; margin-top: 28px; font-size: 16px; }
+      table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; }
+      th { background: #355E3B; color: white; padding: 8px 12px; text-align: left; }
+      td { padding: 7px 12px; border-bottom: 1px solid #e5e7eb; }
+      tr:nth-child(even) td { background: #f9fafb; }
+      .footer { margin-top: 40px; font-size: 11px; color: #6b7280; border-top: 1px solid #e5e7eb; padding-top: 12px; }
+    </style>
+  </head><body>
+    <h1>Broussard Legal Services</h1>
+    <p style="color:#6b7280;font-size:13px;">Generated: ${now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+    ${sections[reportType] || sections.monthly}
+    <div class="footer">Broussard Legal Services · Confidential Business Report · broussardlegalservices.com</div>
+  </body></html>`;
+}
+
+// ─── Export Modal ─────────────────────────────────────────────────────────────
+
+interface ExportModalProps {
+  open: boolean;
+  onClose: () => void;
+  metrics: KPIMetrics;
+  revenueChart: RevenuePoint[];
+  stageBreakdown: StageBreakdown[];
+}
+
+function ExportModal({ open, onClose, metrics, revenueChart, stageBreakdown }: ExportModalProps) {
+  const [reportType, setReportType] = useState<'monthly' | 'revenue' | 'practice'>('monthly');
+  const [exportFormat, setExportFormat] = useState<'csv' | 'pdf'>('csv');
+  const [emailTo, setEmailTo] = useState('');
+  const [sendingEmail, setSendingEmail] = useState(false);
+  const [emailStatus, setEmailStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [emailMsg, setEmailMsg] = useState('');
+
+  const REPORT_LABELS: Record<string, string> = {
+    monthly: 'Monthly Business Report',
+    revenue: 'Revenue Summary',
+    practice: 'Practice Analytics',
+  };
+
+  const handleDownloadCSV = () => {
+    const csv = buildCSV(metrics, revenueChart, stageBreakdown);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `BLS_KPI_${reportType}_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleDownloadPDF = () => {
+    const html = buildPDFHTML(metrics, revenueChart, stageBreakdown, reportType);
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const win = window.open(url, '_blank');
+    if (win) {
+      win.onload = () => {
+        win.print();
+        URL.revokeObjectURL(url);
+      };
+    }
+  };
+
+  const handleSendEmail = async () => {
+    if (!emailTo.trim() || !emailTo.includes('@')) {
+      setEmailStatus('error');
+      setEmailMsg('Please enter a valid email address.');
+      return;
+    }
+    setSendingEmail(true);
+    setEmailStatus('idle');
+    try {
+      const now = new Date();
+      const monthLabel = now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+      const csvContent = buildCSV(metrics, revenueChart, stageBreakdown);
+      const fmt = (n: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n);
+
+      const res = await fetch('/api/admin/send-resend-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: emailTo.trim(),
+          subject: `Broussard Legal Services — ${REPORT_LABELS[reportType]} — ${monthLabel}`,
+          html: `
+            <div style="font-family:Georgia,serif;max-width:600px;margin:0 auto;color:#1a1a1a;">
+              <div style="background:#355E3B;padding:24px 32px;border-radius:8px 8px 0 0;">
+                <h1 style="color:white;margin:0;font-size:20px;">Broussard Legal Services</h1>
+                <p style="color:#a7d9b4;margin:4px 0 0;font-size:13px;">${REPORT_LABELS[reportType]} — ${monthLabel}</p>
+              </div>
+              <div style="padding:24px 32px;background:#f9fafb;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 8px 8px;">
+                <h2 style="color:#355E3B;font-size:15px;margin-top:0;">Key Metrics Snapshot</h2>
+                <table style="width:100%;border-collapse:collapse;font-size:13px;">
+                  <tr style="background:#355E3B;color:white;"><th style="padding:8px 12px;text-align:left;">Metric</th><th style="padding:8px 12px;text-align:right;">Value</th></tr>
+                  <tr><td style="padding:7px 12px;border-bottom:1px solid #e5e7eb;">Revenue MTD</td><td style="padding:7px 12px;border-bottom:1px solid #e5e7eb;text-align:right;font-weight:bold;">${fmt(metrics.revenueMTD)}</td></tr>
+                  <tr style="background:#f3f4f6;"><td style="padding:7px 12px;border-bottom:1px solid #e5e7eb;">Revenue YTD</td><td style="padding:7px 12px;border-bottom:1px solid #e5e7eb;text-align:right;">${fmt(metrics.revenueYTD)}</td></tr>
+                  <tr><td style="padding:7px 12px;border-bottom:1px solid #e5e7eb;">Active Cases</td><td style="padding:7px 12px;border-bottom:1px solid #e5e7eb;text-align:right;">${metrics.activeCases}</td></tr>
+                  <tr style="background:#f3f4f6;"><td style="padding:7px 12px;border-bottom:1px solid #e5e7eb;">Collection Rate</td><td style="padding:7px 12px;border-bottom:1px solid #e5e7eb;text-align:right;">${Math.round(metrics.collectionRate)}%</td></tr>
+                  <tr><td style="padding:7px 12px;border-bottom:1px solid #e5e7eb;">Conversion Rate</td><td style="padding:7px 12px;border-bottom:1px solid #e5e7eb;text-align:right;">${Math.round(metrics.conversionRate)}%</td></tr>
+                  <tr style="background:#f3f4f6;"><td style="padding:7px 12px;">Utilization Rate</td><td style="padding:7px 12px;text-align:right;">${Math.round(metrics.utilizationRate)}%</td></tr>
+                </table>
+                <p style="font-size:12px;color:#6b7280;margin-top:20px;">A full CSV report is attached to this email for detailed analysis.</p>
+                <p style="font-size:11px;color:#9ca3af;margin-top:16px;border-top:1px solid #e5e7eb;padding-top:12px;">Broussard Legal Services · Confidential · broussardlegalservices.com</p>
+              </div>
+            </div>`,
+          attachments: [
+            {
+              filename: `BLS_KPI_${reportType}_${now.toISOString().split('T')[0]}.csv`,
+              content: Buffer.from(csvContent).toString('base64'),
+              type: 'text/csv',
+            },
+          ],
+        }),
+      });
+
+      if (!res.ok) throw new Error('Email send failed');
+      setEmailStatus('success');
+      setEmailMsg(`Report sent to ${emailTo.trim()}`);
+    } catch {
+      setEmailStatus('error');
+      setEmailMsg('Failed to send email. Please try again.');
+    } finally {
+      setSendingEmail(false);
+    }
+  };
+
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-md">
+        <div className="flex items-center justify-between p-5 border-b border-border">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+            </div>
+            <h3 className="text-base font-bold text-foreground">Export KPI Report</h3>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+
+        <div className="p-5 space-y-5">
+          {/* Report Type */}
+          <div>
+            <label className="block text-xs font-semibold text-muted-foreground mb-2">Report Type</label>
+            <div className="grid grid-cols-3 gap-2">
+              {(['monthly', 'revenue', 'practice'] as const).map((type) => (
+                <button
+                  key={type}
+                  onClick={() => setReportType(type)}
+                  className={`px-3 py-2.5 rounded-xl text-xs font-semibold border transition-all ${
+                    reportType === type
+                      ? 'bg-primary text-white border-primary' :'bg-card text-muted-foreground border-border hover:border-primary/40 hover:text-foreground'
+                  }`}
+                >
+                  {type === 'monthly' ? '📊 Monthly' : type === 'revenue' ? '💰 Revenue' : '📈 Practice'}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1.5">{REPORT_LABELS[reportType]}</p>
+          </div>
+
+          {/* Format */}
+          <div>
+            <label className="block text-xs font-semibold text-muted-foreground mb-2">Export Format</label>
+            <div className="grid grid-cols-2 gap-2">
+              {(['csv', 'pdf'] as const).map((fmt) => (
+                <button
+                  key={fmt}
+                  onClick={() => setExportFormat(fmt)}
+                  className={`flex items-center gap-2 px-4 py-3 rounded-xl border text-sm font-semibold transition-all ${
+                    exportFormat === fmt
+                      ? 'bg-primary/10 text-primary border-primary/40' :'bg-card text-muted-foreground border-border hover:border-primary/30'
+                  }`}
+                >
+                  <span className="text-base">{fmt === 'csv' ? '📋' : '📄'}</span>
+                  {fmt.toUpperCase()}
+                  <span className="text-xs font-normal opacity-70">{fmt === 'csv' ? 'Spreadsheet' : 'Printable'}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Download Button */}
+          <button
+            onClick={exportFormat === 'csv' ? handleDownloadCSV : handleDownloadPDF}
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary text-white text-sm font-semibold rounded-xl hover:bg-primary/90 transition-colors"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Download {exportFormat.toUpperCase()}
+          </button>
+
+          {/* Divider */}
+          <div className="flex items-center gap-3">
+            <div className="flex-1 h-px bg-border" />
+            <span className="text-xs text-muted-foreground font-medium">or send via email</span>
+            <div className="flex-1 h-px bg-border" />
+          </div>
+
+          {/* Email Send */}
+          <div className="space-y-3">
+            <div>
+              <label className="block text-xs font-semibold text-muted-foreground mb-1.5">Send Report To</label>
+              <input
+                type="email"
+                placeholder="attorney@broussardlegalservices.com"
+                value={emailTo}
+                onChange={(e) => { setEmailTo(e.target.value); setEmailStatus('idle'); }}
+                className="w-full px-3 py-2.5 text-sm bg-background border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40"
+              />
+            </div>
+            {emailStatus === 'success' && (
+              <p className="text-xs text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">{emailMsg}</p>
+            )}
+            {emailStatus === 'error' && (
+              <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{emailMsg}</p>
+            )}
+            <button
+              onClick={handleSendEmail}
+              disabled={sendingEmail || !emailTo.trim()}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-primary bg-primary/10 border border-primary/20 rounded-xl hover:bg-primary/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {sendingEmail ? (
+                <>
+                  <svg className="animate-spin" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+                  Sending…
+                </>
+              ) : (
+                <>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
+                  </svg>
+                  Send Report via Email
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── KPI Card ─────────────────────────────────────────────────────────────────
 
 interface KPICardProps {
@@ -175,6 +533,7 @@ export default function AdminKPIDashboard({ onNavigate }: AdminKPIDashboardProps
   const [loading, setLoading] = useState(true);
   const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
   const [activeSection, setActiveSection] = useState<'overview' | 'forecasts' | 'utilization'>('overview');
+  const [exportOpen, setExportOpen] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -413,6 +772,15 @@ export default function AdminKPIDashboard({ onNavigate }: AdminKPIDashboardProps
             ))}
           </div>
           <button
+            onClick={() => setExportOpen(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/20 text-xs font-semibold text-primary hover:bg-primary/20 transition-all"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Export
+          </button>
+          <button
             onClick={fetchData}
             disabled={loading}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border text-xs font-medium text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-all disabled:opacity-50"
@@ -424,6 +792,14 @@ export default function AdminKPIDashboard({ onNavigate }: AdminKPIDashboardProps
           </button>
         </div>
       </div>
+
+      <ExportModal
+        open={exportOpen}
+        onClose={() => setExportOpen(false)}
+        metrics={metrics}
+        revenueChart={revenueChart}
+        stageBreakdown={stageBreakdown}
+      />
 
       {/* ── OVERVIEW SECTION ── */}
       {activeSection === 'overview' && (
