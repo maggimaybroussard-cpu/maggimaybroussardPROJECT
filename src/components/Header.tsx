@@ -68,9 +68,14 @@ const mobileNavGroups = [
 export default function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const hamburgerRef = useRef<HTMLButtonElement>(null);
   const pathname = usePathname();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -126,15 +131,17 @@ export default function Header() {
   }, [menuOpen]);
 
   const isHeroPage = pathname === '/' || pathname === '/homepage';
+  const isScrolled = mounted && scrolled;
+  const isHero = mounted && isHeroPage;
 
   return (
     <>
       <nav
         aria-label="Main navigation"
         className={`fixed top-0 left-0 w-full z-50 transition-all duration-500 ${
-          scrolled
+          isScrolled
             ? 'nav-scrolled py-3'
-            : isHeroPage
+            : isHero
             ? 'py-4 md:py-8' :'py-4 md:py-8 bg-background border-b border-border'
         }`}
       >
@@ -180,7 +187,7 @@ export default function Header() {
                 className={`px-3 py-2 rounded-full text-[11px] font-semibold uppercase tracking-widest transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent whitespace-nowrap ${
                   pathname === link?.href || (link?.href === '/' && (pathname === '/' || pathname === '/homepage'))
                     ? 'bg-[#8B3A45] text-white'
-                    : scrolled || !isHeroPage
+                    : isScrolled || !isHero
                     ? 'text-primary-foreground/80 hover:text-white hover:bg-accent/80'
                     : 'text-primary-foreground/80 hover:text-white hover:bg-accent/80'
                 }`}
@@ -196,7 +203,7 @@ export default function Header() {
             <Link
               href="/contact"
               className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-[11px] font-semibold uppercase tracking-widest transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
-                scrolled || !isHeroPage
+                isScrolled || !isHero
                   ? 'bg-accent text-accent-foreground hover:opacity-90'
                   : 'bg-primary-foreground text-primary hover:opacity-90'
               }`}
@@ -293,7 +300,7 @@ export default function Header() {
             aria-expanded={menuOpen}
             aria-controls="mobile-nav-menu"
             className={`md:hidden p-2.5 rounded-full transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
-              scrolled || !isHeroPage
+              isScrolled || !isHero
                 ? 'bg-primary-foreground/10 text-primary-foreground'
                 : 'bg-primary-foreground/10 text-accent'
             }`}
