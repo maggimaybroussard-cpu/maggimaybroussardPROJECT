@@ -6,6 +6,10 @@ const nextConfig = {
   compress: true,
   distDir: process.env.DIST_DIR || '.next',
 
+  experimental: {
+    optimizePackageImports: ['@heroicons/react', 'recharts'],
+  },
+
   typescript: {
     ignoreBuildErrors: true,
   },

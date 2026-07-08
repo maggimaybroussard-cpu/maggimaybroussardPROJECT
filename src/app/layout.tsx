@@ -16,6 +16,7 @@ const playfairDisplay = Playfair_Display({
   style: ['normal', 'italic'],
   variable: '--font-serif',
   display: 'swap',
+  preload: true,
 });
 
 const raleway = Raleway({
@@ -23,6 +24,7 @@ const raleway = Raleway({
   weight: ['300', '400', '500', '600', '700'],
   variable: '--font-sans',
   display: 'swap',
+  preload: true,
 });
 
 export const viewport: Viewport = {
@@ -138,6 +140,9 @@ export default function RootLayout({
       <head>
         <meta charSet="utf-8" />
         <meta name="theme-color" content="#1B2A4A" />
+        {/* Preconnect to Google Fonts to eliminate DNS/TCP render-blocking delay */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/favicon.ico" />
         <link rel="manifest" href="/manifest.json" />
