@@ -158,6 +158,7 @@ export default function Header() {
         ref={navRef}
         aria-label="Main navigation"
         className="fixed top-0 left-0 w-full z-50 transition-all duration-500 py-4 md:py-8"
+        suppressHydrationWarning
       >
         <div className="max-w-7xl mx-auto px-4 md:px-10 flex items-center justify-between gap-4">
           {/* Logo */}
