@@ -23,6 +23,8 @@ interface BookingResult {
   durationMinutes: number;
   meetingLink: string;
   emailSent: boolean;
+  googleCalendarUrl?: string;
+  icsDownloadUrl?: string;
 }
 
 const DURATION_OPTIONS: { value: 15 | 30 | 60; label: string; desc: string; price: string }[] = [
@@ -194,6 +196,8 @@ export default function ConsultationScheduler({
         durationMinutes: duration,
         meetingLink: data.meetingLink,
         emailSent: data.emailSent,
+        googleCalendarUrl: data.googleCalendarUrl,
+        icsDownloadUrl: data.icsDownloadUrl,
       };
 
       // ── Conversion tracking ──────────────────────────────────────────────
@@ -621,17 +625,17 @@ export default function ConsultationScheduler({
               className="w-full rounded-xl p-4 mb-5 text-sm text-left"
               style={{ background: 'rgba(53,94,59,0.06)', border: '1px solid rgba(53,94,59,0.15)' }}
             >
-              <p className="font-semibold text-foreground mb-1" style={{ color: '#355E3B' }}>
+              <p className="font-semibold mb-1" style={{ color: '#355E3B' }}>
                 ✓ Confirmation email sent to {bookingResult.clientEmail}
               </p>
               <p className="text-xs text-muted-foreground">
-                Check your inbox for your Google Meet link and prep instructions.
+                Check your inbox for your Google Meet link, prep instructions, and calendar invite.
               </p>
             </div>
           )}
 
           <div className="w-full rounded-xl border border-border p-4 mb-5 text-left">
-            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">Meeting Link</p>
+            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">Google Meet Link</p>
             <a
               href={bookingResult.meetingLink}
               target="_blank"
@@ -643,6 +647,35 @@ export default function ConsultationScheduler({
             </a>
           </div>
 
+          {/* Calendar add buttons */}
+          <div className="w-full flex flex-col gap-2 mb-5">
+            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground text-left mb-1">Add to Your Calendar</p>
+            <div className="flex flex-col sm:flex-row gap-2">
+              {bookingResult.googleCalendarUrl && (
+                <a
+                  href={bookingResult.googleCalendarUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90"
+                  style={{ background: '#1a73e8' }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                  Google Calendar
+                </a>
+              )}
+              {bookingResult.icsDownloadUrl && (
+                <a
+                  href={bookingResult.icsDownloadUrl}
+                  className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90"
+                  style={{ background: '#0078d4' }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                  Outlook / Apple Calendar
+                </a>
+              )}
+            </div>
+          </div>
+
           <div className="flex flex-col sm:flex-row gap-3 w-full">
             <a
               href={bookingResult.meetingLink}
@@ -651,7 +684,7 @@ export default function ConsultationScheduler({
               className="flex-1 py-3 rounded-full text-sm font-semibold uppercase tracking-widest text-white text-center transition-all hover:opacity-90"
               style={{ background: '#355E3B' }}
             >
-              Add to Calendar
+              Join Meeting
             </a>
             <button
               onClick={() => {

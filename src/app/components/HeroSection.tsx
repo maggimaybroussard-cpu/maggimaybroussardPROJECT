@@ -1,13 +1,15 @@
 'use client';
 
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback, useState } from 'react';
 import Link from 'next/link';
 import AppImage from '@/components/ui/AppImage';
 import { trackCTAClick, trackBookConsultationClick, trackViewServicesClick } from '@/lib/analytics';
+import BookConsultationModal from '@/components/BookConsultationModal';
 
 export default function HeroSection() {
   const heroRef = useRef<HTMLElement>(null);
   const rafRef = useRef<number | null>(null);
+  const [bookingModalOpen, setBookingModalOpen] = useState(false);
 
   // Throttle mousemove via requestAnimationFrame to reduce FID/INP impact
   const handleMouseMove = useCallback((e: MouseEvent) => {
@@ -90,18 +92,19 @@ export default function HeroSection() {
 
           {/* CTAs — 2 on mobile, all 4 on desktop */}
           <div className="animate-fade-in-delay-3 flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 items-stretch sm:items-center">
-            <Link
-              href="/book-consultation"
+            <button
+              type="button"
               onClick={() => {
                 trackCTAClick('Book a Consultation', 'hero', '/book-consultation');
                 trackBookConsultationClick('hero');
+                setBookingModalOpen(true);
               }}
               className="inline-flex items-center justify-center gap-2.5 px-8 py-4 bg-accent text-white rounded-full text-xs font-semibold uppercase tracking-[0.15em] hover:opacity-90 transition-all duration-300 hover:gap-4 shadow-lg shadow-accent/20">
               Book a Consultation
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
               </svg>
-            </Link>
+            </button>
             <Link
               href="/contact"
               onClick={() => {
@@ -160,6 +163,12 @@ export default function HeroSection() {
           </div>
         </div>
       </div>
-    </section>);
+
+      <BookConsultationModal
+        isOpen={bookingModalOpen}
+        onClose={() => setBookingModalOpen(false)}
+      />
+    </section>
+  );
 
 }

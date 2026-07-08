@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { getGoogleAccessToken } from '@/lib/googleCalendar';
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -22,20 +23,21 @@ const brand = {
   green: '#355E3B',
   greenLight: 'rgba(53,94,59,0.08)',
   greenBorder: 'rgba(53,94,59,0.18)',
+  blue: '#1a73e8',
+  blueLight: 'rgba(26,115,232,0.08)',
+  blueBorder: 'rgba(26,115,232,0.18)',
+  msBlue: '#0078d4',
+  msBlueLight: 'rgba(0,120,212,0.08)',
+  msBlueBorder: 'rgba(0,120,212,0.18)',
 };
 
 function formatDate(dateStr: string): string {
   try {
     const [y, m, d] = dateStr.split('-').map(Number);
     return new Date(y, m - 1, d).toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
     });
-  } catch {
-    return dateStr;
-  }
+  } catch { return dateStr; }
 }
 
 function formatTime(timeStr: string): string {
@@ -44,8 +46,154 @@ function formatTime(timeStr: string): string {
     const date = new Date();
     date.setHours(h, m, 0, 0);
     return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+  } catch { return timeStr; }
+}
+
+/**
+ * Build a Google Calendar "Add to Calendar" URL
+ */
+function buildGoogleCalendarUrl(params: {
+  title: string;
+  startDate: string; // YYYY-MM-DD
+  startTime: string; // HH:MM
+  durationMinutes: number;
+  description: string;
+  location: string;
+}): string {
+  const [y, m, d] = params.startDate.split('-').map(Number);
+  const [h, min] = params.startTime.split(':').map(Number);
+  const start = new Date(y, m - 1, d, h, min, 0);
+  const end = new Date(start.getTime() + params.durationMinutes * 60000);
+
+  const fmt = (dt: Date) =>
+    `${dt.getFullYear()}${String(dt.getMonth() + 1).padStart(2, '0')}${String(dt.getDate()).padStart(2, '0')}T${String(dt.getHours()).padStart(2, '0')}${String(dt.getMinutes()).padStart(2, '0')}00`;
+
+  const p = new URLSearchParams({
+    action: 'TEMPLATE',
+    text: params.title,
+    dates: `${fmt(start)}/${fmt(end)}`,
+    details: params.description,
+    location: params.location,
+  });
+  return `https://calendar.google.com/calendar/render?${p.toString()}`;
+}
+
+/**
+ * Create a real Google Calendar event with Google Meet via the Calendar API.
+ * Returns { meetingLink, googleEventId, htmlLink } or falls back to a placeholder.
+ */
+async function createGoogleCalendarEventWithMeet(params: {
+  clientName: string;
+  clientEmail: string;
+  bookingDate: string;
+  bookingTime: string;
+  durationMinutes: number;
+  notes?: string;
+}): Promise<{ meetingLink: string; googleEventId: string | null; htmlLink: string | null }> {
+  try {
+    const auth = await getGoogleAccessToken();
+    if (!auth) {
+      // Fallback: generate a placeholder Meet-style link
+      const token = Math.random().toString(36).substring(2, 10);
+      return {
+        meetingLink: `https://meet.google.com/${token.substring(0, 3)}-${token.substring(3, 7)}-${token.substring(7)}`,
+        googleEventId: null,
+        htmlLink: null,
+      };
+    }
+
+    const [y, m, d] = params.bookingDate.split('-').map(Number);
+    const [h, min] = params.bookingTime.split(':').map(Number);
+    const startDt = new Date(y, m - 1, d, h, min, 0);
+    const endDt = new Date(startDt.getTime() + params.durationMinutes * 60000);
+
+    const fmt = (dt: Date) =>
+      `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}T${String(dt.getHours()).padStart(2, '0')}:${String(dt.getMinutes()).padStart(2, '0')}:00`;
+
+    const durationLabel =
+      params.durationMinutes === 15 ? '15-Minute' :
+      params.durationMinutes === 60 ? '60-Minute' : '30-Minute';
+
+    const descriptionParts = [
+      `${durationLabel} Paralegal Consultation — Broussard Legal Services`,
+      `Client: ${params.clientName}`,
+      params.notes ? `Notes: ${params.notes}` : null,
+      '',
+      'Please have ready:',
+      '• Summary of your matter',
+      '• Relevant documents',
+      '• Your top 3–5 questions',
+      '',
+      '— Maggi May Broussard | broussardlegalservices.com',
+    ].filter((p) => p !== null).join('\n');
+
+    const eventBody = {
+      summary: `${durationLabel} Consultation — ${params.clientName}`,
+      description: descriptionParts,
+      start: { dateTime: fmt(startDt), timeZone: 'America/Chicago' },
+      end: { dateTime: fmt(endDt), timeZone: 'America/Chicago' },
+      colorId: '2', // sage green
+      attendees: [
+        { email: params.clientEmail, displayName: params.clientName, responseStatus: 'accepted' },
+      ],
+      guestsCanSeeOtherGuests: false,
+      reminders: {
+        useDefault: false,
+        overrides: [
+          { method: 'email', minutes: 24 * 60 },
+          { method: 'popup', minutes: 30 },
+        ],
+      },
+      conferenceData: {
+        createRequest: {
+          requestId: `consultation-${Date.now()}`,
+          conferenceSolutionKey: { type: 'hangoutsMeet' },
+        },
+      },
+    };
+
+    const res = await fetch(
+      `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(auth.calendarId)}/events?sendUpdates=all&conferenceDataVersion=1`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${auth.accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(eventBody),
+      }
+    );
+
+    if (!res.ok) {
+      const token = Math.random().toString(36).substring(2, 10);
+      return {
+        meetingLink: `https://meet.google.com/${token.substring(0, 3)}-${token.substring(3, 7)}-${token.substring(7)}`,
+        googleEventId: null,
+        htmlLink: null,
+      };
+    }
+
+    const data = await res.json();
+    const meetingLink =
+      data?.conferenceData?.entryPoints?.find((ep: { entryPointType: string; uri: string }) => ep.entryPointType === 'video')?.uri ||
+      data?.hangoutLink ||
+      (() => {
+        const token = Math.random().toString(36).substring(2, 10);
+        return `https://meet.google.com/${token.substring(0, 3)}-${token.substring(3, 7)}-${token.substring(7)}`;
+      })();
+
+    return {
+      meetingLink,
+      googleEventId: data.id ?? null,
+      htmlLink: data.htmlLink ?? null,
+    };
   } catch {
-    return timeStr;
+    const token = Math.random().toString(36).substring(2, 10);
+    return {
+      meetingLink: `https://meet.google.com/${token.substring(0, 3)}-${token.substring(3, 7)}-${token.substring(7)}`,
+      googleEventId: null,
+      htmlLink: null,
+    };
   }
 }
 
@@ -57,9 +205,11 @@ function buildConfirmationEmail(params: {
   durationMinutes: number;
   bookingId: string;
   meetingLink: string;
+  googleCalendarUrl: string;
+  icsDownloadUrl: string;
   prepDocuments?: Array<{ fileName: string; publicUrl: string | null; description: string | null }>;
 }): string {
-  const { clientName, bookingDate, bookingTime, durationMinutes, meetingLink, prepDocuments } = params;
+  const { clientName, bookingDate, bookingTime, durationMinutes, meetingLink, googleCalendarUrl, icsDownloadUrl, prepDocuments } = params;
   const firstName = clientName.split(' ')[0];
   const formattedDate = formatDate(bookingDate);
   const formattedTime = formatTime(bookingTime);
@@ -108,7 +258,7 @@ function buildConfirmationEmail(params: {
               <span style="font-size:13px;color:${brand.green};font-family:Georgia,serif;font-weight:bold;letter-spacing:0.04em;">&#10003; Consultation Confirmed</span>
             </div>
             <h2 style="margin:0 0 8px;font-size:22px;color:${brand.foreground};font-family:Georgia,serif;font-weight:normal;">Your ${durationLabel} consultation is booked, ${firstName}.</h2>
-            <p style="margin:0 0 24px;font-size:15px;color:${brand.muted};font-family:Georgia,serif;line-height:1.7;">We look forward to speaking with you. Here are your booking details and everything you need to prepare for a productive session.</p>
+            <p style="margin:0 0 24px;font-size:15px;color:${brand.muted};font-family:Georgia,serif;line-height:1.7;">We look forward to speaking with you. Here are your booking details and everything you need to prepare.</p>
           </td>
         </tr>
         <!-- Booking details card -->
@@ -132,7 +282,7 @@ function buildConfirmationEmail(params: {
                     </tr>
                     <tr>
                       <td style="padding-top:14px;">
-                        <p style="margin:0 0 4px;font-size:11px;color:${brand.muted};font-family:Georgia,serif;text-transform:uppercase;letter-spacing:0.1em;">Meeting Link</p>
+                        <p style="margin:0 0 4px;font-size:11px;color:${brand.muted};font-family:Georgia,serif;text-transform:uppercase;letter-spacing:0.1em;">Google Meet Link</p>
                         <a href="${meetingLink}" style="font-size:15px;color:${brand.accent};font-family:Georgia,serif;text-decoration:none;font-weight:bold;">${meetingLink}</a>
                       </td>
                     </tr>
@@ -142,13 +292,37 @@ function buildConfirmationEmail(params: {
             </table>
           </td>
         </tr>
-        <!-- Join button -->
+        <!-- Action buttons row -->
         <tr>
           <td style="padding:0 36px 28px;">
             <table cellpadding="0" cellspacing="0" role="presentation">
               <tr>
-                <td style="background-color:${brand.accent};border-radius:7px;box-shadow:0 2px 8px rgba(200,150,90,0.25);">
-                  <a href="${meetingLink}" style="display:inline-block;padding:13px 28px;color:${brand.white};text-decoration:none;font-size:13px;font-family:Georgia,serif;letter-spacing:0.05em;font-weight:bold;">Join Meeting &rarr;</a>
+                <td style="padding-right:10px;">
+                  <table cellpadding="0" cellspacing="0" role="presentation">
+                    <tr>
+                      <td style="background-color:${brand.accent};border-radius:7px;box-shadow:0 2px 8px rgba(200,150,90,0.25);">
+                        <a href="${meetingLink}" style="display:inline-block;padding:12px 22px;color:${brand.white};text-decoration:none;font-size:12px;font-family:Georgia,serif;letter-spacing:0.05em;font-weight:bold;">&#128249; Join Meeting</a>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+                <td style="padding-right:10px;">
+                  <table cellpadding="0" cellspacing="0" role="presentation">
+                    <tr>
+                      <td style="background-color:${brand.blue};border-radius:7px;">
+                        <a href="${googleCalendarUrl}" style="display:inline-block;padding:12px 22px;color:${brand.white};text-decoration:none;font-size:12px;font-family:Georgia,serif;letter-spacing:0.05em;font-weight:bold;">&#128197; Add to Google Calendar</a>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+                <td>
+                  <table cellpadding="0" cellspacing="0" role="presentation">
+                    <tr>
+                      <td style="background-color:${brand.msBlue};border-radius:7px;">
+                        <a href="${icsDownloadUrl}" style="display:inline-block;padding:12px 22px;color:${brand.white};text-decoration:none;font-size:12px;font-family:Georgia,serif;letter-spacing:0.05em;font-weight:bold;">&#128197; Add to Outlook / Apple</a>
+                      </td>
+                    </tr>
+                  </table>
                 </td>
               </tr>
             </table>
@@ -349,9 +523,15 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Generate a Google Meet-style placeholder link
-    const meetToken = Math.random().toString(36).substring(2, 10);
-    const meetingLink = `https://meet.google.com/${meetToken.substring(0, 3)}-${meetToken.substring(3, 7)}-${meetToken.substring(7)}`;
+    // Create Google Calendar event with Meet link
+    const { meetingLink, googleEventId, htmlLink: googleEventLink } = await createGoogleCalendarEventWithMeet({
+      clientName,
+      clientEmail,
+      bookingDate,
+      bookingTime,
+      durationMinutes,
+      notes,
+    });
 
     // Insert booking
     const { data: booking, error: insertError } = await supabaseAdmin
@@ -367,6 +547,7 @@ export async function POST(req: NextRequest) {
         status: 'confirmed',
         meeting_location: meetingLink,
         confirmation_sent: false,
+        ...(googleEventId ? { gcal_event_id: googleEventId } : {}),
       })
       .select()
       .single();
@@ -382,6 +563,18 @@ export async function POST(req: NextRequest) {
       booking_id: booking.id,
     }).on('conflict', () => {});
 
+    // Build calendar add URLs
+    const googleCalendarUrl = buildGoogleCalendarUrl({
+      title: `Consultation — Broussard Legal Services`,
+      startDate: bookingDate,
+      startTime: bookingTime.substring(0, 5),
+      durationMinutes,
+      description: `Your ${durationMinutes}-minute paralegal consultation.\n\nJoin via Google Meet: ${meetingLink}`,
+      location: meetingLink,
+    });
+
+    const icsDownloadUrl = `${SITE_URL}/api/consultations/calendar-invite?bookingId=${booking.id}`;
+
     // Send confirmation email via Resend
     let emailSent = false;
     let emailError: string | null = null;
@@ -391,7 +584,7 @@ export async function POST(req: NextRequest) {
         durationMinutes === 15 ? '15-Min' : durationMinutes === 60 ? '60-Min' : '30-Min';
       const subject = `Consultation Confirmed — ${durationLabel} on ${formatDate(bookingDate)} at ${formatTime(bookingTime)} CST`;
 
-      // Fetch any prep documents already attached to this inquiry
+      // Fetch any prep documents
       let prepDocuments: Array<{ fileName: string; publicUrl: string | null; description: string | null }> = [];
       if (inquiryId) {
         const { data: prepDocs } = await supabaseAdmin
@@ -406,7 +599,6 @@ export async function POST(req: NextRequest) {
           }));
         }
       }
-      // Also check by booking id (docs attached after booking creation)
       const { data: bookingPrepDocs } = await supabaseAdmin
         .from('consultation_prep_documents')
         .select('file_name, public_url, description')
@@ -428,6 +620,8 @@ export async function POST(req: NextRequest) {
         durationMinutes,
         bookingId: booking.id,
         meetingLink,
+        googleCalendarUrl,
+        icsDownloadUrl,
         prepDocuments,
       });
 
@@ -463,7 +657,7 @@ export async function POST(req: NextRequest) {
       emailError = 'RESEND_API_KEY not configured';
     }
 
-    // Schedule 3-step follow-up sequence (Day 0 confirmation, Day 2 case study, Day 7 offer)
+    // Schedule follow-up sequences
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     if (supabaseUrl && supabaseServiceKey) {
@@ -482,7 +676,6 @@ export async function POST(req: NextRequest) {
         }),
       }).catch(() => {});
 
-      // Schedule 24-hour reminder email with date, time, Google Meet link, and prep instructions
       fetch(`${supabaseUrl}/functions/v1/schedule-consultation-24hr-reminder`, {
         method: 'POST',
         headers: {
@@ -505,6 +698,10 @@ export async function POST(req: NextRequest) {
       success: true,
       bookingId: booking.id,
       meetingLink,
+      googleEventId,
+      googleEventLink,
+      googleCalendarUrl,
+      icsDownloadUrl,
       emailSent,
       emailError,
       booking: {
