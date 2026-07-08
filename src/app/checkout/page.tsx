@@ -156,6 +156,10 @@ function CheckoutContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Only initialize Stripe when we have a clientSecret (payment step reached)
+  // This prevents the 298 KiB Stripe JS bundle from loading on initial page visit
+  const stripePromise = clientSecret ? getStripe() : null;
+
   const [formData, setFormData] = useState<CustomerFormData>({
     firstName: '',
     lastName: '',
@@ -167,8 +171,6 @@ function CheckoutContent() {
     postalCode: '',
     country: 'US',
   });
-
-  const stripePromise = getStripe();
 
   // Track checkout page view on mount
   React.useEffect(() => {
