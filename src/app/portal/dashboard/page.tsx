@@ -190,6 +190,15 @@ const NAV_ITEMS = [
     ),
   },
   {
+    href: '/portal/files',
+    label: 'File Repository',
+    icon: (
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 3h18v4H3z" /><path d="M3 10h18v11H3z" /><line x1="7" y1="15" x2="17" y2="15" />
+      </svg>
+    ),
+  },
+  {
     href: '/portal/documents',
     label: 'Documents',
     icon: (
@@ -1049,6 +1058,7 @@ export default function ClientHomePage() {
               { href: '/portal/hub', label: 'Client Hub', color: '#2563EB' },
               { href: '/portal/invoices', label: 'Invoices', color: '#C8965A' },
               { href: '/portal/messages', label: 'Messages', color: '#2563EB' },
+              { href: '/portal/files', label: 'File Repository', color: '#4F46E5' },
               { href: '/portal/documents', label: 'Documents', color: '#6B7280' },
               { href: '/portal/signatures', label: 'Signatures', color: '#7C3AED' },
               { href: '/portal/retainer', label: 'Retainer', color: '#0891B2' },
