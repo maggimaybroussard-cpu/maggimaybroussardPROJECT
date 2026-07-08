@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -95,6 +95,107 @@ function resolveStage(c: CaseFlow): string {
 
 const FLOW_STAGES = ['inquiry', 'intake', 'consultation', 'proposal_sent', 'active_client', 'billed', 'closed'];
 
+// ── Stage Mover Dropdown ──────────────────────────────────────────────────────
+
+interface StageMoverProps {
+  caseId: string;
+  currentStage: string;
+  onStageChanged: (newStage: string) => void;
+}
+
+function StageMover({ caseId, currentStage, onStageChanged }: StageMoverProps) {
+  const [open, setOpen] = useState(false);
+  const [moving, setMoving] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  const moveToStage = async (newStage: string) => {
+    if (newStage === currentStage || moving) return;
+    setMoving(true);
+    setOpen(false);
+    try {
+      const supabase = createClient();
+      const { error } = await supabase
+        .from('contact_inquiries')
+        .update({ booking_stage: newStage, updated_at: new Date().toISOString() })
+        .eq('id', caseId);
+      if (error) throw error;
+      onStageChanged(newStage);
+      setToast(`Moved to ${STAGE_CONFIG[newStage]?.label ?? newStage}`);
+      setTimeout(() => setToast(null), 3000);
+    } catch {
+      setToast('Failed to update stage');
+      setTimeout(() => setToast(null), 3000);
+    } finally {
+      setMoving(false);
+    }
+  };
+
+  const cfg = STAGE_CONFIG[currentStage] ?? STAGE_CONFIG.inquiry;
+
+  return (
+    <div className="relative" ref={ref}>
+      {toast && (
+        <div className="absolute bottom-full mb-2 left-0 z-50 px-3 py-1.5 rounded-lg text-xs font-medium bg-foreground text-background shadow-lg whitespace-nowrap">
+          {toast}
+        </div>
+      )}
+      <button
+        onClick={(e) => { e.stopPropagation(); setOpen((o) => !o); }}
+        disabled={moving}
+        className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all ${cfg.pill} hover:opacity-80 disabled:opacity-60`}
+        title="Move to stage"
+      >
+        {moving ? (
+          <svg className="w-3 h-3 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 1 1-6.219-8.56" />
+          </svg>
+        ) : (
+          <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
+        )}
+        {cfg.label}
+        <svg className={`w-3 h-3 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {open && (
+        <div className="absolute top-full mt-1 left-0 z-50 bg-card border border-border rounded-xl shadow-lg overflow-hidden min-w-[160px]">
+          <div className="px-3 py-2 border-b border-border/60">
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Move to Stage</p>
+          </div>
+          {FLOW_STAGES.map((stage) => {
+            const sCfg = STAGE_CONFIG[stage];
+            const isCurrent = stage === currentStage;
+            return (
+              <button
+                key={stage}
+                onClick={(e) => { e.stopPropagation(); moveToStage(stage); }}
+                disabled={isCurrent}
+                className={`w-full flex items-center gap-2 px-3 py-2 text-xs font-medium transition-colors text-left ${
+                  isCurrent ? 'bg-muted/40 text-muted-foreground cursor-default' : 'hover:bg-muted/60 text-foreground'
+                }`}
+              >
+                <span className={`w-2 h-2 rounded-full shrink-0 ${sCfg.dot}`} />
+                {sCfg.label}
+                {isCurrent && <span className="ml-auto text-[10px] text-muted-foreground">current</span>}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Main Component ────────────────────────────────────────────────────────────
 
 export default function CaseFlowManager() {
@@ -105,6 +206,7 @@ export default function CaseFlowManager() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [selectedCase, setSelectedCase] = useState<CaseFlowEnriched | null>(null);
   const [drawerTab, setDrawerTab] = useState<'overview' | 'invoices' | 'documents' | 'messages'>('overview');
+  const [liveUpdateId, setLiveUpdateId] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -157,6 +259,38 @@ export default function CaseFlowManager() {
   }, []);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  // ── Realtime subscription for contact_inquiries stage changes ─────────────
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel('caseflow-inquiries-live')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'contact_inquiries' }, (payload) => {
+        const updated = payload.new as CaseFlow;
+        setCases((prev) =>
+          prev.map((c) =>
+            c.id === updated.id
+              ? { ...c, booking_stage: updated.booking_stage, status: updated.status, updated_at: updated.updated_at }
+              : c
+          )
+        );
+        setLiveUpdateId(updated.id);
+        setTimeout(() => setLiveUpdateId(null), 2500);
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+
+  // ── Handle local stage change (optimistic update) ─────────────────────────
+  const handleStageChanged = useCallback((caseId: string, newStage: string) => {
+    setCases((prev) =>
+      prev.map((c) =>
+        c.id === caseId ? { ...c, booking_stage: newStage, updated_at: new Date().toISOString() } : c
+      )
+    );
+    setLiveUpdateId(caseId);
+    setTimeout(() => setLiveUpdateId(null), 2500);
+  }, []);
 
   // ── Derived ───────────────────────────────────────────────────────────────
 
@@ -224,7 +358,13 @@ export default function CaseFlowManager() {
 
       {/* Flow Stage Pipeline */}
       <div className="bg-card border border-border rounded-2xl p-5">
-        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-4">Case Pipeline</p>
+        <div className="flex items-center justify-between mb-4">
+          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Case Pipeline</p>
+          <div className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-xs text-muted-foreground">Live</span>
+          </div>
+        </div>
         <div className="flex items-stretch gap-2 overflow-x-auto pb-1">
           {FLOW_STAGES.map((stage, idx) => {
             const cfg = STAGE_CONFIG[stage];
@@ -299,24 +439,35 @@ export default function CaseFlowManager() {
             const isExpanded = expandedId === c.id;
             const nextDeadline = c.calendly_start_time;
             const daysUntil = nextDeadline ? getDaysUntil(nextDeadline) : null;
+            const isLive = liveUpdateId === c.id;
 
             return (
-              <div key={c.id} className="bg-card border border-border rounded-2xl overflow-hidden transition-shadow hover:shadow-sm">
+              <div
+                key={c.id}
+                className={`bg-card border rounded-2xl overflow-hidden transition-all ${
+                  isLive ? 'border-emerald-400 shadow-sm shadow-emerald-100' : 'border-border hover:shadow-sm'
+                }`}
+              >
                 {/* Row */}
                 <div
                   className="flex items-center gap-4 px-5 py-4 cursor-pointer"
                   onClick={() => setExpandedId(isExpanded ? null : c.id)}
                 >
                   {/* Stage dot */}
-                  <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${stageCfg.dot}`} />
+                  <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${stageCfg.dot} ${isLive ? 'animate-pulse' : ''}`} />
 
                   {/* Case info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-sm font-semibold text-foreground">{c.name}</span>
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${stageCfg.pill}`}>
-                        {stageCfg.label}
-                      </span>
+                      {/* Stage mover — stop propagation so row click doesn't toggle expand */}
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <StageMover
+                          caseId={c.id}
+                          currentStage={stage}
+                          onStageChanged={(newStage) => handleStageChanged(c.id, newStage)}
+                        />
+                      </div>
                       {c.overdueCount > 0 && (
                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border bg-red-50 text-red-700 border-red-200">
                           {c.overdueCount} overdue
@@ -325,6 +476,12 @@ export default function CaseFlowManager() {
                       {c.unreadMessages > 0 && (
                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border bg-blue-50 text-blue-700 border-blue-200">
                           {c.unreadMessages} msg{c.unreadMessages !== 1 ? 's' : ''}
+                        </span>
+                      )}
+                      {isLive && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-emerald-50 text-emerald-700 border-emerald-200">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                          Updated
                         </span>
                       )}
                     </div>
@@ -399,7 +556,11 @@ export default function CaseFlowManager() {
                             <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">Case Details</p>
                             <div className="space-y-1.5 text-sm">
                               <div className="flex justify-between"><span className="text-muted-foreground">Service</span><span className="font-medium text-foreground">{c.service}</span></div>
-                              <div className="flex justify-between"><span className="text-muted-foreground">Status</span><span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${stageCfg.pill}`}>{stageCfg.label}</span></div>
+                              <div className="flex justify-between"><span className="text-muted-foreground">Stage</span>
+                                <div onClick={(e) => e.stopPropagation()}>
+                                  <StageMover caseId={c.id} currentStage={stage} onStageChanged={(ns) => handleStageChanged(c.id, ns)} />
+                                </div>
+                              </div>
                               <div className="flex justify-between"><span className="text-muted-foreground">Created</span><span className="text-foreground">{fmtDate(c.created_at)}</span></div>
                               <div className="flex justify-between"><span className="text-muted-foreground">Updated</span><span className="text-foreground">{fmtDate(c.updated_at)}</span></div>
                             </div>

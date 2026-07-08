@@ -101,7 +101,7 @@ export default function RealtimeCaseNotificationsDashboard() {
       const supabase = createClient();
       const [notifRes, casesRes] = await Promise.all([
         supabase
-          .from('notifications_center')
+          .from('notifications')
           .select('*')
           .order('created_at', { ascending: false })
           .limit(100),
@@ -116,12 +116,12 @@ export default function RealtimeCaseNotificationsDashboard() {
         const mapped: CaseNotification[] = notifRes.data.map((n: Record<string, unknown>) => ({
           id: String(n.id ?? ''),
           inquiry_id: n.inquiry_id ? String(n.inquiry_id) : null,
-          event_type: String(n.event_type ?? 'general'),
+          event_type: String(n.notification_type ?? n.event_type ?? 'general'),
           title: String(n.title ?? 'Notification'),
-          message: String(n.message ?? ''),
+          message: String(n.body ?? n.message ?? ''),
           is_read: Boolean(n.is_read),
           created_at: String(n.created_at ?? new Date().toISOString()),
-          client_name: n.client_name ? String(n.client_name) : undefined,
+          client_name: n.client_name ? String(n.client_name) : (n.metadata as Record<string, unknown>)?.client_name ? String((n.metadata as Record<string, unknown>).client_name) : undefined,
           client_email: n.client_email ? String(n.client_email) : undefined,
           priority: (['low', 'medium', 'high', 'urgent'].includes(String(n.priority)) ? n.priority : 'medium') as CaseNotification['priority'],
         }));
@@ -148,19 +148,22 @@ export default function RealtimeCaseNotificationsDashboard() {
   useEffect(() => {
     fetchData();
     const supabase = createClient();
-    const channel = supabase
+
+    // Subscribe to new notifications
+    const notifChannel = supabase
       .channel('realtime-notifications')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications_center' }, (payload) => {
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, (payload) => {
         const n = payload.new as Record<string, unknown>;
+        const meta = (n.metadata as Record<string, unknown>) ?? {};
         const newNotif: CaseNotification = {
           id: String(n.id ?? ''),
           inquiry_id: n.inquiry_id ? String(n.inquiry_id) : null,
-          event_type: String(n.event_type ?? 'general'),
+          event_type: String(n.notification_type ?? n.event_type ?? 'general'),
           title: String(n.title ?? 'Notification'),
-          message: String(n.message ?? ''),
+          message: String(n.body ?? n.message ?? ''),
           is_read: false,
           created_at: String(n.created_at ?? new Date().toISOString()),
-          client_name: n.client_name ? String(n.client_name) : undefined,
+          client_name: meta.client_name ? String(meta.client_name) : undefined,
           priority: (['low', 'medium', 'high', 'urgent'].includes(String(n.priority)) ? n.priority : 'medium') as CaseNotification['priority'],
         };
         setNotifications((prev) => [newNotif, ...prev]);
@@ -168,18 +171,41 @@ export default function RealtimeCaseNotificationsDashboard() {
       })
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    // Subscribe to case stage changes
+    const caseChannel = supabase
+      .channel('realtime-case-stages')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'contact_inquiries' }, (payload) => {
+        const n = payload.new as Record<string, unknown>;
+        const o = payload.old as Record<string, unknown>;
+        if (n.booking_stage !== o.booking_stage) {
+          const stageLabel = String(n.booking_stage ?? 'updated');
+          toast(`Case stage updated: ${String(n.name ?? 'Client')} → ${stageLabel}`, {
+            icon: '🔄',
+            duration: 4000,
+          });
+          // Refresh cases list
+          setCases((prev) =>
+            prev.map((c) => c.id === String(n.id) ? { ...c, status: String(n.status ?? c.status) } : c)
+          );
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(notifChannel);
+      supabase.removeChannel(caseChannel);
+    };
   }, [fetchData]);
 
   const markRead = async (id: string) => {
     const supabase = createClient();
-    await supabase.from('notifications_center').update({ is_read: true }).eq('id', id);
+    await supabase.from('notifications').update({ is_read: true }).eq('id', id);
     setNotifications((prev) => prev.map((n) => n.id === id ? { ...n, is_read: true } : n));
   };
 
   const markAllRead = async () => {
     const supabase = createClient();
-    await supabase.from('notifications_center').update({ is_read: true }).eq('is_read', false);
+    await supabase.from('notifications').update({ is_read: true }).eq('is_read', false);
     setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
     toast.success('All notifications marked as read');
   };
@@ -212,15 +238,18 @@ Return ONLY valid JSON with this exact structure:
     try {
       const supabase = createClient();
       const caseInfo = cases.find((c) => c.id === selectedCase);
-      await supabase.from('notifications_center').insert({
+      await supabase.from('notifications').insert({
         inquiry_id: selectedCase || null,
-        event_type: eventType,
+        notification_type: eventType,
         title: composedTitle,
-        message: composedMessage,
+        body: composedMessage,
         is_read: false,
-        priority,
-        client_name: caseInfo?.name ?? null,
-        client_email: null,
+        audience: 'admin',
+        metadata: {
+          priority,
+          client_name: caseInfo?.name ?? null,
+          client_email: null,
+        },
       });
       toast.success('Notification sent successfully');
       setShowCompose(false);

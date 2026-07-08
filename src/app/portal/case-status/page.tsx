@@ -209,6 +209,8 @@ export default function CaseStatusDashboard() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [liveFlash, setLiveFlash] = useState(false);
+  const [stageChangeToast, setStageChangeToast] = useState<string | null>(null);
+  const prevStageRef = React.useRef<string | null>(null);
 
   const fetchData = useCallback(async () => {
     if (!user) return;
@@ -294,7 +296,28 @@ export default function CaseStatusDashboard() {
 
         const ch = supabase
           .channel('case-status-live')
-          .on('postgres_changes', { event: '*', schema: 'public', table: 'contact_inquiries', filter: `id=eq.${inquiryId}` }, () => {
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'contact_inquiries', filter: `id=eq.${inquiryId}` }, (payload) => {
+            const updated = payload.new as Record<string, unknown>;
+            const prevStage = prevStageRef.current;
+            const newStage = updated?.booking_stage ? String(updated.booking_stage) : null;
+
+            // Show toast if stage changed
+            if (newStage && prevStage !== newStage) {
+              const STAGE_LABELS_MAP: Record<string, string> = {
+                inquiry: 'Inquiry',
+                intake: 'Intake',
+                consultation: 'Consultation',
+                proposal_sent: 'Proposal Sent',
+                active_client: 'Active',
+                active: 'Active',
+                billed: 'Billed',
+                closed: 'Closed',
+              };
+              const label = STAGE_LABELS_MAP[newStage] ?? newStage;
+              setStageChangeToast(`Your case has moved to: ${label}`);
+              setTimeout(() => setStageChangeToast(null), 5000);
+            }
+
             fetchData();
             setLiveFlash(true);
             setTimeout(() => setLiveFlash(false), 2000);
@@ -304,7 +327,12 @@ export default function CaseStatusDashboard() {
             setLiveFlash(true);
             setTimeout(() => setLiveFlash(false), 2000);
           })
-          .on('postgres_changes', { event: '*', schema: 'public', table: 'portal_messages', filter: `inquiry_id=eq.${inquiryId}` }, () => {
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'portal_messages', filter: `inquiry_id=eq.${inquiryId}` }, (payload) => {
+            const msg = payload.new as Record<string, unknown>;
+            if (msg?.sender_role === 'admin') {
+              setStageChangeToast('New message from your attorney');
+              setTimeout(() => setStageChangeToast(null), 5000);
+            }
             fetchData();
             setLiveFlash(true);
             setTimeout(() => setLiveFlash(false), 2000);
@@ -317,6 +345,13 @@ export default function CaseStatusDashboard() {
         return () => { supabase.removeChannel(ch); };
       });
   }, [user, fetchData]);
+
+  // Track stage changes for toast
+  useEffect(() => {
+    if (caseDetail) {
+      prevStageRef.current = caseDetail.booking_stage;
+    }
+  }, [caseDetail]);
 
   const handleSignOut = async () => {
     setSigningOut(true);
@@ -372,6 +407,28 @@ export default function CaseStatusDashboard() {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Stage change toast */}
+      {stageChangeToast && (
+        <div className="fixed top-4 right-4 z-50 flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg border border-emerald-200 bg-white max-w-sm animate-in slide-in-from-top-2">
+          <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
+            <svg className="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-foreground">Case Updated</p>
+            <p className="text-xs text-muted-foreground truncate">{stageChangeToast}</p>
+          </div>
+          <button
+            onClick={() => setStageChangeToast(null)}
+            className="text-muted-foreground hover:text-foreground transition-colors shrink-0"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      )}
       {/* ── Header ── */}
       <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-sm border-b border-border/60">
         <div className="max-w-5xl mx-auto px-5 md:px-8">

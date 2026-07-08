@@ -80,6 +80,7 @@ export default function PortalMessagesPage() {
   const [showSearch, setShowSearch] = useState(false);
   const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
   const [uploadingAttachment, setUploadingAttachment] = useState(false);
+  const [newMessageToast, setNewMessageToast] = useState<string | null>(null);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -145,7 +146,19 @@ export default function PortalMessagesPage() {
     const supabase = createClient();
     const channel = supabase
       .channel('portal-messages-live')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'portal_messages', filter: `inquiry_id=eq.${inquiryId}` }, () => { fetchMessages(); })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'portal_messages', filter: `inquiry_id=eq.${inquiryId}` }, (payload) => {
+        const msg = payload.new as Record<string, unknown>;
+        // Show toast for incoming admin messages
+        if (msg?.sender_role === 'admin') {
+          const preview = msg?.body ? String(msg.body).slice(0, 60) + (String(msg.body).length > 60 ? '…' : '') : 'New message';
+          setNewMessageToast(preview);
+          setTimeout(() => setNewMessageToast(null), 5000);
+        }
+        fetchMessages();
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'portal_messages', filter: `inquiry_id=eq.${inquiryId}` }, () => {
+        fetchMessages();
+      })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [user, inquiryId, fetchMessages]);
@@ -248,367 +261,391 @@ export default function PortalMessagesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* ── Header ── */}
-      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-sm border-b border-border/60">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <div className="flex items-center justify-between h-14">
-            <div className="flex items-center gap-3">
-              <Link href="/portal/dashboard">
-                <AppLogo className="h-7 w-auto" />
-              </Link>
-              <span className="text-muted-foreground/40 text-sm hidden sm:block">·</span>
-              <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground hidden sm:block">Client Portal</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <button onClick={() => setMobileNavOpen((v) => !v)} className="sm:hidden p-2 rounded-lg hover:bg-secondary/60 text-muted-foreground">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
-                </svg>
-              </button>
-              <nav className="hidden sm:flex items-center gap-0.5">
-                {PORTAL_NAV.map((item) => {
-                  const active = item.href === '/portal/messages';
-                  return (
-                    <Link key={item.href} href={item.href} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-widest transition-colors ${active ? 'bg-secondary/60 text-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-secondary/30'}`}>
-                      <span className={active ? 'text-primary' : 'opacity-60'}>{item.icon}</span>
-                      {item.label}
-                      {item.href === '/portal/messages' && unreadCount > 0 && (
-                        <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-primary text-white text-[9px] font-bold">{unreadCount}</span>
-                      )}
-                    </Link>
-                  );
-                })}
-              </nav>
-              <button onClick={handleSignOut} disabled={signingOut} className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-widest text-muted-foreground hover:text-foreground hover:bg-secondary/30 transition-colors">
-                {signingOut ? 'Signing out…' : 'Sign Out'}
-              </button>
-            </div>
+    <>
+      {/* New message toast */}
+      {newMessageToast && (
+        <div className="fixed top-4 right-4 z-50 flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg border border-blue-200 bg-white max-w-sm animate-in slide-in-from-top-2">
+          <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
+            <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+            </svg>
           </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-foreground">New Message</p>
+            <p className="text-xs text-muted-foreground truncate">{newMessageToast}</p>
+          </div>
+          <button
+            onClick={() => setNewMessageToast(null)}
+            className="text-muted-foreground hover:text-foreground transition-colors shrink-0"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
-        {mobileNavOpen && (
-          <div className="sm:hidden border-t border-border bg-background px-4 py-3 flex flex-col gap-1">
-            {PORTAL_NAV.map((item) => (
-              <Link key={item.href} href={item.href} onClick={() => setMobileNavOpen(false)} className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold uppercase tracking-widest transition-colors ${item.href === '/portal/messages' ? 'bg-secondary/60 text-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-secondary/30'}`}>
-                <span>{item.icon}</span>{item.label}
-              </Link>
-            ))}
-            <button onClick={handleSignOut} className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold uppercase tracking-widest text-muted-foreground hover:text-foreground hover:bg-secondary/30 transition-colors mt-1 border-t border-border pt-3">Sign Out</button>
-          </div>
-        )}
-      </header>
-
-      {/* ── Main ── */}
-      <main className="flex-1 max-w-4xl mx-auto w-full px-4 sm:px-6 py-8 flex flex-col gap-6">
-        {/* Page title */}
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-xs uppercase tracking-widest text-muted-foreground font-semibold mb-1">Client Portal</p>
-            <h1 className="font-serif text-3xl text-foreground">Messaging Hub</h1>
-            <p className="text-sm text-muted-foreground font-light mt-1">
-              Secure, direct communication with your attorney — all messages linked to your case.
-            </p>
-          </div>
-          {caseInfo && (
-            <div className="hidden sm:flex flex-col items-end gap-1 shrink-0">
-              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-card border border-border text-xs text-muted-foreground">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                <span className="font-medium text-foreground">{caseInfo.service}</span>
-                <span className="text-muted-foreground/40">·</span>
-                <span className="capitalize">{caseInfo.status?.replace(/_/g, ' ')}</span>
-              </div>
-              {messages.length > 0 && (
-                <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
-                  <span>{messages.length} total</span>
-                  <span>{adminMsgCount} from attorney</span>
-                  <span>{clientMsgCount} from you</span>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* No case linked */}
-        {!inquiryId && (
-          <div className="flex-1 flex flex-col items-center justify-center py-20 text-center">
-            <div className="w-14 h-14 rounded-2xl bg-secondary/60 flex items-center justify-center mb-4">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-              </svg>
-            </div>
-            <h2 className="font-serif text-xl text-foreground mb-2">No case linked yet</h2>
-            <p className="text-sm text-muted-foreground max-w-sm">Messages will be available once your account is linked to an active case.</p>
-            <Link href="/contact" className="mt-6 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90" style={{ background: '#355E3B' }}>Contact Us</Link>
-          </div>
-        )}
-
-        {/* Message thread */}
-        {inquiryId && (
-          <div className="flex flex-col gap-0 bg-card border border-border rounded-2xl overflow-hidden flex-1" style={{ minHeight: '520px' }}>
-            {/* Thread header */}
-            <div className="px-5 py-4 border-b border-border bg-secondary/20 flex items-center justify-between gap-3">
+      )}
+      <div className="min-h-screen bg-background flex flex-col">
+        {/* ── Header ── */}
+        <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-sm border-b border-border/60">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6">
+            <div className="flex items-center justify-between h-14">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                  <span className="text-sm font-semibold text-primary">MM</span>
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-foreground">Maggi May Broussard</p>
-                  <p className="text-xs text-muted-foreground">Broussard Legal Services</p>
-                </div>
+                <Link href="/portal/dashboard">
+                  <AppLogo className="h-7 w-auto" />
+                </Link>
+                <span className="text-muted-foreground/40 text-sm hidden sm:block">·</span>
+                <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground hidden sm:block">Client Portal</span>
               </div>
               <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setShowSearch((v) => !v)}
-                  className={`p-2 rounded-lg transition-colors ${showSearch ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-secondary/60'}`}
-                  title="Search messages"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                <button onClick={() => setMobileNavOpen((v) => !v)} className="sm:hidden p-2 rounded-lg hover:bg-secondary/60 text-muted-foreground">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
                   </svg>
                 </button>
-                <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                <span className="text-xs text-muted-foreground hidden sm:block">Secure channel</span>
+                <nav className="hidden sm:flex items-center gap-0.5">
+                  {PORTAL_NAV.map((item) => {
+                    const active = item.href === '/portal/messages';
+                    return (
+                      <Link key={item.href} href={item.href} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-widest transition-colors ${active ? 'bg-secondary/60 text-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-secondary/30'}`}>
+                        <span className={active ? 'text-primary' : 'opacity-60'}>{item.icon}</span>
+                        {item.label}
+                        {item.href === '/portal/messages' && unreadCount > 0 && (
+                          <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-primary text-white text-[9px] font-bold">{unreadCount}</span>
+                        )}
+                      </Link>
+                    );
+                  })}
+                </nav>
+                <button onClick={handleSignOut} disabled={signingOut} className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-widest text-muted-foreground hover:text-foreground hover:bg-secondary/30 transition-colors">
+                  {signingOut ? 'Signing out…' : 'Sign Out'}
+                </button>
               </div>
             </div>
+          </div>
+          {mobileNavOpen && (
+            <div className="sm:hidden border-t border-border bg-background px-4 py-3 flex flex-col gap-1">
+              {PORTAL_NAV.map((item) => (
+                <Link key={item.href} href={item.href} onClick={() => setMobileNavOpen(false)} className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold uppercase tracking-widest transition-colors ${item.href === '/portal/messages' ? 'bg-secondary/60 text-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-secondary/30'}`}>
+                  <span>{item.icon}</span>{item.label}
+                </Link>
+              ))}
+              <button onClick={handleSignOut} className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold uppercase tracking-widest text-muted-foreground hover:text-foreground hover:bg-secondary/30 transition-colors mt-1 border-t border-border pt-3">Sign Out</button>
+            </div>
+          )}
+        </header>
 
-            {/* Search bar */}
-            {showSearch && (
-              <div className="px-5 py-3 border-b border-border bg-background">
-                <div className="relative">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                  </svg>
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search messages…"
-                    className="w-full pl-9 pr-4 py-2 border border-border rounded-xl text-sm bg-secondary/30 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40"
-                    autoFocus
-                  />
-                  {searchQuery && (
-                    <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                    </button>
-                  )}
+        {/* ── Main ── */}
+        <main className="flex-1 max-w-4xl mx-auto w-full px-4 sm:px-6 py-8 flex flex-col gap-6">
+          {/* Page title */}
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-xs uppercase tracking-widest text-muted-foreground font-semibold mb-1">Client Portal</p>
+              <h1 className="font-serif text-3xl text-foreground">Messaging Hub</h1>
+              <p className="text-sm text-muted-foreground font-light mt-1">
+                Secure, direct communication with your attorney — all messages linked to your case.
+              </p>
+            </div>
+            {caseInfo && (
+              <div className="hidden sm:flex flex-col items-end gap-1 shrink-0">
+                <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-card border border-border text-xs text-muted-foreground">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                  <span className="font-medium text-foreground">{caseInfo.service}</span>
+                  <span className="text-muted-foreground/40">·</span>
+                  <span className="capitalize">{caseInfo.status?.replace(/_/g, ' ')}</span>
                 </div>
-                {searchQuery && (
-                  <p className="text-[10px] text-muted-foreground mt-1.5 px-1">
-                    {filteredMessages.length} result{filteredMessages.length !== 1 ? 's' : ''} for &ldquo;{searchQuery}&rdquo;
-                  </p>
+                {messages.length > 0 && (
+                  <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                    <span>{messages.length} total</span>
+                    <span>{adminMsgCount} from attorney</span>
+                    <span>{clientMsgCount} from you</span>
+                  </div>
                 )}
               </div>
             )}
+          </div>
 
-            {/* Messages scroll area */}
-            <div className="flex-1 overflow-y-auto px-5 py-5 flex flex-col gap-1" style={{ maxHeight: '420px', minHeight: '320px' }}>
-              {messages.length === 0 && (
-                <div className="flex flex-col items-center justify-center h-full py-12 text-center">
-                  <div className="w-12 h-12 rounded-2xl bg-secondary/60 flex items-center justify-center mb-3">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground">
-                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                    </svg>
-                  </div>
-                  <p className="text-sm font-medium text-foreground mb-1">No messages yet</p>
-                  <p className="text-xs text-muted-foreground">Send a message to start the conversation with your attorney.</p>
-                </div>
-              )}
-
-              {searchQuery && filteredMessages.length === 0 && messages.length > 0 && (
-                <div className="flex flex-col items-center justify-center h-full py-12 text-center">
-                  <p className="text-sm text-muted-foreground">No messages match &ldquo;{searchQuery}&rdquo;</p>
-                  <button onClick={() => setSearchQuery('')} className="mt-2 text-xs text-primary hover:underline">Clear search</button>
-                </div>
-              )}
-
-              {groupedMessages.map(({ date, msgs }) => (
-                <div key={date} className="flex flex-col gap-3">
-                  <div className="flex items-center gap-3 my-3">
-                    <div className="flex-1 h-px bg-border" />
-                    <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold px-2">
-                      {new Date(date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-                    </span>
-                    <div className="flex-1 h-px bg-border" />
-                  </div>
-
-                  {msgs.map((msg) => {
-                    const isClient = msg.sender_role === 'client';
-                    const isHighlighted = searchQuery && msg.body.toLowerCase().includes(searchQuery.toLowerCase());
-                    return (
-                      <div key={msg.id} className={`flex flex-col gap-1 ${isClient ? 'items-end' : 'items-start'}`}>
-                        {msg.reply_to && (
-                          <div className={`max-w-xs px-3 py-2 rounded-xl border text-xs text-muted-foreground bg-secondary/40 border-border ${isClient ? 'mr-1' : 'ml-1'}`}>
-                            <p className="font-semibold mb-0.5 text-[10px] uppercase tracking-widest">
-                              Replying to {msg.reply_to.sender_role === 'admin' ? 'Maggi May' : 'you'}
-                            </p>
-                            <p className="truncate">{msg.reply_to.body}</p>
-                          </div>
-                        )}
-
-                        <div
-                          className={`group relative max-w-sm lg:max-w-md px-4 py-3 rounded-2xl text-sm leading-relaxed ${
-                            isHighlighted ? 'ring-2 ring-amber-400' : ''
-                          } ${isClient ? 'text-white rounded-br-sm' : 'bg-secondary/50 text-foreground border border-border rounded-bl-sm'}`}
-                          style={isClient ? { background: '#355E3B' } : {}}
-                        >
-                          {msg.body}
-
-                          {/* Attachment */}
-                          {msg.attachment_url && (
-                            <a
-                              href={msg.attachment_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className={`flex items-center gap-2 mt-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${isClient ? 'bg-white/20 text-white hover:bg-white/30' : 'bg-primary/10 text-primary hover:bg-primary/20'}`}
-                            >
-                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
-                              </svg>
-                              {msg.attachment_name ?? 'Attachment'}
-                            </a>
-                          )}
-
-                          <button
-                            onClick={() => { setReplyTo(msg); textareaRef.current?.focus(); }}
-                            className={`absolute top-2 ${isClient ? 'left-0 -translate-x-full pr-2' : 'right-0 translate-x-full pl-2'} opacity-0 group-hover:opacity-100 transition-opacity`}
-                            title="Reply"
-                          >
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground hover:text-foreground">
-                              <polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/>
-                            </svg>
-                          </button>
-                        </div>
-
-                        <div className={`flex items-center gap-1.5 px-1 ${isClient ? 'flex-row-reverse' : 'flex-row'}`}>
-                          <span className="text-[10px] text-muted-foreground" title={formatFullDate(msg.created_at)}>{formatTime(msg.created_at)}</span>
-                          {isClient && (
-                            <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
-                              {msg.read_at ? (
-                                <>
-                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-primary"><polyline points="20 6 9 17 4 12"/></svg>
-                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-primary -ml-1.5"><polyline points="20 6 9 17 4 12"/></svg>
-                                  <span className="text-primary">Read</span>
-                                </>
-                              ) : (
-                                <>
-                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground/60"><polyline points="20 6 9 17 4 12"/></svg>
-                                  <span>Sent</span>
-                                </>
-                              )}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ))}
-              <div ref={bottomRef} />
+          {/* No case linked */}
+          {!inquiryId && (
+            <div className="flex-1 flex flex-col items-center justify-center py-20 text-center">
+              <div className="w-14 h-14 rounded-2xl bg-secondary/60 flex items-center justify-center mb-4">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
+              </div>
+              <h2 className="font-serif text-xl text-foreground mb-2">No case linked yet</h2>
+              <p className="text-sm text-muted-foreground max-w-sm">Messages will be available once your account is linked to an active case.</p>
+              <Link href="/contact" className="mt-6 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90" style={{ background: '#355E3B' }}>Contact Us</Link>
             </div>
+          )}
 
-            {/* Compose area */}
-            <div className="border-t border-border bg-background px-4 py-3">
-              {replyTo && (
-                <div className="flex items-center justify-between gap-2 mb-2 px-3 py-2 rounded-xl bg-secondary/40 border border-border text-xs text-muted-foreground">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
-                      <polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/>
-                    </svg>
-                    <span className="font-semibold">Replying to {replyTo.sender_role === 'admin' ? 'Maggi May' : 'yourself'}:</span>
-                    <span className="truncate">{replyTo.body}</span>
+          {/* Message thread */}
+          {inquiryId && (
+            <div className="flex flex-col gap-0 bg-card border border-border rounded-2xl overflow-hidden flex-1" style={{ minHeight: '520px' }}>
+              {/* Thread header */}
+              <div className="px-5 py-4 border-b border-border bg-secondary/20 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <span className="text-sm font-semibold text-primary">MM</span>
                   </div>
-                  <button onClick={() => setReplyTo(null)} className="flex-shrink-0 hover:text-foreground transition-colors">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">Maggi May Broussard</p>
+                    <p className="text-xs text-muted-foreground">Broussard Legal Services</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setShowSearch((v) => !v)}
+                    className={`p-2 rounded-lg transition-colors ${showSearch ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-secondary/60'}`}
+                    title="Search messages"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
                   </button>
+                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                  <span className="text-xs text-muted-foreground hidden sm:block">Secure channel</span>
+                </div>
+              </div>
+
+              {/* Search bar */}
+              {showSearch && (
+                <div className="px-5 py-3 border-b border-border bg-background">
+                  <div className="relative">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Search messages…"
+                      className="w-full pl-9 pr-4 py-2 border border-border rounded-xl text-sm bg-secondary/30 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40"
+                      autoFocus
+                    />
+                    {searchQuery && (
+                      <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                      </button>
+                    )}
+                  </div>
+                  {searchQuery && (
+                    <p className="text-[10px] text-muted-foreground mt-1.5 px-1">
+                      {filteredMessages.length} result{filteredMessages.length !== 1 ? 's' : ''} for &ldquo;{searchQuery}&rdquo;
+                    </p>
+                  )}
                 </div>
               )}
 
-              {/* Attachment preview */}
-              {attachmentFile && (
-                <div className="flex items-center justify-between gap-2 mb-2 px-3 py-2 rounded-xl bg-primary/5 border border-primary/20 text-xs">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary flex-shrink-0">
+              {/* Messages scroll area */}
+              <div className="flex-1 overflow-y-auto px-5 py-5 flex flex-col gap-1" style={{ maxHeight: '420px', minHeight: '320px' }}>
+                {messages.length === 0 && (
+                  <div className="flex flex-col items-center justify-center h-full py-12 text-center">
+                    <div className="w-12 h-12 rounded-2xl bg-secondary/60 flex items-center justify-center mb-3">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                      </svg>
+                    </div>
+                    <p className="text-sm font-medium text-foreground mb-1">No messages yet</p>
+                    <p className="text-xs text-muted-foreground">Send a message to start the conversation with your attorney.</p>
+                  </div>
+                )}
+
+                {searchQuery && filteredMessages.length === 0 && messages.length > 0 && (
+                  <div className="flex flex-col items-center justify-center h-full py-12 text-center">
+                    <p className="text-sm text-muted-foreground">No messages match &ldquo;{searchQuery}&rdquo;</p>
+                    <button onClick={() => setSearchQuery('')} className="mt-2 text-xs text-primary hover:underline">Clear search</button>
+                  </div>
+                )}
+
+                {groupedMessages.map(({ date, msgs }) => (
+                  <div key={date} className="flex flex-col gap-3">
+                    <div className="flex items-center gap-3 my-3">
+                      <div className="flex-1 h-px bg-border" />
+                      <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold px-2">
+                        {new Date(date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                      </span>
+                      <div className="flex-1 h-px bg-border" />
+                    </div>
+
+                    {msgs.map((msg) => {
+                      const isClient = msg.sender_role === 'client';
+                      const isHighlighted = searchQuery && msg.body.toLowerCase().includes(searchQuery.toLowerCase());
+                      return (
+                        <div key={msg.id} className={`flex flex-col gap-1 ${isClient ? 'items-end' : 'items-start'}`}>
+                          {msg.reply_to && (
+                            <div className={`max-w-xs px-3 py-2 rounded-xl border text-xs text-muted-foreground bg-secondary/40 border-border ${isClient ? 'mr-1' : 'ml-1'}`}>
+                              <p className="font-semibold mb-0.5 text-[10px] uppercase tracking-widest">
+                                Replying to {msg.reply_to.sender_role === 'admin' ? 'Maggi May' : 'you'}
+                              </p>
+                              <p className="truncate">{msg.reply_to.body}</p>
+                            </div>
+                          )}
+
+                          <div
+                            className={`group relative max-w-sm lg:max-w-md px-4 py-3 rounded-2xl text-sm leading-relaxed ${
+                              isHighlighted ? 'ring-2 ring-amber-400' : ''
+                            } ${isClient ? 'text-white rounded-br-sm' : 'bg-secondary/50 text-foreground border border-border rounded-bl-sm'}`}
+                            style={isClient ? { background: '#355E3B' } : {}}
+                          >
+                            {msg.body}
+
+                            {/* Attachment */}
+                            {msg.attachment_url && (
+                              <a
+                                href={msg.attachment_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={`flex items-center gap-2 mt-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${isClient ? 'bg-white/20 text-white hover:bg-white/30' : 'bg-primary/10 text-primary hover:bg-primary/20'}`}
+                              >
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+                                </svg>
+                                {msg.attachment_name ?? 'Attachment'}
+                              </a>
+                            )}
+
+                            <button
+                              onClick={() => { setReplyTo(msg); textareaRef.current?.focus(); }}
+                              className={`absolute top-2 ${isClient ? 'left-0 -translate-x-full pr-2' : 'right-0 translate-x-full pl-2'} opacity-0 group-hover:opacity-100 transition-opacity`}
+                              title="Reply"
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground hover:text-foreground">
+                                <polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/>
+                              </svg>
+                            </button>
+                          </div>
+
+                          <div className={`flex items-center gap-1.5 px-1 ${isClient ? 'flex-row-reverse' : 'flex-row'}`}>
+                            <span className="text-[10px] text-muted-foreground" title={formatFullDate(msg.created_at)}>{formatTime(msg.created_at)}</span>
+                            {isClient && (
+                              <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                                {msg.read_at ? (
+                                  <>
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-primary"><polyline points="20 6 9 17 4 12"/></svg>
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-primary -ml-1.5"><polyline points="20 6 9 17 4 12"/></svg>
+                                    <span className="text-primary">Read</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground/60"><polyline points="20 6 9 17 4 12"/></svg>
+                                    <span>Sent</span>
+                                  </>
+                                )}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))}
+                <div ref={bottomRef} />
+              </div>
+
+              {/* Compose area */}
+              <div className="border-t border-border bg-background px-4 py-3">
+                {replyTo && (
+                  <div className="flex items-center justify-between gap-2 mb-2 px-3 py-2 rounded-xl bg-secondary/40 border border-border text-xs text-muted-foreground">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
+                        <polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/>
+                      </svg>
+                      <span className="font-semibold">Replying to {replyTo.sender_role === 'admin' ? 'Maggi May' : 'yourself'}:</span>
+                      <span className="truncate">{replyTo.body}</span>
+                    </div>
+                    <button onClick={() => setReplyTo(null)} className="flex-shrink-0 hover:text-foreground transition-colors">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
+                  </div>
+                )}
+
+                {/* Attachment preview */}
+                {attachmentFile && (
+                  <div className="flex items-center justify-between gap-2 mb-2 px-3 py-2 rounded-xl bg-primary/5 border border-primary/20 text-xs">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary flex-shrink-0">
+                        <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+                      </svg>
+                      <span className="text-primary font-medium truncate">{attachmentFile.name}</span>
+                      <span className="text-muted-foreground">({(attachmentFile.size / 1024).toFixed(0)} KB)</span>
+                    </div>
+                    <button onClick={() => setAttachmentFile(null)} className="flex-shrink-0 text-muted-foreground hover:text-foreground">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
+                  </div>
+                )}
+
+                {error && <p className="text-xs text-red-500 mb-2">{error}</p>}
+
+                <div className="flex items-end gap-2">
+                  <button
+                    onClick={() => attachInputRef.current?.click()}
+                    className="flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors border border-border"
+                    title="Attach file"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
                     </svg>
-                    <span className="text-primary font-medium truncate">{attachmentFile.name}</span>
-                    <span className="text-muted-foreground">({(attachmentFile.size / 1024).toFixed(0)} KB)</span>
-                  </div>
-                  <button onClick={() => setAttachmentFile(null)} className="flex-shrink-0 text-muted-foreground hover:text-foreground">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  </button>
+                  <input ref={attachInputRef} type="file" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) setAttachmentFile(f); }} accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.txt" />
+
+                  <textarea
+                    ref={textareaRef}
+                    value={body}
+                    onChange={(e) => setBody(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Type a message… (Enter to send, Shift+Enter for new line)"
+                    rows={2}
+                    className="flex-1 resize-none bg-secondary/30 border border-border rounded-xl px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40 transition-all"
+                  />
+                  <button
+                    onClick={handleSend}
+                    disabled={sending || uploadingAttachment || !body.trim()}
+                    className="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90"
+                    style={{ background: '#355E3B' }}
+                    title="Send message"
+                  >
+                    {sending || uploadingAttachment ? (
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                      </svg>
+                    )}
                   </button>
                 </div>
-              )}
-
-              {error && <p className="text-xs text-red-500 mb-2">{error}</p>}
-
-              <div className="flex items-end gap-2">
-                <button
-                  onClick={() => attachInputRef.current?.click()}
-                  className="flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors border border-border"
-                  title="Attach file"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
-                  </svg>
-                </button>
-                <input ref={attachInputRef} type="file" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) setAttachmentFile(f); }} accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.txt" />
-
-                <textarea
-                  ref={textareaRef}
-                  value={body}
-                  onChange={(e) => setBody(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Type a message… (Enter to send, Shift+Enter for new line)"
-                  rows={2}
-                  className="flex-1 resize-none bg-secondary/30 border border-border rounded-xl px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40 transition-all"
-                />
-                <button
-                  onClick={handleSend}
-                  disabled={sending || uploadingAttachment || !body.trim()}
-                  className="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90"
-                  style={{ background: '#355E3B' }}
-                  title="Send message"
-                >
-                  {sending || uploadingAttachment ? (
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  ) : (
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
-                    </svg>
-                  )}
-                </button>
+                <p className="text-[10px] text-muted-foreground/50 mt-1.5 px-1">
+                  Messages are private and secure. Attach files up to 10 MB. Maggi May will be notified.
+                </p>
               </div>
-              <p className="text-[10px] text-muted-foreground/50 mt-1.5 px-1">
-                Messages are private and secure. Attach files up to 10 MB. Maggi May will be notified.
-              </p>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Quick links */}
-        {inquiryId && (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {[
-              { href: '/portal/documents', label: 'Upload Documents', desc: 'Share intake forms & files', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> },
-              { href: '/portal/signatures', label: 'Sign Documents', desc: 'Review & sign agreements', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> },
-              { href: '/portal/cases', label: 'View Case Status', desc: 'Track milestones & timeline', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg> },
-            ].map((link) => (
-              <Link key={link.href} href={link.href} className="flex items-center gap-3 p-4 bg-card border border-border rounded-xl hover:border-foreground/20 transition-colors group">
-                <div className="w-9 h-9 rounded-lg bg-primary/8 flex items-center justify-center shrink-0 text-primary group-hover:bg-primary/15 transition-colors">
-                  {link.icon}
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-foreground">{link.label}</p>
-                  <p className="text-[10px] text-muted-foreground">{link.desc}</p>
-                </div>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ml-auto text-muted-foreground group-hover:text-foreground transition-colors">
-                  <polyline points="9 18 15 12 9 6"/>
-                </svg>
-              </Link>
-            ))}
-          </div>
-        )}
-      </main>
-    </div>
+          {/* Quick links */}
+          {inquiryId && (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {[
+                { href: '/portal/documents', label: 'Upload Documents', desc: 'Share intake forms & files', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> },
+                { href: '/portal/signatures', label: 'Sign Documents', desc: 'Review & sign agreements', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> },
+                { href: '/portal/cases', label: 'View Case Status', desc: 'Track milestones & timeline', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg> },
+              ].map((link) => (
+                <Link key={link.href} href={link.href} className="flex items-center gap-3 p-4 bg-card border border-border rounded-xl hover:border-foreground/20 transition-colors group">
+                  <div className="w-9 h-9 rounded-lg bg-primary/8 flex items-center justify-center shrink-0 text-primary group-hover:bg-primary/15 transition-colors">
+                    {link.icon}
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-foreground">{link.label}</p>
+                    <p className="text-[10px] text-muted-foreground">{link.desc}</p>
+                  </div>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ml-auto text-muted-foreground group-hover:text-foreground transition-colors">
+                    <polyline points="9 18 15 12 9 6"/>
+                  </svg>
+                </Link>
+              ))}
+            </div>
+          )}
+        </main>
+      </div>
+    </>
   );
 }
