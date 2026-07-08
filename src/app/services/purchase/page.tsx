@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, FormEvent, Suspense } from 'react';
+import React, { useState, FormEvent, Suspense, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -262,7 +262,7 @@ function PurchaseContent() {
     notes: '',
   });
 
-  const stripePromise = getStripe();
+  const stripePromise = useMemo(() => clientSecret ? getStripe() : null, [clientSecret]);
 
   const categories = ['All', ...Array.from(new Set(SERVICE_PACKAGES.map((s) => s.category)))];
   const filteredServices =

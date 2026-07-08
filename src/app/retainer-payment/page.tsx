@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, FormEvent, useEffect, Suspense } from 'react';
+import React, { useState, FormEvent, useEffect, Suspense, useMemo } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import {
@@ -227,7 +227,7 @@ function RetainerPaymentInner() {
     country: 'US',
   });
 
-  const stripePromise = getStripe();
+  const stripePromise = useMemo(() => clientSecret ? getStripe() : null, [clientSecret]);
 
   // ── Session-based tier pre-selection from URL query params ─────────────────
   useEffect(() => {
