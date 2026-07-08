@@ -70,12 +70,17 @@ const mobileNavGroups = [
 export default function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const navRef = useRef<HTMLElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const hamburgerRef = useRef<HTMLButtonElement>(null);
   const pathname = usePathname();
 
   const isHeroPage = pathname === '/' || pathname === '/homepage';
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Apply dynamic nav classes imperatively after mount to avoid SSR/CSR mismatch
   useEffect(() => {
@@ -153,6 +158,16 @@ export default function Header() {
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [menuOpen]);
+
+  if (!mounted) {
+    return (
+      <nav
+        aria-label="Main navigation"
+        className="fixed top-0 left-0 w-full z-50 transition-all duration-500 py-4 md:py-8"
+        style={{ height: '72px' }}
+      />
+    );
+  }
 
   return (
     <>
