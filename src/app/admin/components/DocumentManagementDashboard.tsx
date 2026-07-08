@@ -26,6 +26,14 @@ interface DocStats {
   recentUploads: number;
 }
 
+interface QueuedFile {
+  id: string;
+  file: File;
+  progress: number; // 0-100
+  status: 'pending' | 'uploading' | 'done' | 'error';
+  error?: string;
+}
+
 const CATEGORIES = [
   'All',
   'Contracts',
@@ -60,6 +68,16 @@ function fmtSize(bytes: number | null): string {
 
 function fmtDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function isImage(fileType: string | null, fileName: string): boolean {
+  const ext = fileName.split('.').pop()?.toLowerCase() || '';
+  return (fileType || '').includes('image') || ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext);
+}
+
+function isPDF(fileType: string | null, fileName: string): boolean {
+  const ext = fileName.split('.').pop()?.toLowerCase() || '';
+  return (fileType || '').includes('pdf') || ext === 'pdf';
 }
 
 function getFileIcon(fileType: string | null, fileName: string): React.ReactNode {
@@ -113,6 +131,52 @@ function getFileIcon(fileType: string | null, fileName: string): React.ReactNode
   );
 }
 
+// ─── Upload a single file with simulated progress ─────────────────────────────
+
+async function uploadSingleFile(
+  file: File,
+  category: string,
+  description: string,
+  onProgress: (pct: number) => void,
+): Promise<void> {
+  const supabase = createClient();
+  const path = `documents/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+
+  // Simulate progress ticks while the real upload runs
+  let simPct = 0;
+  const ticker = setInterval(() => {
+    simPct = Math.min(simPct + Math.random() * 15, 85);
+    onProgress(Math.round(simPct));
+  }, 300);
+
+  try {
+    const { error: storageError } = await supabase.storage
+      .from('case-documents')
+      .upload(path, file, { upsert: false });
+    clearInterval(ticker);
+    if (storageError) throw storageError;
+
+    onProgress(90);
+    const { data: urlData } = supabase.storage.from('case-documents').getPublicUrl(path);
+    const fileUrl = urlData?.publicUrl || '';
+
+    const { error: dbError } = await supabase.from('case_documents').insert({
+      file_name: file.name,
+      file_url: fileUrl,
+      file_type: file.type,
+      file_size: file.size,
+      category,
+      description: description || null,
+      uploaded_by: 'admin',
+    });
+    if (dbError) throw dbError;
+    onProgress(100);
+  } catch (err) {
+    clearInterval(ticker);
+    throw err;
+  }
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function DocumentManagementDashboard() {
@@ -124,7 +188,6 @@ export default function DocumentManagementDashboard() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [selectedDoc, setSelectedDoc] = useState<Document | null>(null);
   const [uploadOpen, setUploadOpen] = useState(false);
-  const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploadCategory, setUploadCategory] = useState('Other');
   const [uploadDescription, setUploadDescription] = useState('');
   const [uploading, setUploading] = useState(false);
@@ -134,7 +197,10 @@ export default function DocumentManagementDashboard() {
   const [editCategory, setEditCategory] = useState('');
   const [editDescription, setEditDescription] = useState('');
   const [saving, setSaving] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [fileQueue, setFileQueue] = useState<QueuedFile[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const dropZoneRef = useRef<HTMLDivElement>(null);
 
   const fetchDocuments = useCallback(async () => {
     setLoading(true);
@@ -157,7 +223,6 @@ export default function DocumentManagementDashboard() {
 
       setDocuments(docs);
 
-      // Compute stats
       const byCategory: Record<string, number> = {};
       let totalSize = 0;
       let recentUploads = 0;
@@ -188,44 +253,91 @@ export default function DocumentManagementDashboard() {
     return matchesSearch && matchesCategory;
   });
 
+  // ── Drag-and-drop handlers ──────────────────────────────────────────────────
+
+  const addFilesToQueue = (files: FileList | File[]) => {
+    const arr = Array.from(files);
+    const valid = arr.filter((f) => f.size <= 20 * 1024 * 1024);
+    if (valid.length < arr.length) {
+      setUploadError(`${arr.length - valid.length} file(s) exceed 20 MB and were skipped.`);
+    }
+    const newItems: QueuedFile[] = valid.map((f) => ({
+      id: `${Date.now()}_${Math.random().toString(36).slice(2)}`,
+      file: f,
+      progress: 0,
+      status: 'pending',
+    }));
+    setFileQueue((prev) => [...prev, ...newItems]);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    if (!dropZoneRef.current?.contains(e.relatedTarget as Node)) {
+      setIsDragOver(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    if (e.dataTransfer.files.length > 0) {
+      addFilesToQueue(e.dataTransfer.files);
+      setUploadOpen(true);
+    }
+  };
+
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      addFilesToQueue(e.target.files);
+      e.target.value = '';
+    }
+  };
+
+  const removeFromQueue = (id: string) => {
+    setFileQueue((prev) => prev.filter((f) => f.id !== id));
+  };
+
   const handleUpload = async () => {
-    if (!uploadFile) { setUploadError('Please select a file.'); return; }
-    if (uploadFile.size > 20 * 1024 * 1024) { setUploadError('File must be under 20 MB.'); return; }
+    const pending = fileQueue.filter((f) => f.status === 'pending');
+    if (pending.length === 0) { setUploadError('Please add at least one file.'); return; }
     setUploading(true);
     setUploadError('');
     setUploadSuccess('');
-    try {
-      const supabase = createClient();
-      const ext = uploadFile.name.split('.').pop();
-      const path = `documents/${Date.now()}_${uploadFile.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
-      const { error: storageError } = await supabase.storage.from('case-documents').upload(path, uploadFile, { upsert: false });
-      if (storageError) throw storageError;
 
-      const { data: urlData } = supabase.storage.from('case-documents').getPublicUrl(path);
-      const fileUrl = urlData?.publicUrl || '';
+    for (const item of pending) {
+      setFileQueue((prev) => prev.map((f) => f.id === item.id ? { ...f, status: 'uploading' } : f));
+      try {
+        await uploadSingleFile(item.file, uploadCategory, uploadDescription, (pct) => {
+          setFileQueue((prev) => prev.map((f) => f.id === item.id ? { ...f, progress: pct } : f));
+        });
+        setFileQueue((prev) => prev.map((f) => f.id === item.id ? { ...f, status: 'done', progress: 100 } : f));
+      } catch (err: any) {
+        setFileQueue((prev) => prev.map((f) => f.id === item.id ? { ...f, status: 'error', error: err?.message || 'Upload failed' } : f));
+      }
+    }
 
-      const { error: dbError } = await supabase.from('case_documents').insert({
-        file_name: uploadFile.name,
-        file_url: fileUrl,
-        file_type: uploadFile.type,
-        file_size: uploadFile.size,
-        category: uploadCategory,
-        description: uploadDescription || null,
-        uploaded_by: 'admin',
-      });
-      if (dbError) throw dbError;
-
-      setUploadSuccess('Document uploaded successfully.');
-      setUploadFile(null);
-      setUploadDescription('');
-      setUploadCategory('Other');
-      if (fileInputRef.current) fileInputRef.current.value = '';
-      await fetchDocuments();
-      setTimeout(() => { setUploadOpen(false); setUploadSuccess(''); }, 1500);
-    } catch (err: any) {
-      setUploadError(err?.message || 'Upload failed. Please try again.');
-    } finally {
-      setUploading(false);
+    setUploading(false);
+    const allDone = fileQueue.every((f) => f.status === 'done' || f.status === 'error');
+    if (allDone) {
+      const anyError = fileQueue.some((f) => f.status === 'error');
+      if (!anyError) {
+        setUploadSuccess('All documents uploaded successfully.');
+        await fetchDocuments();
+        setTimeout(() => {
+          setUploadOpen(false);
+          setUploadSuccess('');
+          setFileQueue([]);
+          setUploadDescription('');
+          setUploadCategory('Other');
+        }, 1500);
+      } else {
+        setUploadError('Some files failed to upload. Review errors below.');
+        await fetchDocuments();
+      }
     }
   };
 
@@ -252,23 +364,54 @@ export default function DocumentManagementDashboard() {
     } catch { /* silent */ }
   };
 
+  const closeUploadModal = () => {
+    if (uploading) return;
+    setUploadOpen(false);
+    setUploadError('');
+    setUploadSuccess('');
+    setFileQueue([]);
+    setUploadDescription('');
+    setUploadCategory('Other');
+  };
+
   return (
-    <div className="space-y-6">
+    <div
+      className="space-y-6"
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
+      {/* Global drag overlay */}
+      {isDragOver && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-primary/10 border-4 border-dashed border-primary rounded-none pointer-events-none">
+          <div className="bg-white rounded-2xl shadow-2xl px-10 py-8 flex flex-col items-center gap-3">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+            <p className="text-lg font-bold text-primary">Drop files to upload</p>
+            <p className="text-sm text-muted-foreground">PDF, images, Word, Excel · Max 20 MB each</p>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold text-foreground">Document Management</h2>
           <p className="text-sm text-muted-foreground mt-0.5">Centralized repository for all legal documents, case files, and reports</p>
         </div>
-        <button
-          onClick={() => setUploadOpen(true)}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white text-sm font-semibold rounded-xl hover:bg-primary/90 transition-colors"
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
-          </svg>
-          Upload Document
-        </button>
+        <div className="flex items-center gap-2">
+          <p className="text-xs text-muted-foreground hidden sm:block">Drag &amp; drop anywhere to upload</p>
+          <button
+            onClick={() => setUploadOpen(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white text-sm font-semibold rounded-xl hover:bg-primary/90 transition-colors"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+            Upload Document
+          </button>
+        </div>
       </div>
 
       {/* Stats Row */}
@@ -426,7 +569,7 @@ export default function DocumentManagementDashboard() {
                         <button
                           onClick={() => setSelectedDoc(doc)}
                           className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
-                          title="View details"
+                          title="Preview"
                         >
                           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
@@ -475,61 +618,167 @@ export default function DocumentManagementDashboard() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {filtered.map((doc) => (
-            <div key={doc.id} className="bg-card border border-border rounded-2xl p-4 hover:shadow-sm transition-all group">
-              <div className="flex items-start justify-between mb-3">
-                {getFileIcon(doc.file_type, doc.file_name)}
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <a href={doc.file_url} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-lg text-muted-foreground hover:text-emerald-600 hover:bg-emerald-50 transition-colors">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-                    </svg>
-                  </a>
-                  <button onClick={() => handleDelete(doc)} className="p-1.5 rounded-lg text-muted-foreground hover:text-red-600 hover:bg-red-50 transition-colors">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-                    </svg>
-                  </button>
+            <div
+              key={doc.id}
+              className="bg-card border border-border rounded-2xl overflow-hidden hover:shadow-sm transition-all group cursor-pointer"
+              onClick={() => setSelectedDoc(doc)}
+            >
+              {/* Thumbnail */}
+              {isImage(doc.file_type, doc.file_name) ? (
+                <div className="h-32 bg-muted/20 overflow-hidden">
+                  <img
+                    src={doc.file_url}
+                    alt={doc.file_name}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
                 </div>
-              </div>
-              <p className="text-sm font-semibold text-foreground truncate mb-1">{doc.file_name}</p>
-              {doc.category && (
-                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${CATEGORY_COLORS[doc.category] || 'bg-gray-100 text-gray-600'}`}>
-                  {doc.category}
-                </span>
+              ) : isPDF(doc.file_type, doc.file_name) ? (
+                <div className="h-32 bg-red-50 flex items-center justify-center">
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                    <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+                  </svg>
+                </div>
+              ) : (
+                <div className="h-32 bg-muted/10 flex items-center justify-center">
+                  {getFileIcon(doc.file_type, doc.file_name)}
+                </div>
               )}
-              <div className="mt-3 pt-3 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
-                <span>{fmtSize(doc.file_size)}</span>
-                <span>{fmtDate(doc.created_at)}</span>
+              <div className="p-4">
+                <div className="flex items-start justify-between mb-2">
+                  <p className="text-sm font-semibold text-foreground truncate flex-1 pr-2">{doc.file_name}</p>
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                    <a href={doc.file_url} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-lg text-muted-foreground hover:text-emerald-600 hover:bg-emerald-50 transition-colors">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                      </svg>
+                    </a>
+                    <button onClick={() => handleDelete(doc)} className="p-1.5 rounded-lg text-muted-foreground hover:text-red-600 hover:bg-red-50 transition-colors">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+                {doc.category && (
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${CATEGORY_COLORS[doc.category] || 'bg-gray-100 text-gray-600'}`}>
+                    {doc.category}
+                  </span>
+                )}
+                <div className="mt-3 pt-3 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
+                  <span>{fmtSize(doc.file_size)}</span>
+                  <span>{fmtDate(doc.created_at)}</span>
+                </div>
               </div>
             </div>
           ))}
         </div>
       )}
 
-      {/* Upload Modal */}
+      {/* ── Upload Modal ──────────────────────────────────────────────────────── */}
       {uploadOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-md">
-            <div className="flex items-center justify-between p-5 border-b border-border">
-              <h3 className="text-base font-bold text-foreground">Upload Document</h3>
-              <button onClick={() => { setUploadOpen(false); setUploadError(''); setUploadSuccess(''); }} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors">
+          <div className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between p-5 border-b border-border flex-shrink-0">
+              <h3 className="text-base font-bold text-foreground">Upload Documents</h3>
+              <button onClick={closeUploadModal} disabled={uploading} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors disabled:opacity-40">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </button>
             </div>
-            <div className="p-5 space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-muted-foreground mb-1.5">File *</label>
+
+            <div className="p-5 space-y-4 overflow-y-auto flex-1">
+              {/* Drop Zone */}
+              <div
+                ref={dropZoneRef}
+                onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragOver(true); }}
+                onDragLeave={(e) => { e.stopPropagation(); setIsDragOver(false); }}
+                onDrop={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragOver(false); if (e.dataTransfer.files.length > 0) addFilesToQueue(e.dataTransfer.files); }}
+                onClick={() => fileInputRef.current?.click()}
+                className={`relative border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all ${
+                  isDragOver
+                    ? 'border-primary bg-primary/5 scale-[1.01]'
+                    : 'border-border hover:border-primary/50 hover:bg-muted/20'
+                }`}
+              >
                 <input
                   ref={fileInputRef}
                   type="file"
+                  multiple
                   accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.jpg,.jpeg,.png,.txt"
-                  onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
-                  className="w-full text-sm text-muted-foreground file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 cursor-pointer"
+                  onChange={handleFileInputChange}
+                  className="hidden"
                 />
-                <p className="text-xs text-muted-foreground mt-1">PDF, DOC, DOCX, XLS, XLSX, CSV, JPG, PNG, TXT · Max 20 MB</p>
+                <div className="flex flex-col items-center gap-2">
+                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-colors ${isDragOver ? 'bg-primary/10' : 'bg-muted/40'}`}>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={isDragOver ? 'text-primary' : 'text-muted-foreground'}>
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">
+                      {isDragOver ? 'Release to add files' : 'Drag & drop files here'}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">or <span className="text-primary font-semibold">click to browse</span></p>
+                  </div>
+                  <p className="text-xs text-muted-foreground">PDF, DOC, DOCX, XLS, XLSX, CSV, JPG, PNG, TXT · Max 20 MB each</p>
+                </div>
               </div>
+
+              {/* File Queue */}
+              {fileQueue.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{fileQueue.length} file{fileQueue.length !== 1 ? 's' : ''} queued</p>
+                  {fileQueue.map((item) => (
+                    <div key={item.id} className="bg-muted/20 border border-border rounded-xl p-3">
+                      <div className="flex items-center gap-3">
+                        {getFileIcon(item.file.type, item.file.name)}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2 mb-1">
+                            <p className="text-xs font-semibold text-foreground truncate">{item.file.name}</p>
+                            <div className="flex items-center gap-1.5 flex-shrink-0">
+                              <span className="text-xs text-muted-foreground">{fmtSize(item.file.size)}</span>
+                              {item.status === 'done' && (
+                                <span className="w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center">
+                                  <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                </span>
+                              )}
+                              {item.status === 'error' && (
+                                <span className="w-4 h-4 rounded-full bg-red-500 flex items-center justify-center">
+                                  <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                </span>
+                              )}
+                              {item.status === 'pending' && !uploading && (
+                                <button onClick={() => removeFromQueue(item.id)} className="text-muted-foreground hover:text-red-500 transition-colors">
+                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                          {/* Progress bar */}
+                          {(item.status === 'uploading' || item.status === 'done') && (
+                            <div className="w-full bg-muted/40 rounded-full h-1.5 overflow-hidden">
+                              <div
+                                className={`h-full rounded-full transition-all duration-300 ${item.status === 'done' ? 'bg-emerald-500' : 'bg-primary'}`}
+                                style={{ width: `${item.progress}%` }}
+                              />
+                            </div>
+                          )}
+                          {item.status === 'uploading' && (
+                            <p className="text-xs text-muted-foreground mt-0.5">{item.progress}% uploaded…</p>
+                          )}
+                          {item.status === 'error' && item.error && (
+                            <p className="text-xs text-red-500 mt-0.5">{item.error}</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Category + Description */}
               <div>
-                <label className="block text-xs font-semibold text-muted-foreground mb-1.5">Category</label>
+                <label className="block text-xs font-semibold text-muted-foreground mb-1.5">Category (applies to all files)</label>
                 <select
                   value={uploadCategory}
                   onChange={(e) => setUploadCategory(e.target.value)}
@@ -544,101 +793,130 @@ export default function DocumentManagementDashboard() {
                   value={uploadDescription}
                   onChange={(e) => setUploadDescription(e.target.value)}
                   rows={2}
-                  placeholder="Brief description of this document…"
+                  placeholder="Brief description of these documents…"
                   className="w-full px-3 py-2 text-sm bg-background border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
                 />
               </div>
+
               {uploadError && <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{uploadError}</p>}
               {uploadSuccess && <p className="text-xs text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">{uploadSuccess}</p>}
-              <div className="flex gap-3 pt-1">
-                <button onClick={() => { setUploadOpen(false); setUploadError(''); }} className="flex-1 px-4 py-2 text-sm font-semibold text-muted-foreground bg-muted/40 rounded-xl hover:bg-muted/60 transition-colors">
-                  Cancel
-                </button>
-                <button
-                  onClick={handleUpload}
-                  disabled={uploading || !uploadFile}
-                  className="flex-1 px-4 py-2 text-sm font-semibold text-white bg-primary rounded-xl hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  {uploading ? 'Uploading…' : 'Upload'}
-                </button>
-              </div>
+            </div>
+
+            <div className="p-5 border-t border-border flex gap-3 flex-shrink-0">
+              <button onClick={closeUploadModal} disabled={uploading} className="flex-1 px-4 py-2 text-sm font-semibold text-muted-foreground bg-muted/40 rounded-xl hover:bg-muted/60 disabled:opacity-40 transition-colors">
+                Cancel
+              </button>
+              <button
+                onClick={handleUpload}
+                disabled={uploading || fileQueue.filter((f) => f.status === 'pending').length === 0}
+                className="flex-1 px-4 py-2 text-sm font-semibold text-white bg-primary rounded-xl hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {uploading
+                  ? `Uploading ${fileQueue.filter((f) => f.status === 'done').length}/${fileQueue.length}…`
+                  : `Upload ${fileQueue.filter((f) => f.status === 'pending').length || ''} File${fileQueue.filter((f) => f.status === 'pending').length !== 1 ? 's' : ''}`}
+              </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Detail Modal */}
+      {/* ── Detail / Preview Modal ────────────────────────────────────────────── */}
       {selectedDoc && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-lg">
-            <div className="flex items-center justify-between p-5 border-b border-border">
+          <div className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between p-5 border-b border-border flex-shrink-0">
               <h3 className="text-base font-bold text-foreground truncate pr-4">{selectedDoc.file_name}</h3>
               <button onClick={() => setSelectedDoc(null)} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors flex-shrink-0">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </button>
             </div>
-            <div className="p-5 space-y-4">
-              <div className="flex items-center gap-4">
-                {getFileIcon(selectedDoc.file_type, selectedDoc.file_name)}
-                <div>
-                  <p className="text-sm font-semibold text-foreground">{selectedDoc.file_name}</p>
-                  <p className="text-xs text-muted-foreground">{fmtSize(selectedDoc.file_size)} · Uploaded {fmtDate(selectedDoc.created_at)}</p>
+
+            <div className="overflow-y-auto flex-1">
+              {/* File Preview */}
+              {isImage(selectedDoc.file_type, selectedDoc.file_name) && (
+                <div className="bg-muted/10 border-b border-border flex items-center justify-center p-4 max-h-72 overflow-hidden">
+                  <img
+                    src={selectedDoc.file_url}
+                    alt={selectedDoc.file_name}
+                    className="max-w-full max-h-64 object-contain rounded-xl shadow-sm"
+                  />
                 </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <div className="bg-muted/20 rounded-xl p-3">
-                  <p className="text-xs text-muted-foreground mb-0.5">Category</p>
-                  <p className="font-semibold text-foreground">{selectedDoc.category || '—'}</p>
+              )}
+              {isPDF(selectedDoc.file_type, selectedDoc.file_name) && (
+                <div className="border-b border-border" style={{ height: '320px' }}>
+                  <iframe
+                    src={`${selectedDoc.file_url}#toolbar=0&navpanes=0`}
+                    title={selectedDoc.file_name}
+                    className="w-full h-full"
+                    style={{ border: 'none' }}
+                  />
                 </div>
-                <div className="bg-muted/20 rounded-xl p-3">
-                  <p className="text-xs text-muted-foreground mb-0.5">Uploaded By</p>
-                  <p className="font-semibold text-foreground capitalize">{selectedDoc.uploaded_by}</p>
-                </div>
-                {selectedDoc.contact_inquiries && (
-                  <div className="bg-muted/20 rounded-xl p-3 col-span-2">
-                    <p className="text-xs text-muted-foreground mb-0.5">Associated Client</p>
-                    <p className="font-semibold text-foreground">{selectedDoc.contact_inquiries.name}</p>
-                    <p className="text-xs text-muted-foreground">{selectedDoc.contact_inquiries.email} · {selectedDoc.contact_inquiries.service}</p>
+              )}
+
+              <div className="p-5 space-y-4">
+                <div className="flex items-center gap-4">
+                  {getFileIcon(selectedDoc.file_type, selectedDoc.file_name)}
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">{selectedDoc.file_name}</p>
+                    <p className="text-xs text-muted-foreground">{fmtSize(selectedDoc.file_size)} · Uploaded {fmtDate(selectedDoc.created_at)}</p>
                   </div>
-                )}
-                {selectedDoc.description && (
-                  <div className="bg-muted/20 rounded-xl p-3 col-span-2">
-                    <p className="text-xs text-muted-foreground mb-0.5">Description</p>
-                    <p className="text-sm text-foreground">{selectedDoc.description}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div className="bg-muted/20 rounded-xl p-3">
+                    <p className="text-xs text-muted-foreground mb-0.5">Category</p>
+                    <p className="font-semibold text-foreground">{selectedDoc.category || '—'}</p>
                   </div>
-                )}
+                  <div className="bg-muted/20 rounded-xl p-3">
+                    <p className="text-xs text-muted-foreground mb-0.5">Uploaded By</p>
+                    <p className="font-semibold text-foreground capitalize">{selectedDoc.uploaded_by}</p>
+                  </div>
+                  {selectedDoc.contact_inquiries && (
+                    <div className="bg-muted/20 rounded-xl p-3 col-span-2">
+                      <p className="text-xs text-muted-foreground mb-0.5">Associated Client</p>
+                      <p className="font-semibold text-foreground">{selectedDoc.contact_inquiries.name}</p>
+                      <p className="text-xs text-muted-foreground">{selectedDoc.contact_inquiries.email} · {selectedDoc.contact_inquiries.service}</p>
+                    </div>
+                  )}
+                  {selectedDoc.description && (
+                    <div className="bg-muted/20 rounded-xl p-3 col-span-2">
+                      <p className="text-xs text-muted-foreground mb-0.5">Description</p>
+                      <p className="text-sm text-foreground">{selectedDoc.description}</p>
+                    </div>
+                  )}
+                </div>
               </div>
-              <div className="flex gap-3 pt-1">
-                <a
-                  href={selectedDoc.file_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-primary rounded-xl hover:bg-primary/90 transition-colors"
-                >
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-                  </svg>
-                  Download
-                </a>
-                <button
-                  onClick={() => { setEditDoc(selectedDoc); setEditCategory(selectedDoc.category || 'Other'); setEditDescription(selectedDoc.description || ''); setSelectedDoc(null); }}
-                  className="flex-1 px-4 py-2 text-sm font-semibold text-foreground bg-muted/40 rounded-xl hover:bg-muted/60 transition-colors"
-                >
-                  Edit Details
-                </button>
-                <button
-                  onClick={() => handleDelete(selectedDoc)}
-                  className="px-4 py-2 text-sm font-semibold text-red-600 bg-red-50 rounded-xl hover:bg-red-100 transition-colors"
-                >
-                  Delete
-                </button>
-              </div>
+            </div>
+
+            <div className="p-5 border-t border-border flex gap-3 flex-shrink-0">
+              <a
+                href={selectedDoc.file_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-primary rounded-xl hover:bg-primary/90 transition-colors"
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                Download
+              </a>
+              <button
+                onClick={() => { setEditDoc(selectedDoc); setEditCategory(selectedDoc.category || 'Other'); setEditDescription(selectedDoc.description || ''); setSelectedDoc(null); }}
+                className="flex-1 px-4 py-2 text-sm font-semibold text-foreground bg-muted/40 rounded-xl hover:bg-muted/60 transition-colors"
+              >
+                Edit Details
+              </button>
+              <button
+                onClick={() => handleDelete(selectedDoc)}
+                className="px-4 py-2 text-sm font-semibold text-red-600 bg-red-50 rounded-xl hover:bg-red-100 transition-colors"
+              >
+                Delete
+              </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Edit Modal */}
+      {/* ── Edit Modal ────────────────────────────────────────────────────────── */}
       {editDoc && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-md">
