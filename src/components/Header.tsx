@@ -134,16 +134,21 @@ export default function Header() {
   const isScrolled = mounted && scrolled;
   const isHero = mounted && isHeroPage;
 
+  // Compute nav className — must be identical on server and first client render
+  // suppressHydrationWarning handles the diff after mount
+  const navClassName = `fixed top-0 left-0 w-full z-50 transition-all duration-500 ${
+    isScrolled
+      ? 'nav-scrolled py-3'
+      : isHero
+      ? 'py-4 md:py-8' :'py-4 md:py-8 bg-background border-b border-border'
+  }`;
+
   return (
     <>
       <nav
         aria-label="Main navigation"
-        className={`fixed top-0 left-0 w-full z-50 transition-all duration-500 ${
-          isScrolled
-            ? 'nav-scrolled py-3'
-            : isHero
-            ? 'py-4 md:py-8' :'py-4 md:py-8 bg-background border-b border-border'
-        }`}
+        className={navClassName}
+        suppressHydrationWarning
       >
         <div className="max-w-7xl mx-auto px-4 md:px-10 flex items-center justify-between gap-4">
           {/* Logo */}
@@ -299,6 +304,7 @@ export default function Header() {
             aria-label={menuOpen ? 'Close navigation menu' : 'Open navigation menu'}
             aria-expanded={menuOpen}
             aria-controls="mobile-nav-menu"
+            suppressHydrationWarning
             className={`md:hidden p-2.5 rounded-full transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
               isScrolled || !isHero
                 ? 'bg-primary-foreground/10 text-primary-foreground'
