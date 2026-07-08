@@ -44,7 +44,7 @@ export default function AboutSection() {
                 alt="Professional woman in business attire seated at a bright, well-organized desk with legal documents"
                 fill
                 className="object-cover object-top"
-                sizes="(max-width: 1024px) 100vw, 50vw" />
+                sizes="(max-width: 640px) 100vw, 384px" />
               {/* Warm overlay tint */}
               <div suppressHydrationWarning className="absolute inset-0 bg-gradient-to-t from-primary/20 via-transparent to-transparent" />
               {/* Accent border ring */}
