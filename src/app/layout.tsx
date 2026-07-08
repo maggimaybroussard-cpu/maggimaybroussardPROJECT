@@ -143,6 +143,12 @@ export default function RootLayout({
         {/* Preconnect to Google Fonts to eliminate DNS/TCP render-blocking delay */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        {/* Preconnect to Stripe — warms TCP/TLS so Stripe.js loads faster when payment step is reached */}
+        <link rel="preconnect" href="https://js.stripe.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://js.stripe.com" />
+        {/* Preconnect to YouTube image CDN — ensures thumbnail cache headers are respected */}
+        <link rel="preconnect" href="https://img.youtube.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://img.youtube.com" />
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/favicon.ico" />
         <link rel="manifest" href="/manifest.json" />
