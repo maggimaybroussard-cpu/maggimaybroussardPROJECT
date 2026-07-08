@@ -2050,3 +2050,62 @@ export function trackAssistantBookingCTAClick(messageCount: number) {
     assistant_source: 'floating_chat',
   });
 }
+
+// ── Resources Hub Events ─────────────────────────────────────────────────────
+
+/** Fired when the Resources Hub page loads */
+export function trackResourcesHubView() {
+  trackEvent('resources_hub_view', {
+    event_category: 'engagement',
+    event_label: 'Resources Hub Page',
+    page: 'resources',
+  });
+}
+
+/** Fired when a user clicks a resource card */
+export function trackResourceClick(resourceId: string, resourceTitle: string, resourceType: string, resourceCategory: string) {
+  trackEvent('resource_click', {
+    event_category: 'engagement',
+    event_label: resourceTitle,
+    resource_id: resourceId,
+    resource_type: resourceType,
+    resource_category: resourceCategory,
+  });
+}
+
+/** Fired when a user filters resources by category */
+export function trackResourceFilterCategory(category: string) {
+  trackEvent('resources_filter_category', {
+    event_category: 'engagement',
+    filter_value: category,
+  });
+}
+
+/** Fired when a user searches the resources hub */
+export function trackResourceSearch(searchTerm: string) {
+  trackEvent('resources_search', {
+    event_category: 'engagement',
+    search_term: searchTerm,
+  });
+}
+
+/** Fired when a user clicks the Book Consultation CTA from the Resources Hub */
+export function trackResourcesHubCTAClick(ctaLabel: string) {
+  trackEvent('resources_hub_cta_click', {
+    event_category: 'conversion',
+    event_label: ctaLabel,
+    page: 'resources',
+  });
+}
+
+// ── Twilio SMS Reminder Events ───────────────────────────────────────────────
+
+/** Fired when a 24hr consultation SMS reminder is triggered from admin */
+export function trackConsultation24hrReminderSent(bookingId: string, success: boolean) {
+  trackEvent('consultation_24hr_reminder_sent', {
+    event_category: 'engagement',
+    event_label: success ? 'SMS Sent' : 'SMS Failed',
+    booking_id: bookingId,
+    success,
+  });
+}
