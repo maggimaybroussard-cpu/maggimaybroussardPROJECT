@@ -68,14 +68,36 @@ const mobileNavGroups = [
 export default function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const navRef = useRef<HTMLElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const hamburgerRef = useRef<HTMLButtonElement>(null);
   const pathname = usePathname();
 
+  const isHeroPage = pathname === '/' || pathname === '/homepage';
+
+  // Apply dynamic nav classes imperatively after mount to avoid SSR/CSR mismatch
   useEffect(() => {
-    setMounted(true);
-  }, []);
+    const nav = navRef.current;
+    if (!nav) return;
+
+    const updateNavClass = () => {
+      const isScrolledNow = scrolled;
+      const isHeroNow = isHeroPage;
+
+      // Remove all dynamic classes first
+      nav.classList.remove('nav-scrolled', 'py-3', 'py-4', 'md:py-8', 'bg-background', 'border-b', 'border-border');
+
+      if (isScrolledNow) {
+        nav.classList.add('nav-scrolled', 'py-3');
+      } else if (isHeroNow) {
+        nav.classList.add('py-4', 'md:py-8');
+      } else {
+        nav.classList.add('py-4', 'md:py-8', 'bg-background', 'border-b', 'border-border');
+      }
+    };
+
+    updateNavClass();
+  }, [scrolled, isHeroPage]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -130,25 +152,12 @@ export default function Header() {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [menuOpen]);
 
-  const isHeroPage = pathname === '/' || pathname === '/homepage';
-  const isScrolled = mounted && scrolled;
-  const isHero = mounted && isHeroPage;
-
-  // Compute nav className — must be identical on server and first client render
-  // suppressHydrationWarning handles the diff after mount
-  const navClassName = `fixed top-0 left-0 w-full z-50 transition-all duration-500 ${
-    isScrolled
-      ? 'nav-scrolled py-3'
-      : isHero
-      ? 'py-4 md:py-8' :'py-4 md:py-8 bg-background border-b border-border'
-  }`;
-
   return (
     <>
       <nav
+        ref={navRef}
         aria-label="Main navigation"
-        className={navClassName}
-        suppressHydrationWarning
+        className="fixed top-0 left-0 w-full z-50 transition-all duration-500 py-4 md:py-8"
       >
         <div className="max-w-7xl mx-auto px-4 md:px-10 flex items-center justify-between gap-4">
           {/* Logo */}
@@ -191,10 +200,7 @@ export default function Header() {
                 }
                 className={`px-3 py-2 rounded-full text-[11px] font-semibold uppercase tracking-widest transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent whitespace-nowrap ${
                   pathname === link?.href || (link?.href === '/' && (pathname === '/' || pathname === '/homepage'))
-                    ? 'bg-[#8B3A45] text-white'
-                    : isScrolled || !isHero
-                    ? 'text-primary-foreground/80 hover:text-white hover:bg-accent/80'
-                    : 'text-primary-foreground/80 hover:text-white hover:bg-accent/80'
+                    ? 'bg-[#8B3A45] text-white' :'text-primary-foreground/80 hover:text-white hover:bg-accent/80'
                 }`}
               >
                 {link?.label}
@@ -207,11 +213,7 @@ export default function Header() {
             {/* Hire Me */}
             <Link
               href="/contact"
-              className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-[11px] font-semibold uppercase tracking-widest transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
-                isScrolled || !isHero
-                  ? 'bg-accent text-accent-foreground hover:opacity-90'
-                  : 'bg-primary-foreground text-primary hover:opacity-90'
-              }`}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-[11px] font-semibold uppercase tracking-widest transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent bg-accent text-accent-foreground hover:opacity-90"
             >
               Hire Me
             </Link>
@@ -304,12 +306,7 @@ export default function Header() {
             aria-label={menuOpen ? 'Close navigation menu' : 'Open navigation menu'}
             aria-expanded={menuOpen}
             aria-controls="mobile-nav-menu"
-            suppressHydrationWarning
-            className={`md:hidden p-2.5 rounded-full transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
-              isScrolled || !isHero
-                ? 'bg-primary-foreground/10 text-primary-foreground'
-                : 'bg-primary-foreground/10 text-accent'
-            }`}
+            className="md:hidden p-2.5 rounded-full transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent bg-primary-foreground/10 text-accent"
           >
             {menuOpen ? (
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
