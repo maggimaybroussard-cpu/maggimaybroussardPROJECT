@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sendAppointmentReminderSMS } from '@/lib/twilio/smsClient';
+import { sendAppointmentReminderSMS, sendConsultationReminderWhatsApp } from '@/lib/twilio/smsClient';
 import { createClient } from '@/lib/supabase/server';
 
 /**
@@ -29,6 +29,7 @@ export async function POST(req: NextRequest) {
       appointmentTime,
       appointmentType = 'Paralegal Consultation',
       meetingLink,
+      channel = 'sms',
     } = body as {
       bookingId?: string;
       clientPhone: string;
@@ -37,6 +38,7 @@ export async function POST(req: NextRequest) {
       appointmentTime: string;
       appointmentType?: string;
       meetingLink?: string;
+      channel?: 'sms' | 'whatsapp';
     };
 
     if (!clientPhone || !clientName || !appointmentDate || !appointmentTime) {
@@ -66,29 +68,30 @@ export async function POST(req: NextRequest) {
         hour12: true,
       }) + ' CST';
 
-    const firstName = clientName.split(' ')[0];
-    const siteUrl = 'https://broussardlegalservices.com';
-    const meetUrl = meetingLink || `${siteUrl}/book-consultation`;
+    const meetUrl = meetingLink || `https://broussardlegalservices.com/book-consultation`;
 
-    // Build the SMS body — concise, informative, no-show reducing
-    const smsBody =
-      `Maggi May Broussard Legal Services\n\n` +
-      `Hi ${firstName}, reminder: your ${appointmentType} is TOMORROW — ${formattedDate} at ${formattedTime}.\n\n` +
-      `Join via: ${meetUrl}\n\n` +
-      `Need to reschedule? Visit ${siteUrl}/availability\n\n` +
-      `Reply STOP to opt out.`;
-
-    const result = await sendAppointmentReminderSMS({
-      to: clientPhone,
-      clientName,
-      eventName: appointmentType,
-      eventDate: formattedDate,
-      eventTime: formattedTime,
-      reminderType: '24hr',
-    });
+    // Send via selected channel
+    const result = channel === 'whatsapp'
+      ? await sendConsultationReminderWhatsApp({
+          to: clientPhone,
+          clientName,
+          appointmentType,
+          appointmentDate: formattedDate,
+          appointmentTime: formattedTime,
+          meetingLink: meetUrl,
+          reminderType: '24hr',
+        })
+      : await sendAppointmentReminderSMS({
+          to: clientPhone,
+          clientName,
+          eventName: appointmentType,
+          eventDate: formattedDate,
+          eventTime: formattedTime,
+          reminderType: '24hr',
+        });
 
     if (!result.success) {
-      console.error('[consultation-24hr-reminder] SMS failed:', result.error);
+      console.error('[consultation-24hr-reminder] Message failed:', result.error);
       return NextResponse.json({ error: result.error }, { status: 500 });
     }
 
@@ -122,7 +125,6 @@ export async function POST(req: NextRequest) {
           })
           .eq('id', bookingId);
       } catch (logErr) {
-        // Non-fatal — SMS was sent, just log the error
         console.warn('[consultation-24hr-reminder] Supabase log error:', logErr);
       }
     }
@@ -131,6 +133,7 @@ export async function POST(req: NextRequest) {
       success: true,
       messageSid: result.messageSid,
       sentTo: clientPhone,
+      channel,
       scheduledFor: `${formattedDate} at ${formattedTime}`,
     });
   } catch (err) {

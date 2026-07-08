@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sendMFACode, sendPaymentReminderSMS, sendAppointmentReminderSMS, sendSMS } from '@/lib/twilio/smsClient';
+import { sendMFACode, sendPaymentReminderSMS, sendAppointmentReminderSMS, sendSMS, sendWhatsApp, sendConsultationReminderWhatsApp, sendPaymentReminderWhatsApp, sendClientNotificationWhatsApp } from '@/lib/twilio/smsClient';
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { type, to, ...params } = body;
+    const { type, to, channel = 'sms', ...params } = body;
 
     // booking_confirmation uses a different shape — handle it before the type check
     if (!type && params.reminderType === 'booking_confirmation') {
@@ -39,6 +39,49 @@ export async function POST(req: NextRequest) {
 
     if (!type || !to) {
       return NextResponse.json({ error: 'Missing required fields: type, to' }, { status: 400 });
+    }
+
+    // Route to WhatsApp channel when channel='whatsapp'
+    if (channel === 'whatsapp') {
+      let result;
+      switch (type) {
+        case 'payment_reminder': {
+          const { clientName, invoiceNumber, amount, dueDate, paymentLink, isOverdue } = params;
+          if (!clientName || !invoiceNumber || !amount || !dueDate) {
+            return NextResponse.json({ error: 'Missing payment reminder fields' }, { status: 400 });
+          }
+          result = await sendPaymentReminderWhatsApp({ to, clientName, invoiceNumber, amount, dueDate, paymentLink, isOverdue });
+          break;
+        }
+        case 'appointment_reminder': {
+          const { clientName, eventName, eventDate, eventTime, reminderType } = params;
+          if (!clientName || !eventDate || !eventTime || !reminderType) {
+            return NextResponse.json({ error: 'Missing appointment reminder fields' }, { status: 400 });
+          }
+          result = await sendConsultationReminderWhatsApp({ to, clientName, appointmentType: eventName, appointmentDate: eventDate, appointmentTime: eventTime, reminderType });
+          break;
+        }
+        case 'client_notification': {
+          const { clientName, subject, message, actionLink, actionLabel } = params;
+          if (!clientName || !subject || !message) {
+            return NextResponse.json({ error: 'Missing client notification fields' }, { status: 400 });
+          }
+          result = await sendClientNotificationWhatsApp({ to, clientName, subject, message, actionLink, actionLabel });
+          break;
+        }
+        case 'custom': {
+          const { message } = params;
+          if (!message) return NextResponse.json({ error: 'Missing message for custom WhatsApp' }, { status: 400 });
+          result = await sendWhatsApp(to, message);
+          break;
+        }
+        default:
+          return NextResponse.json({ error: `Unknown type for WhatsApp channel: ${type}` }, { status: 400 });
+      }
+      if (!result.success) {
+        return NextResponse.json({ error: result.error }, { status: 500 });
+      }
+      return NextResponse.json({ success: true, messageSid: result.messageSid, channel: 'whatsapp' });
     }
 
     let result;
