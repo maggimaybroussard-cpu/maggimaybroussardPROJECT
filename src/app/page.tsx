@@ -82,7 +82,7 @@ export default function HomePage() {
             image: `${baseUrl}/assets/images/app_logo.png`,
             areaServed: 'US',
             serviceType: ['Litigation Support', 'Legal Research', 'Document Drafting', 'Case Management'],
-            priceRange: 'Varies',
+            priceRange: '$750–$2,800/month',
           }),
         }}
       />
