@@ -11,7 +11,7 @@ export default function MobileAppSection() {
         <div className="bg-card border border-border rounded-3xl overflow-hidden">
           <div className="grid md:grid-cols-2 gap-0">
             {/* Left — Content */}
-            <div className="p-8 md:p-12 flex flex-col justify-center gap-6">
+            <div className="p-6 md:p-12 flex flex-col justify-center gap-5 md:gap-6">
               {/* Label */}
               <p className="text-[11px] font-semibold uppercase tracking-[0.4em] flex items-center gap-3" style={{ color: '#8B3A45' }}>
                 <span className="w-8 h-px inline-block" style={{ background: 'rgba(139,58,69,0.7)' }} />
@@ -19,38 +19,38 @@ export default function MobileAppSection() {
               </p>
 
               <div>
-                <h2 className="font-serif text-3xl md:text-4xl text-foreground leading-tight mb-3">
+                <h2 className="font-serif text-2xl md:text-4xl text-foreground leading-tight mb-2 md:mb-3">
                   Your legal matters,
                   <br />
                   <span className="italic" style={{ opacity: 0.75 }}>always at hand</span>
                 </h2>
-                <p className="text-base font-light leading-relaxed" style={{ color: '#4A6B58' }}>
+                <p className="text-sm md:text-base font-light leading-relaxed" style={{ color: '#4A6B58' }}>
                   Install the Broussard Legal client portal on your phone or tablet. Access your cases, documents, invoices, and messages — anywhere, anytime.
                 </p>
               </div>
 
-              {/* Feature list */}
-              <div className="grid grid-cols-2 gap-3">
+              {/* Feature list — 3 cols on mobile, 2 on md */}
+              <div className="grid grid-cols-3 md:grid-cols-2 gap-2 md:gap-3">
                 {[
                   { icon: '📁', label: 'Deliverable Hub' },
-                  { icon: '💬', label: 'Direct Messaging' },
-                  { icon: '🧾', label: 'Invoice Payments' },
+                  { icon: '💬', label: 'Messaging' },
+                  { icon: '🧾', label: 'Invoices' },
                   { icon: '✍️', label: 'E-Signatures' },
-                  { icon: '📅', label: 'Book Appointments' },
-                  { icon: '🤖', label: 'AI Legal Secretary' },
+                  { icon: '📅', label: 'Appointments' },
+                  { icon: '🤖', label: 'AI Secretary' },
                 ]?.map(({ icon, label }) => (
-                  <div key={label} className="flex items-center gap-2.5">
-                    <span className="text-base">{icon}</span>
-                    <p className="text-sm font-medium text-foreground">{label}</p>
+                  <div key={label} className="flex items-center gap-1.5 md:gap-2.5">
+                    <span className="text-sm md:text-base">{icon}</span>
+                    <p className="text-xs md:text-sm font-medium text-foreground leading-tight">{label}</p>
                   </div>
                 ))}
               </div>
 
               {/* Install buttons */}
-              <div className="flex flex-wrap gap-3 pt-2">
+              <div className="flex flex-wrap gap-2.5 md:gap-3 pt-1 md:pt-2">
                 <Link
                   href="/mobile-download"
-                  className="inline-flex items-center gap-2.5 px-6 py-3 bg-primary text-primary-foreground rounded-full text-xs font-semibold uppercase tracking-[0.15em] hover:opacity-90 transition-all duration-300 shadow-lg shadow-primary/20"
+                  className="inline-flex items-center gap-2 md:gap-2.5 px-5 md:px-6 py-2.5 md:py-3 bg-primary text-primary-foreground rounded-full text-xs font-semibold uppercase tracking-[0.15em] hover:opacity-90 transition-all duration-300 shadow-lg shadow-primary/20"
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
@@ -59,7 +59,7 @@ export default function MobileAppSection() {
                 </Link>
                 <Link
                   href="/client-deliverable-hub"
-                  className="inline-flex items-center gap-2.5 px-6 py-3 border border-border text-foreground rounded-full text-xs font-semibold uppercase tracking-[0.15em] hover:border-accent hover:text-accent transition-all duration-300"
+                  className="inline-flex items-center gap-2 md:gap-2.5 px-5 md:px-6 py-2.5 md:py-3 border border-border text-foreground rounded-full text-xs font-semibold uppercase tracking-[0.15em] hover:border-accent hover:text-accent transition-all duration-300"
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                     <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
@@ -74,8 +74,8 @@ export default function MobileAppSection() {
               </p>
             </div>
 
-            {/* Right — Visual with attorney photo */}
-            <div className="relative bg-gradient-to-br from-primary/90 to-primary flex items-center justify-center p-10 md:p-14 min-h-[320px] overflow-hidden">
+            {/* Right — Visual with attorney photo — hidden on small mobile, shown md+ */}
+            <div className="hidden md:relative md:flex bg-gradient-to-br from-primary/90 to-primary items-center justify-center p-10 md:p-14 min-h-[320px] overflow-hidden">
               {/* Decorative circles */}
               <div className="absolute top-6 right-6 w-32 h-32 rounded-full bg-accent/10 blur-2xl" />
               <div className="absolute bottom-6 left-6 w-24 h-24 rounded-full bg-accent/8 blur-xl" />

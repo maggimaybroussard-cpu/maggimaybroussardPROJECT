@@ -65,16 +65,16 @@ export default function HeroSection() {
       </div>
 
       {/* Content */}
-      <div className="relative z-10 max-w-7xl mx-auto w-full px-5 md:px-10 pb-20 md:pb-32 pt-36 md:pt-44">
+      <div className="relative z-10 max-w-7xl mx-auto w-full px-5 md:px-10 pb-16 md:pb-32 pt-28 md:pt-44">
         <div className="max-w-3xl">
           {/* Eyebrow */}
-          <p className="animate-fade-in text-accent text-[10px] md:text-[11px] font-semibold uppercase tracking-[0.3em] md:tracking-[0.4em] mb-5 md:mb-7 flex items-center gap-3">
+          <p className="animate-fade-in text-accent text-[10px] md:text-[11px] font-semibold uppercase tracking-[0.3em] md:tracking-[0.4em] mb-4 md:mb-7 flex items-center gap-3">
             <span className="w-8 h-px bg-accent/70 inline-block" />
             Contract Paralegal · Nationwide · Remote
           </p>
 
           {/* Main Headline */}
-          <h1 className="animate-fade-in-delay-1 text-hero-display mb-5 md:mb-7 text-primary-foreground">
+          <h1 className="animate-fade-in-delay-1 text-hero-display mb-4 md:mb-7 text-primary-foreground">
             Precision.
             <br />
             <span className="italic" style={{ opacity: 0.85 }}>Dedication.</span>
@@ -83,12 +83,12 @@ export default function HeroSection() {
           </h1>
 
           {/* Subheadline */}
-          <p className="animate-fade-in-delay-2 text-base md:text-xl font-bold leading-[1.7] max-w-lg mb-10 md:mb-12 tracking-wide" style={{ color: '#355E3B' }}>
+          <p className="animate-fade-in-delay-2 text-sm md:text-xl font-bold leading-[1.7] max-w-lg mb-8 md:mb-12 tracking-wide" style={{ color: '#355E3B' }}>
             Expert paralegal support for law firms and attorneys
             across all 50 states — remote, reliable, and ready to support your practice.
           </p>
 
-          {/* CTAs */}
+          {/* CTAs — 2 on mobile, all 4 on desktop */}
           <div className="animate-fade-in-delay-3 flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 items-stretch sm:items-center">
             <Link
               href="/book-consultation"
@@ -116,18 +116,37 @@ export default function HeroSection() {
                 trackCTAClick('View Services', 'hero', '/services');
                 trackViewServicesClick('hero');
               }}
-              className="inline-flex items-center justify-center gap-2.5 px-8 py-4 border border-primary-foreground/20 text-primary-foreground/80 rounded-full text-xs font-semibold uppercase tracking-[0.15em] hover:bg-primary-foreground/8 hover:border-primary-foreground/40 hover:text-primary-foreground transition-all duration-300">
+              className="hidden sm:inline-flex items-center justify-center gap-2.5 px-8 py-4 border border-primary-foreground/20 text-primary-foreground/80 rounded-full text-xs font-semibold uppercase tracking-[0.15em] hover:bg-primary-foreground/8 hover:border-primary-foreground/40 hover:text-primary-foreground transition-all duration-300">
               View Services
             </Link>
             <Link
               href="/portal/register"
               onClick={() => trackCTAClick('Client Portal', 'hero', '/portal/register')}
-              className="inline-flex items-center justify-center gap-2 px-8 py-4 border border-primary-foreground/20 text-primary-foreground/80 rounded-full text-xs font-semibold uppercase tracking-[0.15em] hover:bg-primary-foreground/8 hover:border-primary-foreground/40 hover:text-primary-foreground transition-all duration-300">
+              className="hidden sm:inline-flex items-center justify-center gap-2 px-8 py-4 border border-primary-foreground/20 text-primary-foreground/80 rounded-full text-xs font-semibold uppercase tracking-[0.15em] hover:bg-primary-foreground/8 hover:border-primary-foreground/40 hover:text-primary-foreground transition-all duration-300">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
                 <polyline points="10 17 15 12 10 7" />
                 <line x1="15" y1="12" x2="3" y2="12" />
               </svg>
+              Client Portal
+            </Link>
+          </div>
+
+          {/* Mobile-only secondary links row */}
+          <div className="animate-fade-in-delay-3 flex sm:hidden items-center gap-4 mt-4">
+            <Link
+              href="/services"
+              onClick={() => trackViewServicesClick('hero')}
+              className="text-primary-foreground/70 text-xs font-semibold uppercase tracking-[0.15em] hover:text-primary-foreground transition-colors underline underline-offset-4"
+            >
+              View Services
+            </Link>
+            <span className="text-primary-foreground/30 text-xs">·</span>
+            <Link
+              href="/portal/register"
+              onClick={() => trackCTAClick('Client Portal', 'hero', '/portal/register')}
+              className="text-primary-foreground/70 text-xs font-semibold uppercase tracking-[0.15em] hover:text-primary-foreground transition-colors underline underline-offset-4"
+            >
               Client Portal
             </Link>
           </div>

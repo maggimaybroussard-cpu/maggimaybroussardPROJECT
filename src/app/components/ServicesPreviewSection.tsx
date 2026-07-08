@@ -74,7 +74,7 @@ export default function ServicesPreviewSection() {
           {services.map((service, index) => (
             <div
               key={service.id}
-              className="scroll-reveal-hidden group py-6 md:py-9 flex flex-col md:flex-row md:items-center gap-4 md:gap-10 px-4 md:px-5 -mx-4 md:-mx-5 rounded-2xl transition-all duration-300 hover:bg-background/70"
+              className="scroll-reveal-hidden group py-5 md:py-9 flex flex-col md:flex-row md:items-center gap-3 md:gap-10 px-4 md:px-5 -mx-4 md:-mx-5 rounded-2xl transition-all duration-300 hover:bg-background/70"
               style={{ transitionDelay: `${index * 0.08}s` }}
               onMouseEnter={() => trackServiceCardHover(service.title, 'home_services_preview')}
             >
@@ -88,17 +88,17 @@ export default function ServicesPreviewSection() {
                 <Link
                   href="/services"
                   onClick={() => trackServiceClick(service.title, 'home_services_preview')}
-                  className="font-serif text-xl md:text-[1.75rem] text-foreground group-hover:text-primary transition-colors duration-300 md:w-60 shrink-0 leading-tight hover:underline"
+                  className="font-serif text-lg md:text-[1.75rem] text-foreground group-hover:text-primary transition-colors duration-300 md:w-60 shrink-0 leading-tight hover:underline"
                 >
                   {service.title}
                 </Link>
               </div>
               {/* Description */}
-              <p className="text-muted-foreground leading-[1.75] font-light text-sm md:text-[15px] flex-1">
+              <p className="text-muted-foreground leading-[1.75] font-light text-sm md:text-[15px] flex-1 pl-[3.25rem] md:pl-0">
                 {service.description}
               </p>
-              {/* Schedule Consultation Button */}
-              <div className="shrink-0 self-start md:self-auto">
+              {/* Schedule Consultation Button — hidden on mobile, visible on md+ */}
+              <div className="hidden md:block shrink-0">
                 <Link
                   href="/intake"
                   className="inline-flex items-center gap-2 px-5 py-2.5 bg-accent text-white rounded-full text-xs font-semibold uppercase tracking-[0.12em] hover:bg-accent/90 transition-all duration-300 shadow-sm hover:shadow-md whitespace-nowrap"
@@ -118,8 +118,8 @@ export default function ServicesPreviewSection() {
           ))}
         </div>
 
-        {/* CTA */}
-        <div className="scroll-reveal-hidden mt-12 md:mt-16 flex justify-center">
+        {/* CTA — includes mobile-friendly "Schedule" button */}
+        <div className="scroll-reveal-hidden mt-10 md:mt-16 flex flex-col sm:flex-row items-center justify-center gap-3">
           <Link
             href="/services"
             onClick={() => {
@@ -132,6 +132,17 @@ export default function ServicesPreviewSection() {
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M5 12h14M12 5l7 7-7 7" />
             </svg>
+          </Link>
+          {/* Mobile-only schedule CTA */}
+          <Link
+            href="/intake"
+            onClick={() => {
+              trackBookConsultationClick('home_services_preview_bottom');
+              trackCTAClick('Schedule Consultation', 'home_services_preview_bottom', '/intake');
+            }}
+            className="sm:hidden inline-flex items-center gap-2 px-8 py-4 bg-accent text-white rounded-full text-xs font-semibold uppercase tracking-[0.15em] hover:opacity-90 transition-all duration-300 shadow-sm"
+          >
+            Schedule Consultation
           </Link>
         </div>
       </div>

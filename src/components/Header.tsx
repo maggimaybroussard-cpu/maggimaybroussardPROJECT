@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import AppLogo from '@/components/ui/AppLogo';
 
-
 const navLinks = [
   { label: 'Home', href: '/' },
   { label: 'Services', href: '/services' },
@@ -26,6 +25,44 @@ const navLinks = [
   { label: 'Contact', href: '/contact' },
   { label: '📁 Deliverable Hub', href: '/client-deliverable-hub' },
   { label: '📲 Install App', href: '/mobile-download' },
+];
+
+// Grouped nav for mobile
+const mobileNavGroups = [
+  {
+    label: 'Explore',
+    links: [
+      { label: 'Home', href: '/' },
+      { label: 'Services', href: '/services' },
+      { label: 'Pricing', href: '/pricing' },
+      { label: 'Blog', href: '/blog' },
+      { label: 'Case Studies', href: '/case-studies' },
+      { label: 'Testimonials', href: '/testimonials' },
+    ],
+  },
+  {
+    label: 'Work With Me',
+    links: [
+      { label: '📋 Book Consultation', href: '/prospect-booking' },
+      { label: '📅 Schedule', href: '/schedule' },
+      { label: '📅 Book Appointment', href: '/book-appointment' },
+      { label: 'Contact', href: '/contact' },
+      { label: 'Availability', href: '/availability' },
+    ],
+  },
+  {
+    label: 'Client Services',
+    links: [
+      { label: 'New Intake', href: '/portal/intake' },
+      { label: 'Intake Status', href: '/intake-status' },
+      { label: 'Contracts', href: '/contracts' },
+      { label: 'Retainer', href: '/retainer-contract' },
+      { label: 'Pay Retainer', href: '/retainer-payment' },
+      { label: '📁 Deliverable Hub', href: '/client-deliverable-hub' },
+      { label: '📲 Install App', href: '/mobile-download' },
+      { label: 'Log Formats', href: '/log-formats' },
+    ],
+  },
 ];
 
 export default function Header() {
@@ -274,64 +311,118 @@ export default function Header() {
         </div>
       </nav>
 
-      {/* Mobile Menu Overlay */}
+      {/* Mobile Menu — Slide-in drawer from right */}
       {menuOpen && (
         <div
-          id="mobile-nav-menu"
-          ref={mobileMenuRef}
-          role="dialog"
-          aria-modal="true"
-          aria-label="Navigation menu"
-          className="fixed inset-0 z-40 bg-primary/97 backdrop-blur-lg flex flex-col items-center justify-center gap-5 md:hidden px-6"
-        >
-          {navLinks?.map((link) => (
-            <Link
-              key={link?.href}
-              href={link?.href}
-              onClick={() => setMenuOpen(false)}
-              aria-current={pathname === link?.href ? 'page' : undefined}
-              className="font-serif text-3xl text-primary-foreground/90 hover:text-accent transition-colors duration-200 italic focus-visible:outline-none focus-visible:text-accent"
-            >
-              {link?.label}
-            </Link>
+          className="fixed inset-0 z-40 md:hidden"
+          onClick={() => setMenuOpen(false)}
+          aria-hidden="true"
+          style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}
+        />
+      )}
+      <div
+        id="mobile-nav-menu"
+        ref={mobileMenuRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Navigation menu"
+        className={`fixed top-0 right-0 h-full w-[85vw] max-w-[340px] z-50 md:hidden flex flex-col bg-background border-l border-border shadow-2xl transition-transform duration-300 ease-out ${
+          menuOpen ? 'translate-x-0' : 'translate-x-full'
+        }`}
+      >
+        {/* Drawer header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">
+          <Link href="/" onClick={() => setMenuOpen(false)} className="flex items-center gap-2.5">
+            <AppLogo size={28} />
+            <span className="font-serif text-[14px] tracking-tight" style={{ color: '#355E3B' }}>
+              Broussard Legal
+            </span>
+          </Link>
+          <button
+            onClick={() => setMenuOpen(false)}
+            aria-label="Close menu"
+            className="p-2 rounded-full hover:bg-secondary transition-colors"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Scrollable nav groups */}
+        <div className="flex-1 overflow-y-auto py-4 px-5 space-y-6">
+          {mobileNavGroups.map((group) => (
+            <div key={group.label}>
+              <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-muted-foreground mb-2 px-1">
+                {group.label}
+              </p>
+              <div className="grid grid-cols-2 gap-1.5">
+                {group.links.map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    onClick={() => setMenuOpen(false)}
+                    aria-current={pathname === link.href ? 'page' : undefined}
+                    className={`px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-200 truncate ${
+                      pathname === link.href
+                        ? 'bg-[#8B3A45] text-white'
+                        : 'bg-secondary/60 text-foreground hover:bg-secondary hover:text-accent'
+                    }`}
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+              </div>
+            </div>
           ))}
-          <div className="flex flex-col sm:flex-row items-center gap-3 mt-6 w-full max-w-xs">
-            <Link
-              href="/contact"
-              onClick={() => setMenuOpen(false)}
-              className="w-full text-center px-6 py-3.5 bg-accent text-accent-foreground rounded-full text-sm font-semibold uppercase tracking-widest hover:opacity-90 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-foreground"
-            >
-              Hire Me
-            </Link>
+        </div>
+
+        {/* Sticky bottom CTAs */}
+        <div className="shrink-0 px-5 py-4 border-t border-border space-y-2.5 bg-background">
+          <Link
+            href="/contact"
+            onClick={() => setMenuOpen(false)}
+            className="flex items-center justify-center gap-2 w-full py-3.5 bg-accent text-accent-foreground rounded-full text-sm font-semibold uppercase tracking-widest hover:opacity-90 transition-opacity"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M5 12h14M12 5l7 7-7 7" />
+            </svg>
+            Hire Me
+          </Link>
+          <div className="grid grid-cols-2 gap-2">
             <Link
               href="/checkout"
               onClick={() => setMenuOpen(false)}
-              className="w-full text-center px-6 py-3.5 rounded-full text-sm font-semibold uppercase tracking-widest transition-all duration-200 border"
-              style={{ borderColor: 'rgba(200,150,90,0.6)', color: '#C8965A', background: 'rgba(200,150,90,0.1)' }}
+              className="flex items-center justify-center gap-1.5 py-3 rounded-full text-xs font-semibold uppercase tracking-wider transition-all border"
+              style={{ borderColor: 'rgba(139,96,32,0.5)', color: '#6B4A10', background: 'rgba(139,96,32,0.08)' }}
             >
               Pay Now
             </Link>
             <Link
               href="/portal/login"
               onClick={() => setMenuOpen(false)}
-              className="w-full text-center px-6 py-3.5 rounded-full text-sm font-semibold uppercase tracking-widest transition-all duration-200 border"
+              className="flex items-center justify-center gap-1.5 py-3 rounded-full text-xs font-semibold uppercase tracking-wider transition-all border"
               style={{ borderColor: 'rgba(53,94,59,0.5)', color: '#355E3B', background: 'rgba(53,94,59,0.08)' }}
             >
               Client Portal
             </Link>
-            <a
-              href="https://legal-assistant-ai-maggimaybroussa.replit.app"
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => setMenuOpen(false)}
-              className="w-full text-center px-6 py-3.5 rounded-full text-sm font-semibold uppercase tracking-widest transition-all duration-200 border"
-              style={{ borderColor: 'rgba(53,94,59,0.5)', color: '#355E3B', background: 'rgba(53,94,59,0.08)' }}
-            >
-              Staff Login
-            </a>
           </div>
+          <a
+            href="https://legal-assistant-ai-maggimaybroussa.replit.app"
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => setMenuOpen(false)}
+            className="flex items-center justify-center gap-1.5 w-full py-3 rounded-full text-xs font-semibold uppercase tracking-wider transition-all border"
+            style={{ borderColor: 'rgba(53,94,59,0.4)', color: '#355E3B', background: 'rgba(53,94,59,0.06)' }}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <circle cx="12" cy="8" r="4" />
+              <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+            </svg>
+            Staff Login
+          </a>
         </div>
-      )}
+      </div>
     </>
   );
 }
