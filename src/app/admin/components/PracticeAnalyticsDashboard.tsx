@@ -39,6 +39,10 @@ interface AnalyticsData {
   matterDurations: MatterDuration[];
   referralSources: ReferralSource[];
   monthlyRevenue: Array<{ month: string; billed: number; collected: number }>;
+  activeRetainers: number;
+  retainerRevenue: number;
+  renewalsDue30: number;
+  renewalAcceptRate: number;
 }
 
 const CHART_COLORS = ['#6366f1', '#8b5cf6', '#a78bfa', '#c4b5fd', '#ddd6fe', '#ede9fe'];
@@ -167,6 +171,26 @@ export default function PracticeAnalyticsDashboard() {
         .map(([month, d]) => ({ month, billed: Math.round(d.billed), collected: Math.round(d.collected) }))
         .slice(-6);
 
+      // Fetch retainer data
+      const { data: retainers } = await supabase
+        .from('retainer_subscriptions')
+        .select('id, amount, status, current_period_end, renewal_accepted_at, renewal_declined_at')
+        .in('status', ['active', 'trialing']);
+
+      const allRetainers = retainers || [];
+      const now = new Date(); now.setHours(0, 0, 0, 0);
+      const activeRetainers = allRetainers.filter(r => r.status === 'active').length;
+      const retainerRevenue = allRetainers.filter(r => r.status === 'active').reduce((sum, r) => sum + (r.amount || 0), 0);
+      const renewalsDue30 = allRetainers.filter(r => {
+        if (!r.current_period_end) return false;
+        const d = new Date(r.current_period_end); d.setHours(0, 0, 0, 0);
+        const days = Math.round((d.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+        return days >= 0 && days <= 30;
+      }).length;
+      const renewalResponded = allRetainers.filter(r => r.renewal_accepted_at || r.renewal_declined_at).length;
+      const renewalAccepted = allRetainers.filter(r => r.renewal_accepted_at).length;
+      const renewalAcceptRate = renewalResponded > 0 ? Math.round((renewalAccepted / renewalResponded) * 100) : 0;
+
       setData({
         totalRevenue: Math.round(collected),
         totalMatters: allCases.length,
@@ -181,6 +205,10 @@ export default function PracticeAnalyticsDashboard() {
         matterDurations,
         referralSources,
         monthlyRevenue,
+        activeRetainers,
+        retainerRevenue,
+        renewalsDue30,
+        renewalAcceptRate,
       });
     } catch {
       // Fallback to demo data
@@ -221,6 +249,10 @@ export default function PracticeAnalyticsDashboard() {
           { month: 'May 25', billed: 10500, collected: 9500 },
           { month: 'Jun 25', billed: 7000, collected: 5700 },
         ],
+        activeRetainers: 6,
+        retainerRevenue: 8400,
+        renewalsDue30: 2,
+        renewalAcceptRate: 83,
       });
     } finally {
       setLoading(false);
@@ -322,6 +354,14 @@ export default function PracticeAnalyticsDashboard() {
             <StatCard label="Realization Rate" value={`${data.realizationRate}%`} sub={`$${data.billedRevenue.toLocaleString()} billed`} color={data.realizationRate >= 85 ? 'text-green-600' : 'text-orange-500'} />
             <StatCard label="Utilization Rate" value={`${data.utilizationRate}%`} sub={`${data.billableHours}h billable`} color={data.utilizationRate >= 75 ? 'text-green-600' : 'text-orange-500'} />
             <StatCard label="Active Matters" value={data.totalMatters.toString()} sub={`Avg $${data.avgMatterValue.toLocaleString()}/matter`} />
+          </div>
+
+          {/* Retainer KPIs */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <StatCard label="Active Retainers" value={data.activeRetainers.toString()} sub="Ongoing subscriptions" color="text-primary" />
+            <StatCard label="Retainer MRR" value={`$${data.retainerRevenue.toLocaleString()}`} sub="Monthly recurring" color="text-primary" />
+            <StatCard label="Renewals Due (30d)" value={data.renewalsDue30.toString()} sub="Need action" color={data.renewalsDue30 > 0 ? 'text-amber-600' : 'text-green-600'} />
+            <StatCard label="Renewal Accept Rate" value={`${data.renewalAcceptRate}%`} sub="Client confirmations" color={data.renewalAcceptRate >= 80 ? 'text-green-600' : 'text-orange-500'} />
           </div>
 
           {/* Monthly Revenue Chart */}
