@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import CaseDocumentsManager from '@/app/admin/components/CaseDocumentsManager';
+import CaseFileAnalyzer from '@/app/admin/components/CaseFileAnalyzer';
 
 import MatterMessageThread from '@/components/MatterMessageThread';
 
@@ -211,7 +212,7 @@ function resolveStage(c: CaseDetail): string {
   return 'intake';
 }
 
-type ActiveTab = 'overview' | 'documents' | 'messages' | 'invoices' | 'tasks' | 'retainer' | 'timeline';
+type ActiveTab = 'overview' | 'documents' | 'messages' | 'invoices' | 'tasks' | 'retainer' | 'timeline' | 'ai_analysis';
 
 // ── Main Component ────────────────────────────────────────────────────────────
 
@@ -422,6 +423,7 @@ export default function AdminCaseDetailPage() {
     { id: 'invoices', label: 'Invoices', badge: pendingInvoices.length || undefined },
     { id: 'tasks', label: 'Tasks', badge: openTasks.length || undefined },
     { id: 'retainer', label: 'Retainer' },
+    { id: 'ai_analysis', label: '✦ AI Analysis' },
   ];
 
   return (
@@ -757,6 +759,16 @@ export default function AdminCaseDetailPage() {
             caseId={caseId}
             documents={documents}
             onDocumentsChange={fetchData}
+          />
+        )}
+
+        {/* ── AI Analysis Tab ── */}
+        {activeTab === 'ai_analysis' && (
+          <CaseFileAnalyzer
+            caseId={caseId}
+            caseName={caseDetail.name}
+            caseService={caseDetail.service}
+            caseMessage={caseDetail.message}
           />
         )}
 
