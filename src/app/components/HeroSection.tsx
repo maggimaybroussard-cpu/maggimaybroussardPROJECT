@@ -140,16 +140,16 @@ export default function HeroSection() {
             <Link
               href="/services"
               onClick={() => trackViewServicesClick('hero')}
-              className="text-primary-foreground/70 text-xs font-semibold uppercase tracking-[0.15em] hover:text-primary-foreground transition-colors underline underline-offset-4"
-            >
+              className="text-primary-foreground/70 text-xs font-semibold uppercase tracking-[0.15em] hover:text-primary-foreground transition-colors underline underline-offset-4">
+              
               View Services
             </Link>
             <span className="text-primary-foreground/30 text-xs">·</span>
             <Link
               href="/portal/register"
               onClick={() => trackCTAClick('Client Portal', 'hero', '/portal/register')}
-              className="text-primary-foreground/70 text-xs font-semibold uppercase tracking-[0.15em] hover:text-primary-foreground transition-colors underline underline-offset-4"
-            >
+              className="text-primary-foreground/70 text-xs font-semibold uppercase tracking-[0.15em] hover:text-primary-foreground transition-colors underline underline-offset-4">
+              
               Client Portal
             </Link>
           </div>
@@ -166,9 +166,9 @@ export default function HeroSection() {
 
       <BookConsultationModal
         isOpen={bookingModalOpen}
-        onClose={() => setBookingModalOpen(false)}
-      />
-    </section>
-  );
+        onClose={() => setBookingModalOpen(false)} />
+      
+    </section>);
+
 
 }

@@ -81,8 +81,8 @@ export default function ServicesHero() {
 
       <BookConsultationModal
         isOpen={bookingModalOpen}
-        onClose={() => setBookingModalOpen(false)}
-      />
-    </>
-  );
+        onClose={() => setBookingModalOpen(false)} />
+      
+    </>);
+
 }
