@@ -8,6 +8,7 @@ const nextConfig = {
 
   experimental: {
     optimizePackageImports: ['@heroicons/react', 'recharts'],
+    optimizeCss: true,
   },
 
   typescript: {
