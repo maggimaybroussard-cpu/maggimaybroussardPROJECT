@@ -130,6 +130,95 @@ export function trackPaymentSuccess(paymentType: string, amount: number, transac
   });
 }
 
+// ── Invoice Payment Funnel Events ────────────────────────────────────────────
+
+/** Fired when client views the invoice list page */
+export function trackInvoiceListView(invoiceCount: number, outstandingCount: number) {
+  trackEvent('invoice_list_view', {
+    event_category: 'engagement',
+    event_label: 'Invoice List Page',
+    invoice_count: invoiceCount,
+    outstanding_count: outstandingCount,
+  });
+}
+
+/** Fired when client clicks "Pay Now" on an invoice */
+export function trackInvoicePayClick(invoiceId: string, invoiceNumber: string, amount: number) {
+  trackEvent('invoice_pay_click', {
+    event_category: 'conversion',
+    event_label: 'Invoice Pay Now',
+    invoice_id: invoiceId,
+    invoice_number: invoiceNumber,
+    value: amount,
+    currency: 'USD',
+  });
+  // GA4 begin_checkout funnel event
+  trackEvent('begin_checkout', {
+    value: amount,
+    currency: 'USD',
+    items: [
+      {
+        item_id: invoiceId,
+        item_name: `Invoice ${invoiceNumber}`,
+        price: amount,
+        quantity: 1,
+        item_category: 'legal_services',
+      },
+    ],
+  });
+}
+
+/** Fired when Stripe checkout session is created successfully */
+export function trackCheckoutSessionCreated(invoiceId: string, amount: number) {
+  trackEvent('checkout_session_created', {
+    event_category: 'conversion',
+    event_label: 'Stripe Checkout Session Created',
+    invoice_id: invoiceId,
+    value: amount,
+    currency: 'USD',
+  });
+}
+
+/** Fired on the payment success page after invoice payment */
+export function trackInvoicePaymentSuccess(invoiceId: string, invoiceNumber: string, amount: number, sessionId: string) {
+  trackEvent('invoice_payment_success', {
+    event_category: 'conversion',
+    event_label: 'Invoice Payment Confirmed',
+    invoice_id: invoiceId,
+    invoice_number: invoiceNumber,
+    value: amount,
+    currency: 'USD',
+    session_id: sessionId,
+  });
+  // GA4 purchase event
+  trackEvent('purchase', {
+    transaction_id: sessionId || invoiceId,
+    value: amount,
+    currency: 'USD',
+    items: [
+      {
+        item_id: invoiceId,
+        item_name: `Invoice ${invoiceNumber}`,
+        price: amount,
+        quantity: 1,
+        item_category: 'legal_services',
+      },
+    ],
+  });
+}
+
+/** Fired when client views an invoice detail page */
+export function trackInvoiceDetailView(invoiceId: string, invoiceNumber: string, status: string, amount: number) {
+  trackEvent('invoice_detail_view', {
+    event_category: 'engagement',
+    event_label: 'Invoice Detail Page',
+    invoice_id: invoiceId,
+    invoice_number: invoiceNumber,
+    invoice_status: status,
+    value: amount,
+  });
+}
+
 /** Fired when a payment attempt fails */
 export function trackPaymentError(paymentType: string, errorReason: string) {
   trackEvent('payment_error', {

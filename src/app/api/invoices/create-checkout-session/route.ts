@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
         invoice_number,
         client_name: clientName ?? '',
       },
-      success_url: success_url ?? `${process.env.NEXT_PUBLIC_SITE_URL}/client/invoices?payment=success`,
+      success_url: success_url ?? `${process.env.NEXT_PUBLIC_SITE_URL}/payment-success?session_id={CHECKOUT_SESSION_ID}&invoice_id=${invoice_id}&invoice_number=${encodeURIComponent(invoice_number)}&amount=${amount}`,
       cancel_url: cancel_url ?? `${process.env.NEXT_PUBLIC_SITE_URL}/client/invoices`,
     });
 

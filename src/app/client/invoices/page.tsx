@@ -191,7 +191,7 @@ export default function ClientInvoicesPage() {
           amount: balance,
           currency: invoice.currency || 'usd',
           invoice_number: invoice.invoice_number,
-          success_url: `${window.location.origin}/client/invoices?payment=success`,
+          success_url: `${window.location.origin}/payment-success?session_id={CHECKOUT_SESSION_ID}&invoice_id=${invoice.id}&invoice_number=${encodeURIComponent(invoice.invoice_number)}&amount=${balance}`,
           cancel_url: `${window.location.origin}/client/invoices`,
         }),
       });
@@ -490,7 +490,13 @@ export default function ClientInvoicesPage() {
                     {/* Invoice info */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-sm font-semibold text-foreground">{invoice.invoice_number}</span>
+                        <Link
+                          href={`/client/invoices/${invoice.id}`}
+                          className="text-sm font-semibold text-foreground hover:text-primary transition-colors"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {invoice.invoice_number}
+                        </Link>
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${cfg.pill}`}>
                           {cfg.label}
                         </span>
