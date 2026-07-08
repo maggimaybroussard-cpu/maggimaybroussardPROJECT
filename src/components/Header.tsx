@@ -1,8 +1,6 @@
 'use client';
 
-import dynamic from 'next/dynamic';
-
-const HeaderInner = dynamic(() => import('./HeaderInner'), { ssr: false });
+import HeaderInner from './HeaderInner';
 
 export default function Header() {
   return <HeaderInner />;
