@@ -309,27 +309,41 @@ export default function Header({ initialClaims }: HeaderProps) {
             ref={hamburgerRef}
             onClick={() => setMenuOpen(!menuOpen)}
             aria-label="Open navigation menu"
-            aria-expanded={false}
+            aria-expanded={menuOpen}
             aria-controls="mobile-nav-menu"
             className="md:hidden p-2.5 rounded-full transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent bg-primary-foreground/10 text-accent"
             suppressHydrationWarning
           >
-            <svg
-              width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
-              aria-hidden="true"
-              suppressHydrationWarning
-              className={menuOpen ? 'hidden' : 'block'}
-            >
-              <line x1="3" y1="8" x2="21" y2="8" /><line x1="3" y1="16" x2="21" y2="16" />
-            </svg>
-            <svg
-              width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
-              aria-hidden="true"
-              suppressHydrationWarning
-              className={menuOpen ? 'block' : 'hidden'}
-            >
-              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
+            <span className="relative block w-[22px] h-[22px]">
+              {/* Hamburger icon */}
+              <svg
+                width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
+                aria-hidden="true"
+                style={{
+                  position: 'absolute', top: 0, left: 0,
+                  transition: 'opacity 0.2s, transform 0.2s',
+                  opacity: menuOpen ? 0 : 1,
+                  transform: menuOpen ? 'rotate(45deg) scale(0.8)' : 'rotate(0deg) scale(1)',
+                  pointerEvents: 'none',
+                }}
+              >
+                <line x1="3" y1="8" x2="21" y2="8" /><line x1="3" y1="16" x2="21" y2="16" />
+              </svg>
+              {/* Close icon */}
+              <svg
+                width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
+                aria-hidden="true"
+                style={{
+                  position: 'absolute', top: 0, left: 0,
+                  transition: 'opacity 0.2s, transform 0.2s',
+                  opacity: menuOpen ? 1 : 0,
+                  transform: menuOpen ? 'rotate(0deg) scale(1)' : 'rotate(-45deg) scale(0.8)',
+                  pointerEvents: 'none',
+                }}
+              >
+                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </span>
           </button>
         </div>
       </nav>
