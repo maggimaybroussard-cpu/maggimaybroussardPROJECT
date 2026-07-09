@@ -151,7 +151,7 @@ export default function RootLayout({
           :root{--background:#F9F0EC;--foreground:#1B2A4A;--primary:#1B2A4A;--primary-foreground:#F5ECD7;--accent:#B76E79;--font-sans:'Raleway',sans-serif;--font-serif:'Playfair Display',serif}
         ` }} />
         {/* Preconnect to Google Fonts to eliminate DNS/TCP render-blocking delay */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         {/* Preconnect to Stripe — warms TCP/TLS so Stripe.js loads faster when payment step is reached */}
         <link rel="preconnect" href="https://js.stripe.com" crossOrigin="anonymous" />
