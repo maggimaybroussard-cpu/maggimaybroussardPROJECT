@@ -83,8 +83,6 @@ export default function Header() {
     setMounted(true);
   }, []);
 
-  if (!mounted) return null;
-
   // Apply dynamic nav classes imperatively after mount to avoid SSR/CSR mismatch
   useEffect(() => {
     if (!mounted) return;
@@ -176,7 +174,9 @@ export default function Header() {
         className="fixed top-0 left-0 w-full z-50 transition-all duration-500 py-4 md:py-8"
         suppressHydrationWarning
       >
-        <div className="max-w-7xl mx-auto px-4 md:px-10 flex items-center justify-between gap-4" suppressHydrationWarning>
+        {mounted ? (
+          /* Real client-only UI — rendered after hydration */
+          <div className="max-w-7xl mx-auto px-4 md:px-10 flex items-center justify-between gap-4" suppressHydrationWarning>
             {/* Logo */}
             <div className="flex items-center gap-3 group shrink-0">
               {/* Profile picture — navigates to Admin */}
@@ -330,19 +330,105 @@ export default function Header() {
               <svg
                 width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
                 aria-hidden="true"
-                className={mounted && menuOpen ? 'hidden' : 'block'}
+                className={menuOpen ? 'hidden' : 'block'}
               >
                 <line x1="3" y1="8" x2="21" y2="8" /><line x1="3" y1="16" x2="21" y2="16" />
               </svg>
               <svg
                 width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
                 aria-hidden="true"
-                className={mounted && menuOpen ? 'block' : 'hidden'}
+                className={menuOpen ? 'block' : 'hidden'}
               >
                 <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
               </svg>
             </button>
           </div>
+        ) : (
+          /* Deterministic SSR placeholder — same structure/nesting/classes, no client-only values */
+          <div className="max-w-7xl mx-auto px-4 md:px-10 flex items-center justify-between gap-4">
+            {/* Logo placeholder */}
+            <div className="flex items-center gap-3 shrink-0">
+              <div className="relative">
+                <div className="w-9 h-9 rounded-full" />
+              </div>
+              <div className="flex items-center gap-2.5">
+                <span
+                  className="font-serif text-lg tracking-tight"
+                  style={{ color: '#355E3B' }}
+                >
+                  Broussard Legal Services
+                </span>
+              </div>
+            </div>
+
+            {/* Desktop nav placeholder */}
+            <div className="hidden lg:flex items-center gap-0.5 flex-1 justify-center" role="list">
+              {navLinks?.map((link) => (
+                <span
+                  key={link?.href}
+                  className="px-3 py-2 rounded-full text-[11px] font-semibold uppercase tracking-widest text-primary-foreground/80 whitespace-nowrap"
+                >
+                  {link?.label}
+                </span>
+              ))}
+            </div>
+
+            {/* Desktop CTAs placeholder */}
+            <div className="hidden lg:flex items-center gap-2 shrink-0">
+              <span className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-[11px] font-semibold uppercase tracking-widest bg-accent text-accent-foreground">
+                Hire Me
+              </span>
+              <span
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-[11px] font-semibold uppercase tracking-widest border"
+                style={{ borderColor: 'rgba(139,96,32,0.6)', color: '#6B4A10', background: 'rgba(139,96,32,0.08)' }}
+              >
+                Pay Now
+              </span>
+              <span
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-[11px] font-semibold uppercase tracking-widest border"
+                style={{ borderColor: 'rgba(53,94,59,0.5)', color: '#355E3B', background: 'rgba(53,94,59,0.07)' }}
+              >
+                Portal
+              </span>
+              <span
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-[11px] font-semibold uppercase tracking-widest border"
+                style={{ borderColor: 'rgba(53,94,59,0.5)', color: '#355E3B', background: 'rgba(53,94,59,0.07)' }}
+              >
+                Staff Login
+              </span>
+            </div>
+
+            {/* Tablet placeholder */}
+            <div className="hidden md:flex lg:hidden items-center gap-2">
+              <span className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-[11px] font-semibold uppercase tracking-widest bg-accent text-accent-foreground">
+                Hire Me
+              </span>
+              <span
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-[11px] font-semibold uppercase tracking-widest border"
+                style={{ borderColor: 'rgba(53,94,59,0.5)', color: '#355E3B', background: 'rgba(53,94,59,0.07)' }}
+              >
+                Portal
+              </span>
+              <span
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-[11px] font-semibold uppercase tracking-widest border"
+                style={{ borderColor: 'rgba(53,94,59,0.5)', color: '#355E3B', background: 'rgba(53,94,59,0.07)' }}
+              >
+                Staff Login
+              </span>
+            </div>
+
+            {/* Mobile hamburger placeholder */}
+            <div className="md:hidden p-2.5 rounded-full bg-primary-foreground/10 text-accent">
+              <svg
+                width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
+                aria-hidden="true"
+                className="block"
+              >
+                <line x1="3" y1="8" x2="21" y2="8" /><line x1="3" y1="16" x2="21" y2="16" />
+              </svg>
+            </div>
+          </div>
+        )}
       </nav>
 
       {/* Mobile Menu — Slide-in drawer from right */}
