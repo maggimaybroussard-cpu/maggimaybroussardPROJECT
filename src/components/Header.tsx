@@ -86,7 +86,6 @@ export default function Header({ initialClaims }: HeaderProps) {
 
   const isHeroPage = pathname === '/' || pathname === '/homepage';
 
-  // Mark as mounted to enable client-side dynamic classes
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -98,15 +97,10 @@ export default function Header({ initialClaims }: HeaderProps) {
     if (!nav) return;
 
     const updateNavClass = () => {
-      const isScrolledNow = scrolled;
-      const isHeroNow = isHeroPage;
-
-      // Remove all dynamic classes first
       nav.classList.remove('nav-scrolled', 'py-3', 'py-4', 'md:py-8', 'bg-background', 'border-b', 'border-border');
-
-      if (isScrolledNow) {
+      if (scrolled) {
         nav.classList.add('nav-scrolled', 'py-3');
-      } else if (isHeroNow) {
+      } else if (isHeroPage) {
         nav.classList.add('py-4', 'md:py-8');
       } else {
         nav.classList.add('py-4', 'md:py-8', 'bg-background', 'border-b', 'border-border');
@@ -135,7 +129,6 @@ export default function Header({ initialClaims }: HeaderProps) {
       document.body.style.overflow = '';
       hamburgerRef.current?.focus();
     }
-    // Update aria attributes imperatively to avoid hydration mismatch
     if (hamburgerRef.current) {
       hamburgerRef.current.setAttribute('aria-label', menuOpen ? 'Close navigation menu' : 'Open navigation menu');
       hamburgerRef.current.setAttribute('aria-expanded', String(menuOpen));
@@ -182,264 +175,172 @@ export default function Header({ initialClaims }: HeaderProps) {
         className="fixed top-0 left-0 w-full z-50 transition-all duration-500 py-4 md:py-8"
         suppressHydrationWarning
       >
-        {mounted ? (
-          /* Real client-only UI — rendered after hydration */
-          <div className="max-w-7xl mx-auto px-4 md:px-10 flex items-center justify-between gap-4" suppressHydrationWarning>
-            {/* Logo */}
-            <div className="flex items-center gap-3 group shrink-0">
-              {/* Profile picture — navigates to Admin */}
-              <div className="relative">
-                <Link
-                  href="/admin"
-                  className="focus:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-full"
-                  aria-label="Go to Admin"
-                >
-                  <AppLogo
-                    size={36}
-                    className="transition-transform duration-300 group-hover:scale-105 cursor-pointer"
-                  />
-                </Link>
-              </div>
-
-              <Link href="/" className="flex items-center gap-2.5" aria-label="Broussard Legal Services — Home">
-                <span
-                  className="font-serif text-lg tracking-tight transition-colors duration-300"
-                  style={{ color: '#355E3B' }}
-                >
-                  Broussard Legal Services
-                </span>
+        <div className="max-w-7xl mx-auto px-4 md:px-10 flex items-center justify-between gap-4">
+          {/* Logo */}
+          <div className="flex items-center gap-3 group shrink-0">
+            <div className="relative">
+              <Link
+                href="/admin"
+                className="focus:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-full"
+                aria-label="Go to Admin"
+              >
+                <AppLogo
+                  size={36}
+                  className="transition-transform duration-300 group-hover:scale-105 cursor-pointer"
+                />
               </Link>
             </div>
 
-            {/* Desktop Nav */}
-            <div className="hidden lg:flex items-center gap-0.5 flex-1 justify-center" role="list">
-              {navLinks?.map((link) => (
-                <Link
-                  key={link?.href}
-                  href={link?.href}
-                  role="listitem"
-                  aria-current={
-                    pathname === link?.href || (link?.href === '/' && (pathname === '/' || pathname === '/homepage'))
-                      ? 'page'
-                      : undefined
-                  }
-                  className={`px-3 py-2 rounded-full text-[11px] font-semibold uppercase tracking-widest transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent whitespace-nowrap ${
-                    pathname === link?.href || (link?.href === '/' && (pathname === '/' || pathname === '/homepage'))
-                      ? 'bg-[#8B3A45] text-white' :'text-primary-foreground/80 hover:text-white hover:bg-accent/80'
-                  }`}
-                >
-                  {link?.label}
-                </Link>
-              ))}
-            </div>
+            <Link href="/" className="flex items-center gap-2.5" aria-label="Broussard Legal Services — Home">
+              <span
+                className="font-serif text-lg tracking-tight transition-colors duration-300"
+                style={{ color: '#355E3B' }}
+              >
+                Broussard Legal Services
+              </span>
+            </Link>
+          </div>
 
-            {/* Desktop CTAs */}
-            <div className="hidden lg:flex items-center gap-2 shrink-0">
-              {/* Hire Me */}
+          {/* Desktop Nav */}
+          <div className="hidden lg:flex items-center gap-0.5 flex-1 justify-center" role="list">
+            {navLinks?.map((link) => (
               <Link
-                href="/contact"
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-[11px] font-semibold uppercase tracking-widest transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent bg-accent text-accent-foreground hover:opacity-90"
+                key={link?.href}
+                href={link?.href}
+                role="listitem"
+                aria-current={
+                  pathname === link?.href || (link?.href === '/' && (pathname === '/' || pathname === '/homepage'))
+                    ? 'page'
+                    : undefined
+                }
+                className={`px-3 py-2 rounded-full text-[11px] font-semibold uppercase tracking-widest transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent whitespace-nowrap ${
+                  pathname === link?.href || (link?.href === '/' && (pathname === '/' || pathname === '/homepage'))
+                    ? 'bg-[#8B3A45] text-white' :'text-primary-foreground/80 hover:text-white hover:bg-accent/80'
+                }`}
               >
-                Hire Me
+                {link?.label}
               </Link>
+            ))}
+          </div>
 
-              {/* Pay Now */}
-              <Link
-                href="/checkout"
-                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-[11px] font-semibold uppercase tracking-widest transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent border"
-                style={{
-                  borderColor: 'rgba(139,96,32,0.6)',
-                  color: '#6B4A10',
-                  background: 'rgba(139,96,32,0.08)',
-                }}
-              >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
-                  <line x1="1" y1="10" x2="23" y2="10" />
-                </svg>
-                Pay Now
-              </Link>
-
-              {/* Client Login */}
-              <Link
-                href="/portal/login"
-                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-[11px] font-semibold uppercase tracking-widest transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent border"
-                style={{
-                  borderColor: 'rgba(53,94,59,0.5)',
-                  color: '#355E3B',
-                  background: 'rgba(53,94,59,0.07)',
-                }}
-              >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
-                  <polyline points="10 17 15 12 10 7" />
-                  <line x1="15" y1="12" x2="3" y2="12" />
-                </svg>
-                Portal
-              </Link>
-
-              {/* Staff Login */}
-              <a
-                href="https://legal-assistant-ai-maggimaybroussa.replit.app"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-[11px] font-semibold uppercase tracking-widest transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent border"
-                style={{
-                  borderColor: 'rgba(53,94,59,0.5)',
-                  color: '#355E3B',
-                  background: 'rgba(53,94,59,0.07)',
-                }}
-              >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <circle cx="12" cy="8" r="4" />
-                  <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
-                </svg>
-                Staff Login
-              </a>
-            </div>
-
-            {/* Tablet Nav (md only) — simplified */}
-            <div className="hidden md:flex lg:hidden items-center gap-2">
-              <Link
-                href="/contact"
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-[11px] font-semibold uppercase tracking-widest transition-all duration-300 bg-accent text-accent-foreground hover:opacity-90"
-              >
-                Hire Me
-              </Link>
-              <Link
-                href="/portal/login"
-                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-[11px] font-semibold uppercase tracking-widest transition-all duration-300 border"
-                style={{ borderColor: 'rgba(53,94,59,0.5)', color: '#355E3B', background: 'rgba(53,94,59,0.07)' }}
-              >
-                Portal
-              </Link>
-              <a
-                href="https://legal-assistant-ai-maggimaybroussa.replit.app"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-[11px] font-semibold uppercase tracking-widest transition-all duration-300 border"
-                style={{ borderColor: 'rgba(53,94,59,0.5)', color: '#355E3B', background: 'rgba(53,94,59,0.07)' }}
-              >
-                Staff Login
-              </a>
-            </div>
-
-            {/* Mobile Hamburger */}
-            <button
-              ref={hamburgerRef}
-              onClick={() => setMenuOpen(!menuOpen)}
-              aria-label="Open navigation menu"
-              aria-expanded={false}
-              aria-controls="mobile-nav-menu"
-              className="md:hidden p-2.5 rounded-full transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent bg-primary-foreground/10 text-accent"
-              suppressHydrationWarning
+          {/* Desktop CTAs */}
+          <div className="hidden lg:flex items-center gap-2 shrink-0">
+            <Link
+              href="/contact"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-[11px] font-semibold uppercase tracking-widest transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent bg-accent text-accent-foreground hover:opacity-90"
             >
-              {/* Always render both icons; toggle visibility after mount to avoid hydration mismatch */}
-              <svg
-                width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
-                aria-hidden="true"
-                className={menuOpen ? 'hidden' : 'block'}
-              >
-                <line x1="3" y1="8" x2="21" y2="8" /><line x1="3" y1="16" x2="21" y2="16" />
+              Hire Me
+            </Link>
+
+            <Link
+              href="/checkout"
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-[11px] font-semibold uppercase tracking-widest transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent border"
+              style={{
+                borderColor: 'rgba(139,96,32,0.6)',
+                color: '#6B4A10',
+                background: 'rgba(139,96,32,0.08)',
+              }}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
+                <line x1="1" y1="10" x2="23" y2="10" />
               </svg>
-              <svg
-                width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
-                aria-hidden="true"
-                className={menuOpen ? 'block' : 'hidden'}
-              >
-                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+              Pay Now
+            </Link>
+
+            <Link
+              href="/portal/login"
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-[11px] font-semibold uppercase tracking-widest transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent border"
+              style={{
+                borderColor: 'rgba(53,94,59,0.5)',
+                color: '#355E3B',
+                background: 'rgba(53,94,59,0.07)',
+              }}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+                <polyline points="10 17 15 12 10 7" />
+                <line x1="15" y1="12" x2="3" y2="12" />
               </svg>
-            </button>
+              Portal
+            </Link>
+
+            <a
+              href="https://legal-assistant-ai-maggimaybroussa.replit.app"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-[11px] font-semibold uppercase tracking-widest transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent border"
+              style={{
+                borderColor: 'rgba(53,94,59,0.5)',
+                color: '#355E3B',
+                background: 'rgba(53,94,59,0.07)',
+              }}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="12" cy="8" r="4" />
+                <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+              </svg>
+              Staff Login
+            </a>
           </div>
-        ) : (
-          /* Deterministic SSR placeholder — same structure/nesting/classes, no client-only values */
-          <div className="max-w-7xl mx-auto px-4 md:px-10 flex items-center justify-between gap-4">
-            {/* Logo placeholder */}
-            <div className="flex items-center gap-3 shrink-0">
-              <div className="relative">
-                <div className="w-9 h-9 rounded-full" />
-              </div>
-              <div className="flex items-center gap-2.5">
-                <span
-                  className="font-serif text-lg tracking-tight"
-                  style={{ color: '#355E3B' }}
-                >
-                  Broussard Legal Services
-                </span>
-              </div>
-            </div>
 
-            {/* Desktop nav placeholder */}
-            <div className="hidden lg:flex items-center gap-0.5 flex-1 justify-center" role="list">
-              {navLinks?.map((link) => (
-                <span
-                  key={link?.href}
-                  className="px-3 py-2 rounded-full text-[11px] font-semibold uppercase tracking-widest text-primary-foreground/80 whitespace-nowrap"
-                >
-                  {link?.label}
-                </span>
-              ))}
-            </div>
-
-            {/* Desktop CTAs placeholder */}
-            <div className="hidden lg:flex items-center gap-2 shrink-0">
-              <span className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-[11px] font-semibold uppercase tracking-widest bg-accent text-accent-foreground">
-                Hire Me
-              </span>
-              <span
-                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-[11px] font-semibold uppercase tracking-widest border"
-                style={{ borderColor: 'rgba(139,96,32,0.6)', color: '#6B4A10', background: 'rgba(139,96,32,0.08)' }}
-              >
-                Pay Now
-              </span>
-              <span
-                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-[11px] font-semibold uppercase tracking-widest border"
-                style={{ borderColor: 'rgba(53,94,59,0.5)', color: '#355E3B', background: 'rgba(53,94,59,0.07)' }}
-              >
-                Portal
-              </span>
-              <span
-                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-[11px] font-semibold uppercase tracking-widest border"
-                style={{ borderColor: 'rgba(53,94,59,0.5)', color: '#355E3B', background: 'rgba(53,94,59,0.07)' }}
-              >
-                Staff Login
-              </span>
-            </div>
-
-            {/* Tablet placeholder */}
-            <div className="hidden md:flex lg:hidden items-center gap-2">
-              <span className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-[11px] font-semibold uppercase tracking-widest bg-accent text-accent-foreground">
-                Hire Me
-              </span>
-              <span
-                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-[11px] font-semibold uppercase tracking-widest border"
-                style={{ borderColor: 'rgba(53,94,59,0.5)', color: '#355E3B', background: 'rgba(53,94,59,0.07)' }}
-              >
-                Portal
-              </span>
-              <span
-                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-[11px] font-semibold uppercase tracking-widest border"
-                style={{ borderColor: 'rgba(53,94,59,0.5)', color: '#355E3B', background: 'rgba(53,94,59,0.07)' }}
-              >
-                Staff Login
-              </span>
-            </div>
-
-            {/* Mobile hamburger placeholder */}
-            <div className="md:hidden p-2.5 rounded-full bg-primary-foreground/10 text-accent">
-              <svg
-                width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
-                aria-hidden="true"
-                className="block"
-              >
-                <line x1="3" y1="8" x2="21" y2="8" /><line x1="3" y1="16" x2="21" y2="16" />
-              </svg>
-            </div>
+          {/* Tablet Nav (md only) — simplified */}
+          <div className="hidden md:flex lg:hidden items-center gap-2">
+            <Link
+              href="/contact"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-[11px] font-semibold uppercase tracking-widest transition-all duration-300 bg-accent text-accent-foreground hover:opacity-90"
+            >
+              Hire Me
+            </Link>
+            <Link
+              href="/portal/login"
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-[11px] font-semibold uppercase tracking-widest transition-all duration-300 border"
+              style={{ borderColor: 'rgba(53,94,59,0.5)', color: '#355E3B', background: 'rgba(53,94,59,0.07)' }}
+            >
+              Portal
+            </Link>
+            <a
+              href="https://legal-assistant-ai-maggimaybroussa.replit.app"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-[11px] font-semibold uppercase tracking-widest transition-all duration-300 border"
+              style={{ borderColor: 'rgba(53,94,59,0.5)', color: '#355E3B', background: 'rgba(53,94,59,0.07)' }}
+            >
+              Staff Login
+            </a>
           </div>
-        )}
+
+          {/* Mobile Hamburger */}
+          <button
+            ref={hamburgerRef}
+            onClick={() => setMenuOpen(!menuOpen)}
+            aria-label="Open navigation menu"
+            aria-expanded={false}
+            aria-controls="mobile-nav-menu"
+            className="md:hidden p-2.5 rounded-full transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent bg-primary-foreground/10 text-accent"
+            suppressHydrationWarning
+          >
+            <svg
+              width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
+              aria-hidden="true"
+              suppressHydrationWarning
+              className={mounted ? (menuOpen ? 'hidden' : 'block') : 'block'}
+            >
+              <line x1="3" y1="8" x2="21" y2="8" /><line x1="3" y1="16" x2="21" y2="16" />
+            </svg>
+            <svg
+              width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
+              aria-hidden="true"
+              suppressHydrationWarning
+              className={mounted ? (menuOpen ? 'block' : 'hidden') : 'hidden'}
+            >
+              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
       </nav>
 
-      {/* Mobile Menu — Slide-in drawer from right */}
+      {/* Mobile Menu backdrop */}
       {mounted && menuOpen && (
         <div
           className="fixed inset-0 z-40 md:hidden"
