@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { updateSession } from '@/lib/supabase/proxy';
 
 // ── Simple in-memory rate limiter for AI chat route ───────────────────────────
 const AI_RATE_LIMIT_WINDOW_MS = 60_000;
@@ -87,11 +88,15 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  let supabaseResponse = NextResponse.next({ request });
+  // Run updateSession proxy to keep auth tokens in sync for SSR
+  const proxyResponse = await updateSession(request);
+
+  // Build a Supabase client using the refreshed request cookies for route protection
+  let supabaseResponse = proxyResponse;
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
         getAll() {

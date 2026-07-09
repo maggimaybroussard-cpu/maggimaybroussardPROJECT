@@ -67,10 +67,18 @@ const mobileNavGroups = [
   },
 ];
 
-export default function Header() {
+interface HeaderProps {
+  initialClaims?: Record<string, unknown> | null;
+}
+
+export default function Header({ initialClaims }: HeaderProps) {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  // SSR-consistent auth state seeded from server-fetched claims
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(
+    initialClaims != null
+  );
   const navRef = useRef<HTMLElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const hamburgerRef = useRef<HTMLButtonElement>(null);
