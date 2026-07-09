@@ -83,6 +83,8 @@ export default function Header() {
     setMounted(true);
   }, []);
 
+  if (!mounted) return null;
+
   // Apply dynamic nav classes imperatively after mount to avoid SSR/CSR mismatch
   useEffect(() => {
     if (!mounted) return;
