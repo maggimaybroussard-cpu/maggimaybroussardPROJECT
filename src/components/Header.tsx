@@ -74,7 +74,6 @@ interface HeaderProps {
 export default function Header({ initialClaims }: HeaderProps) {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
   // SSR-consistent auth state seeded from server-fetched claims
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(
     initialClaims != null
@@ -86,13 +85,8 @@ export default function Header({ initialClaims }: HeaderProps) {
 
   const isHeroPage = pathname === '/' || pathname === '/homepage';
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
   // Apply dynamic nav classes imperatively after mount to avoid SSR/CSR mismatch
   useEffect(() => {
-    if (!mounted) return;
     const nav = navRef.current;
     if (!nav) return;
 
@@ -108,7 +102,7 @@ export default function Header({ initialClaims }: HeaderProps) {
     };
 
     updateNavClass();
-  }, [scrolled, isHeroPage, mounted]);
+  }, [scrolled, isHeroPage]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -324,7 +318,7 @@ export default function Header({ initialClaims }: HeaderProps) {
               width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
               aria-hidden="true"
               suppressHydrationWarning
-              className={mounted ? (menuOpen ? 'hidden' : 'block') : 'block'}
+              className={menuOpen ? 'hidden' : 'block'}
             >
               <line x1="3" y1="8" x2="21" y2="8" /><line x1="3" y1="16" x2="21" y2="16" />
             </svg>
@@ -332,7 +326,7 @@ export default function Header({ initialClaims }: HeaderProps) {
               width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
               aria-hidden="true"
               suppressHydrationWarning
-              className={mounted ? (menuOpen ? 'block' : 'hidden') : 'hidden'}
+              className={menuOpen ? 'block' : 'hidden'}
             >
               <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
             </svg>
@@ -341,14 +335,13 @@ export default function Header({ initialClaims }: HeaderProps) {
       </nav>
 
       {/* Mobile Menu backdrop */}
-      {mounted && menuOpen && (
-        <div
-          className="fixed inset-0 z-40 md:hidden"
-          onClick={() => setMenuOpen(false)}
-          aria-hidden="true"
-          style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}
-        />
-      )}
+      <div
+        className={`fixed inset-0 z-40 md:hidden transition-opacity duration-300 ${menuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+        onClick={() => setMenuOpen(false)}
+        aria-hidden="true"
+        style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}
+        suppressHydrationWarning
+      />
       <div
         id="mobile-nav-menu"
         ref={mobileMenuRef}
@@ -356,7 +349,7 @@ export default function Header({ initialClaims }: HeaderProps) {
         aria-modal="true"
         aria-label="Navigation menu"
         className={`fixed top-0 right-0 h-full w-[85vw] max-w-[340px] z-50 md:hidden flex flex-col bg-background border-l border-border shadow-2xl transition-transform duration-300 ease-out ${
-          mounted && menuOpen ? 'translate-x-0' : 'translate-x-full'
+          menuOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
         suppressHydrationWarning
       >
