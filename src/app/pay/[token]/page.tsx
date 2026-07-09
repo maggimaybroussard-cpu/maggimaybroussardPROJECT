@@ -49,6 +49,14 @@ export default function PayInvoicePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [redirecting, setRedirecting] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Read URL search params client-side only to avoid hydration mismatch
+    const sp = new URLSearchParams(window.location.search);
+    const status = sp.get('payment');
+    if (status) setPaymentStatus(status);
+  }, []);
 
   useEffect(() => {
     if (!token) {
@@ -188,35 +196,32 @@ export default function PayInvoicePage() {
   const firstName = clientInfo?.name?.split(' ')[0] ?? 'there';
   const isOverdue = invoice.status === 'overdue';
 
-  // Check for Stripe return params
-  if (typeof window !== 'undefined') {
-    const sp = new URLSearchParams(window.location.search);
-    if (sp.get('payment') === 'success') {
-      return (
-        <div className="min-h-screen flex items-center justify-center px-4" style={{ background: '#EDE8E0' }}>
-          <div className="max-w-md w-full rounded-2xl border p-8 text-center space-y-5" style={{ background: '#FAF7F2', borderColor: '#D9D0C5' }}>
-            <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto" style={{ background: '#EAF2EB' }}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#355E3B" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-            </div>
-            <div>
-              <h1 className="text-xl font-serif font-semibold mb-2" style={{ color: '#2C1F14' }}>Payment Received</h1>
-              <p className="text-sm font-serif leading-relaxed" style={{ color: '#7A6B5D' }}>
-                Thank you, {firstName}. Your payment for Invoice {invoice.invoice_number} has been processed. A receipt will be emailed to you shortly.
-              </p>
-            </div>
-            <Link
-              href="/portal/billing"
-              className="block w-full py-3 px-6 rounded-full text-sm font-semibold uppercase tracking-widest text-center transition-all hover:opacity-90"
-              style={{ background: '#355E3B', color: '#fff' }}
-            >
-              View Billing Portal
-            </Link>
+  // Check for Stripe return params — now driven by state, not window in render
+  if (paymentStatus === 'success' && invoice) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4" style={{ background: '#EDE8E0' }}>
+        <div className="max-w-md w-full rounded-2xl border p-8 text-center space-y-5" style={{ background: '#FAF7F2', borderColor: '#D9D0C5' }}>
+          <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto" style={{ background: '#EAF2EB' }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#355E3B" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
           </div>
+          <div>
+            <h1 className="text-xl font-serif font-semibold mb-2" style={{ color: '#2C1F14' }}>Payment Received</h1>
+            <p className="text-sm font-serif leading-relaxed" style={{ color: '#7A6B5D' }}>
+              Thank you, {firstName}. Your payment for Invoice {invoice.invoice_number} has been processed. A receipt will be emailed to you shortly.
+            </p>
+          </div>
+          <Link
+            href="/portal/billing"
+            className="block w-full py-3 px-6 rounded-full text-sm font-semibold uppercase tracking-widest text-center transition-all hover:opacity-90"
+            style={{ background: '#355E3B', color: '#fff' }}
+          >
+            View Billing Portal
+          </Link>
         </div>
-      );
-    }
+      </div>
+    );
   }
 
   return (
