@@ -69,7 +69,7 @@ const mobileNavGroups = [
 export default function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const navRef = useRef<HTMLElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const hamburgerRef = useRef<HTMLButtonElement>(null);
   const pathname = usePathname();
@@ -77,8 +77,17 @@ export default function Header() {
   const isHeroPage = pathname === '/' || pathname === '/homepage';
 
   useEffect(() => {
-    setMounted(true);
-  }, []);
+    const nav = navRef.current;
+    if (!nav) return;
+    nav.classList.remove('nav-scrolled', 'py-3', 'py-4', 'md:py-8', 'bg-background', 'border-b', 'border-border');
+    if (scrolled) {
+      nav.classList.add('nav-scrolled', 'py-3');
+    } else if (isHeroPage) {
+      nav.classList.add('py-4', 'md:py-8');
+    } else {
+      nav.classList.add('py-4', 'md:py-8', 'bg-background', 'border-b', 'border-border');
+    }
+  }, [scrolled, isHeroPage]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -132,18 +141,12 @@ export default function Header() {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [menuOpen]);
 
-  const navClassName = (() => {
-    const base = 'fixed top-0 left-0 w-full z-50 transition-all duration-500';
-    if (scrolled) return `${base} nav-scrolled py-3`;
-    if (isHeroPage) return `${base} py-4 md:py-8`;
-    return `${base} py-4 md:py-8 bg-background border-b border-border`;
-  })();
-
   return (
     <>
       <nav
+        ref={navRef}
         aria-label="Main navigation"
-        className={navClassName}
+        className="fixed top-0 left-0 w-full z-50 transition-all duration-500 py-4 md:py-8"
       >
         <div className="max-w-7xl mx-auto px-4 md:px-10 flex items-center justify-between gap-4">
           {/* Logo */}
