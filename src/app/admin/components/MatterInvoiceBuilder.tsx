@@ -317,6 +317,7 @@ export default function MatterInvoiceBuilder() {
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [markingPaid, setMarkingPaid] = useState<string | null>(null);
   const [matterSearch, setMatterSearch] = useState('');
+  const [creatingCheckout, setCreatingCheckout] = useState<string | null>(null);
 
   // Invoice form state
   const [invoiceNumber, setInvoiceNumber] = useState(generateInvoiceNumber);
@@ -859,6 +860,43 @@ export default function MatterInvoiceBuilder() {
       setError(e instanceof Error ? e.message : 'Failed to update payment status');
     } finally {
       setMarkingPaid(null);
+    }
+  }
+
+  // Create Stripe Checkout Session for direct payment
+  async function handleCreateCheckout(invoice: Invoice) {
+    if (!selectedMatter) return;
+    setCreatingCheckout(invoice.id);
+    setError(null);
+    try {
+      const outstanding = invoice.amount - invoice.amount_paid;
+      if (outstanding <= 0) {
+        setError('This invoice has already been paid in full.');
+        return;
+      }
+
+      const res = await fetch('/api/invoices/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          invoice_id: invoice.id,
+          amount: outstanding,
+          currency: 'usd',
+          invoice_number: invoice.invoice_number,
+          success_url: `${window.location.origin}/payment-success?invoice_id=${invoice.id}&invoice_number=${encodeURIComponent(invoice.invoice_number)}&amount=${outstanding}`,
+          cancel_url: window.location.href,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to create payment link');
+      if (data.url) {
+        window.open(data.url, '_blank');
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to create Stripe checkout session');
+    } finally {
+      setCreatingCheckout(null);
     }
   }
 
@@ -1468,6 +1506,25 @@ export default function MatterInvoiceBuilder() {
                         {/* Mark paid */}
                         {inv.payment_status !== 'paid' && (
                           <>
+                            {/* Pay Now via Stripe Checkout */}
+                            <button
+                              onClick={() => handleCreateCheckout(inv)}
+                              disabled={creatingCheckout === inv.id}
+                              className="px-3 py-1.5 text-xs font-semibold border border-violet-200 rounded-lg bg-violet-50 text-violet-700 hover:bg-violet-100 disabled:opacity-50 transition-colors flex items-center gap-1.5"
+                              title="Generate a Stripe Checkout link for direct client payment"
+                            >
+                              {creatingCheckout === inv.id ? (
+                                <>
+                                  <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                                  Generating…
+                                </>
+                              ) : (
+                                <>
+                                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                                  Pay Now
+                                </>
+                              )}
+                            </button>
                             <button
                               onClick={() => handleMarkPayment(inv, 'paid')}
                               disabled={markingPaid === inv.id}
