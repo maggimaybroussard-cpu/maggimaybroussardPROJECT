@@ -69,20 +69,16 @@ const mobileNavGroups = [
 export default function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const hamburgerRef = useRef<HTMLButtonElement>(null);
   const pathname = usePathname();
 
   const isHeroPage = pathname === '/' || pathname === '/homepage';
 
-  // Derive nav className from state — no DOM mutation needed
-  const navClassName = [
-    'fixed top-0 left-0 w-full z-50 transition-all duration-500',
-    scrolled
-      ? 'nav-scrolled py-3'
-      : isHeroPage
-      ? 'py-4 md:py-8' :'py-4 md:py-8 bg-background border-b border-border',
-  ].join(' ');
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -135,6 +131,16 @@ export default function Header() {
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [menuOpen]);
+
+  // Always render the same static className on server and initial client render.
+  // Dynamic scroll/hero classes are applied only after mount to avoid hydration mismatch.
+  const navClassName = [
+    'fixed top-0 left-0 w-full z-50 transition-all duration-500',
+    mounted && scrolled
+      ? 'nav-scrolled py-3'
+      : mounted && isHeroPage
+      ? 'py-4 md:py-8' :'py-4 md:py-8',
+  ].join(' ');
 
   return (
     <>
@@ -231,32 +237,6 @@ export default function Header() {
                 <circle cx="12" cy="8" r="4" />
                 <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
               </svg>
-              Staff Login
-            </a>
-          </div>
-
-          {/* Tablet Nav (md only) */}
-          <div className="hidden md:flex lg:hidden items-center gap-2">
-            <Link
-              href="/contact"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-[11px] font-semibold uppercase tracking-widest transition-all duration-300 bg-accent text-accent-foreground hover:opacity-90"
-            >
-              Hire Me
-            </Link>
-            <Link
-              href="/portal/login"
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-[11px] font-semibold uppercase tracking-widest transition-all duration-300 border"
-              style={{ borderColor: 'rgba(53,94,59,0.5)', color: '#355E3B', background: 'rgba(53,94,59,0.07)' }}
-            >
-              Portal
-            </Link>
-            <a
-              href="https://legal-assistant-ai-maggimaybroussa.replit.app"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-[11px] font-semibold uppercase tracking-widest transition-all duration-300 border"
-              style={{ borderColor: 'rgba(53,94,59,0.5)', color: '#355E3B', background: 'rgba(53,94,59,0.07)' }}
-            >
               Staff Login
             </a>
           </div>
