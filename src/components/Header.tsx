@@ -68,6 +68,7 @@ const mobileNavGroups = [
 export default function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const navRef = useRef<HTMLElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const hamburgerRef = useRef<HTMLButtonElement>(null);
@@ -75,8 +76,14 @@ export default function Header() {
 
   const isHeroPage = pathname === '/' || pathname === '/homepage';
 
+  // Mark as mounted to enable client-side dynamic classes
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   // Apply dynamic nav classes imperatively after mount to avoid SSR/CSR mismatch
   useEffect(() => {
+    if (!mounted) return;
     const nav = navRef.current;
     if (!nav) return;
 
@@ -97,7 +104,7 @@ export default function Header() {
     };
 
     updateNavClass();
-  }, [scrolled, isHeroPage]);
+  }, [scrolled, isHeroPage, mounted]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -157,7 +164,7 @@ export default function Header() {
       <nav
         ref={navRef}
         aria-label="Main navigation"
-        className="fixed top-0 left-0 w-full z-50 transition-all duration-500 py-4 md:py-8"
+        className="fixed top-0 left-0 w-full z-50 transition-all duration-500"
         suppressHydrationWarning
       >
         <div className="max-w-7xl mx-auto px-4 md:px-10 flex items-center justify-between gap-4">
