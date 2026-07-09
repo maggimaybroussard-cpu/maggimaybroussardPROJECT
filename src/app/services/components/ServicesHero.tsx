@@ -61,8 +61,8 @@ export default function ServicesHero() {
             {/* Right — stat pills */}
             <div className="flex flex-col gap-4 lg:items-end">
               {[
-              { value: '10+', label: 'Practice Areas Covered' },
-              { value: '48hr', label: 'Average Turnaround' },
+              { value: '5+', label: 'Practice Areas Covered' },
+              { value: '48hr', label: 'Standard Turnaround' },
               { value: '100%', label: 'Remote & Nationwide' },
               { value: 'NDA', label: 'Strict Confidentiality' }]?.
               map((stat) =>

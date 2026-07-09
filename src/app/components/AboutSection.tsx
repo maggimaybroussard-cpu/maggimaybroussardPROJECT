@@ -5,8 +5,8 @@ import Link from 'next/link';
 import AppImage from '@/components/ui/AppImage';
 
 const stats = [
-{ number: '4+', label: 'Years Experience' },
-{ number: 'All 50', label: 'States — Remote' },
+{ number: '3+', label: 'Years Experience' },
+{ number: 'Remote', label: 'Nationwide Service' },
 { number: '100%', label: 'Remote & Flexible' },
 { number: 'Flat-Rate', label: 'Transparent Pricing' }];
 
@@ -81,16 +81,16 @@ export default function AboutSection() {
             <div suppressHydrationWarning className="flex flex-col gap-4 md:gap-5">
               <div suppressHydrationWarning className="scroll-reveal-hidden" style={{ transitionDelay: '0.1s' }}>
                 <p suppressHydrationWarning className="text-base md:text-[17px] text-muted-foreground leading-[1.8] font-light">
-                  With over 4+ years of experience supporting attorneys and law firms nationwide,
-                  I bring meticulous attention to detail, deep legal knowledge, and unwavering
+                  With a background supporting attorneys and law firms across multiple practice areas,
+                  I bring meticulous attention to detail, solid legal knowledge, and unwavering
                   professionalism to every engagement.
                 </p>
               </div>
               <div suppressHydrationWarning className="scroll-reveal-hidden" style={{ transitionDelay: '0.18s' }}>
                 <p suppressHydrationWarning className="text-base text-muted-foreground leading-[1.8] font-light">
                   As a contracted, remote legal services provider, I offer flexible support tailored to your
-                  firm&apos;s needs — from complex litigation assistance to routine document management —
-                  without the overhead of a full-time hire. Based in Louisiana, available everywhere.
+                  firm&apos;s needs — from litigation assistance to document management —
+                  without the overhead of a full-time hire. Based in Louisiana, available remotely.
                 </p>
               </div>
             </div>
