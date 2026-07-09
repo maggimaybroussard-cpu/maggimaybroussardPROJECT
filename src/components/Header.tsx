@@ -169,8 +169,7 @@ export default function Header() {
         className="fixed top-0 left-0 w-full z-50 transition-all duration-500 py-4 md:py-8"
         suppressHydrationWarning
       >
-        {mounted ? (
-          <div className="max-w-7xl mx-auto px-4 md:px-10 flex items-center justify-between gap-4" suppressHydrationWarning>
+        <div className="max-w-7xl mx-auto px-4 md:px-10 flex items-center justify-between gap-4" suppressHydrationWarning>
             {/* Logo */}
             <div className="flex items-center gap-3 group shrink-0">
               {/* Profile picture — navigates to Admin */}
@@ -330,9 +329,6 @@ export default function Header() {
               )}
             </button>
           </div>
-        ) : (
-          <div className="max-w-7xl mx-auto px-4 md:px-10 flex items-center justify-between gap-4" aria-hidden="true" />
-        )}
       </nav>
 
       {/* Mobile Menu — Slide-in drawer from right */}
