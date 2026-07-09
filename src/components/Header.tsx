@@ -134,7 +134,6 @@ export default function Header() {
 
   const navClassName = (() => {
     const base = 'fixed top-0 left-0 w-full z-50 transition-all duration-500';
-    if (!mounted) return `${base} py-4 md:py-8`;
     if (scrolled) return `${base} nav-scrolled py-3`;
     if (isHeroPage) return `${base} py-4 md:py-8`;
     return `${base} py-4 md:py-8 bg-background border-b border-border`;
