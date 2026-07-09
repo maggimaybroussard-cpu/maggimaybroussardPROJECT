@@ -202,7 +202,7 @@
   /* INP optimization: use content-visibility for below-fold sections */
   .section-below-fold {
     content-visibility: auto;
-    contain-intrinsic-size: 0 500px;
+    contain-intrinsic-size: 0 600px;
   }
 
   /* Performance: reduce paint complexity for fixed overlays */
@@ -227,6 +227,11 @@
 
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
+  }
+
+  /* Performance: critical CSS variables for above-fold paint */
+  .critical-above-fold {
+    contain: layout style;
   }
 }
 

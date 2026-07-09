@@ -17,6 +17,7 @@ const playfairDisplay = Playfair_Display({
   variable: '--font-serif',
   display: 'swap',
   preload: true,
+  adjustFontFallback: true,
 });
 
 const raleway = Raleway({
@@ -25,6 +26,7 @@ const raleway = Raleway({
   variable: '--font-sans',
   display: 'swap',
   preload: true,
+  adjustFontFallback: true,
 });
 
 export const viewport: Viewport = {
@@ -140,6 +142,14 @@ export default function RootLayout({
       <head>
         <meta charSet="utf-8" />
         <meta name="theme-color" content="#1B2A4A" />
+        {/* Critical above-the-fold CSS inlined to eliminate render-blocking */}
+        <style dangerouslySetInnerHTML={{ __html: `
+          *,*::before,*::after{box-sizing:border-box}
+          html{scroll-behavior:smooth}
+          body{margin:0;background-color:#F9F0EC;color:#1B2A4A;font-family:'Raleway',sans-serif;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+          h1,h2,h3,h4,h5,h6,p{margin:0}
+          :root{--background:#F9F0EC;--foreground:#1B2A4A;--primary:#1B2A4A;--primary-foreground:#F5ECD7;--accent:#B76E79;--font-sans:'Raleway',sans-serif;--font-serif:'Playfair Display',serif}
+        ` }} />
         {/* Preconnect to Google Fonts to eliminate DNS/TCP render-blocking delay */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
