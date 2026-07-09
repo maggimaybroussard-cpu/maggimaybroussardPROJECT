@@ -138,7 +138,7 @@ export default function RootLayout({
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
 
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className={`${playfairDisplay.variable} ${raleway.variable}`}>
       <head>
         <meta charSet="utf-8" />
         <meta name="theme-color" content="#1B2A4A" />
@@ -150,9 +150,8 @@ export default function RootLayout({
           h1,h2,h3,h4,h5,h6,p{margin:0}
           :root{--background:#F9F0EC;--foreground:#1B2A4A;--primary:#1B2A4A;--primary-foreground:#F5ECD7;--accent:#B76E79;--font-sans:'Raleway',sans-serif;--font-serif:'Playfair Display',serif}
         ` }} />
-        {/* Preconnect to Google Fonts to eliminate DNS/TCP render-blocking delay */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" crossOrigin="anonymous" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        {/* next/font/google automatically injects preconnect for fonts.googleapis.com and fonts.gstatic.com */}
+        {/* Manual preconnects removed to avoid duplicate render-blocking resource hints */}
         {/* Preconnect to Stripe — warms TCP/TLS so Stripe.js loads faster when payment step is reached */}
         <link rel="preconnect" href="https://js.stripe.com" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://js.stripe.com" />
