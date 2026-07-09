@@ -20,6 +20,7 @@ const navLinks = [
   { label: 'Retainer', href: '/retainer-contract' },
   { label: 'Pay Retainer', href: '/retainer-payment' },
   { label: 'Schedule', href: '/schedule' },
+  { label: 'Strategy Session', href: '/strategy-session' },
   { label: 'Book Now', href: '/prospect-booking' },
   { label: 'Book Appointment', href: '/book-appointment' },
   { label: 'Contact', href: '/contact' },
@@ -43,6 +44,7 @@ const mobileNavGroups = [
   {
     label: 'Work With Me',
     links: [
+      { label: 'Strategy Session', href: '/strategy-session' },
       { label: 'Book Consultation', href: '/prospect-booking' },
       { label: 'Schedule', href: '/schedule' },
       { label: 'Book Appointment', href: '/book-appointment' },
