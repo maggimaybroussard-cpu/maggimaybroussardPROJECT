@@ -143,7 +143,7 @@ export default function RootLayout({
         <meta charSet="utf-8" />
         <meta name="theme-color" content="#1B2A4A" />
         {/* Critical above-the-fold CSS inlined to eliminate render-blocking */}
-        <style dangerouslySetInnerHTML={{ __html: `
+        <style suppressHydrationWarning dangerouslySetInnerHTML={{ __html: `
           *,*::before,*::after{box-sizing:border-box}
           html{scroll-behavior:smooth}
           body{margin:0;background-color:#F9F0EC;color:#1B2A4A;font-family:'Raleway',sans-serif;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
