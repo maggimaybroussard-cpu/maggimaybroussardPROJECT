@@ -86,6 +86,39 @@ function capHistory(history: Array<{ role: string; content: string }>): Array<{ 
   return history.slice(-MAX_HISTORY_MESSAGES);
 }
 
+// ── AI Provider Routing ───────────────────────────────────────────────────────
+
+interface ProviderRoute {
+  provider: string;
+  model: string;
+  label: string;
+  icon: string;
+}
+
+const TAB_PROVIDER_MAP: Record<string, ProviderRoute> = {
+  // Research tasks → Perplexity for real-time web search
+  research_history: { provider: 'PERPLEXITY', model: 'perplexity/llama-3.1-sonar-small-128k-online', label: 'Perplexity', icon: '🟣' },
+  // Document drafting & analysis → Claude for deep reasoning
+  docs: { provider: 'ANTHROPIC', model: 'anthropic/claude-sonnet-4-6', label: 'Claude', icon: '🟠' },
+  brief: { provider: 'ANTHROPIC', model: 'anthropic/claude-sonnet-4-6', label: 'Claude', icon: '🟠' },
+  review: { provider: 'ANTHROPIC', model: 'anthropic/claude-sonnet-4-6', label: 'Claude', icon: '🟠' },
+  depoproep: { provider: 'ANTHROPIC', model: 'anthropic/claude-sonnet-4-6', label: 'Claude', icon: '🟠' },
+  settlement: { provider: 'ANTHROPIC', model: 'anthropic/claude-sonnet-4-6', label: 'Claude', icon: '🟠' },
+  // Case files & large document analysis → Gemini for large context
+  casefiles: { provider: 'GEMINI', model: 'gemini/gemini-2.5-flash', label: 'Gemini', icon: '🔵' },
+  // Fast tasks → GPT-4o Mini (default)
+  chat: { provider: 'OPEN_AI', model: 'openai/gpt-4o-mini', label: 'GPT-4o', icon: '🟢' },
+  hours: { provider: 'OPEN_AI', model: 'openai/gpt-4o-mini', label: 'GPT-4o', icon: '🟢' },
+  invoice: { provider: 'OPEN_AI', model: 'openai/gpt-4o-mini', label: 'GPT-4o', icon: '🟢' },
+  intake: { provider: 'OPEN_AI', model: 'openai/gpt-4o-mini', label: 'GPT-4o', icon: '🟢' },
+  deadline: { provider: 'OPEN_AI', model: 'openai/gpt-4o-mini', label: 'GPT-4o', icon: '🟢' },
+  comm: { provider: 'OPEN_AI', model: 'openai/gpt-4o-mini', label: 'GPT-4o', icon: '🟢' },
+};
+
+function getProviderForTab(tab: string): ProviderRoute {
+  return TAB_PROVIDER_MAP[tab] ?? { provider: 'OPEN_AI', model: 'openai/gpt-4o-mini', label: 'GPT-4o', icon: '🟢' };
+}
+
 function buildSystemPrompt(caseSummary?: string, clientName?: string, caseRef?: string) {
   const base = `You are Lexi, a professional legal secretary at Broussard Legal Services, a boutique law firm specializing in business law, contracts, employment law, real estate, estate planning, and litigation support.
 
@@ -932,12 +965,19 @@ export default function LegalSecretaryAssistant({ onClose, floatingMode = false 
   const [sessionLoading, setSessionLoading] = useState(false);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // ── Dynamic provider based on active tab ──────────────────────────────────
+  const activeProviderRoute = getProviderForTab(activeTab);
+
   // Persist active tab to localStorage
   useEffect(() => {
     lsSet('lexi_active_tab', activeTab);
   }, [activeTab]);
 
-  const { response, isLoading, error, sendMessage } = useChat('OPEN_AI', 'gpt-4o-mini', true);
+  const { response, isLoading, error, sendMessage } = useChat(
+    activeProviderRoute.provider,
+    activeProviderRoute.model,
+    true
+  );
 
   useEffect(() => {
     if (error) toast.error('Assistant unavailable. Please try again.');
@@ -1273,6 +1313,9 @@ export default function LegalSecretaryAssistant({ onClose, floatingMode = false 
                   ? `${activeSession.case_ref} · Persistent session`
                   : 'Broussard Legal Services · Available now'}
               </p>
+              <span className="text-[10px] bg-white/15 px-1.5 py-0.5 rounded-full font-medium ml-1">
+                {activeProviderRoute.icon} {activeProviderRoute.label}
+              </span>
             </div>
           </div>
           <div className="flex items-center gap-1">
