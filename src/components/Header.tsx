@@ -313,13 +313,12 @@ export default function Header() {
             <button
               ref={hamburgerRef}
               onClick={() => setMenuOpen(!menuOpen)}
-              aria-label={menuOpen ? 'Close navigation menu' : 'Open navigation menu'}
-              aria-expanded={menuOpen}
+              aria-label={mounted && menuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+              aria-expanded={mounted ? menuOpen : false}
               aria-controls="mobile-nav-menu"
               className="md:hidden p-2.5 rounded-full transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent bg-primary-foreground/10 text-accent"
-              suppressHydrationWarning
             >
-              {menuOpen ? (
+              {mounted && menuOpen ? (
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
                   <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
                 </svg>
@@ -333,7 +332,7 @@ export default function Header() {
       </nav>
 
       {/* Mobile Menu — Slide-in drawer from right */}
-      {menuOpen && (
+      {mounted && menuOpen && (
         <div
           className="fixed inset-0 z-40 md:hidden"
           onClick={() => setMenuOpen(false)}
@@ -348,9 +347,8 @@ export default function Header() {
         aria-modal="true"
         aria-label="Navigation menu"
         className={`fixed top-0 right-0 h-full w-[85vw] max-w-[340px] z-50 md:hidden flex flex-col bg-background border-l border-border shadow-2xl transition-transform duration-300 ease-out ${
-          menuOpen ? 'translate-x-0' : 'translate-x-full'
+          mounted && menuOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
-        suppressHydrationWarning
       >
         {/* Drawer header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">
