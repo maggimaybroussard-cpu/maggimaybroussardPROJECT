@@ -25,21 +25,18 @@ export default function GoogleAnalytics() {
 
   return (
     <>
-      {/* Load gtag.js after the page is interactive — deferred but available before user interactions */}
       <Script
         src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
-        strategy="afterInteractive"
+        strategy="lazyOnload"
       />
-      {/* Inline config runs after the external script is ready */}
-      <Script id="google-analytics" strategy="afterInteractive">
+      <Script id="google-analytics" strategy="lazyOnload">
         {`
           window.dataLayer = window.dataLayer || [];
           function gtag(){dataLayer.push(arguments);}
           gtag('js', new Date());
           gtag('config', '${GA_MEASUREMENT_ID}', {
             page_path: window.location.pathname,
-            send_page_view: false,
-            transport_type: 'beacon'
+            send_page_view: false
           });
         `}
       </Script>

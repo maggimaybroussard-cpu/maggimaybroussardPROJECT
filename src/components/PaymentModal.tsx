@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, FormEvent, useMemo } from 'react';
+import React, { useState, FormEvent } from 'react';
 import {
   useStripe,
   useElements,
@@ -200,7 +200,7 @@ export default function PaymentModal({
   const [error, setError] = useState<string | null>(null);
   const [successIntent, setSuccessIntent] = useState<PaymentIntent | null>(null);
 
-  const stripePromise = useMemo(() => clientSecret ? getStripe() : null, [clientSecret]);
+  const stripePromise = getStripe();
 
   const handleSelectOption = (option: PaymentOption) => {
     trackPaymentTypeSelected(option.type, option.amount);

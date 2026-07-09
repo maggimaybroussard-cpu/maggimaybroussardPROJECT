@@ -53,9 +53,9 @@ export default function BrandVideoSection() {
                 onClick={() => setPlaying(true)}
                 className="group absolute inset-0 w-full h-full flex flex-col items-center justify-center bg-primary/80 hover:bg-primary/70 transition-colors duration-300 cursor-pointer"
                 aria-label="Play brand video">
-                {/* YouTube thumbnail — proxied through /api/yt-thumb for long cache headers */}
+                {/* YouTube thumbnail — proper <img> for browser HTTP cache */}
                 <img
-                  src={`/api/yt-thumb/${YOUTUBE_VIDEO_ID}`}
+                  src={`https://img.youtube.com/vi/${YOUTUBE_VIDEO_ID}/hqdefault.jpg`}
                   alt="Broussard Legal Services brand video thumbnail"
                   className="absolute inset-0 w-full h-full object-cover opacity-40"
                   loading="lazy"

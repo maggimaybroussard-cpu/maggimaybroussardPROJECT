@@ -9,7 +9,6 @@ const navLinks = [
   { label: 'Home', href: '/' },
   { label: 'Services', href: '/services' },
   { label: 'Pricing', href: '/pricing' },
-  { label: 'Resources', href: '/resources' },
   { label: 'Blog', href: '/blog' },
   { label: 'Case Studies', href: '/case-studies' },
   { label: 'Testimonials', href: '/testimonials' },
@@ -28,6 +27,7 @@ const navLinks = [
   { label: '📲 Install App', href: '/mobile-download' },
 ];
 
+// Grouped nav for mobile
 const mobileNavGroups = [
   {
     label: 'Explore',
@@ -35,7 +35,6 @@ const mobileNavGroups = [
       { label: 'Home', href: '/' },
       { label: 'Services', href: '/services' },
       { label: 'Pricing', href: '/pricing' },
-      { label: 'Resources', href: '/resources' },
       { label: 'Blog', href: '/blog' },
       { label: 'Case Studies', href: '/case-studies' },
       { label: 'Testimonials', href: '/testimonials' },
@@ -69,16 +68,36 @@ const mobileNavGroups = [
 export default function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const navRef = useRef<HTMLElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const hamburgerRef = useRef<HTMLButtonElement>(null);
   const pathname = usePathname();
 
   const isHeroPage = pathname === '/' || pathname === '/homepage';
 
+  // Apply dynamic nav classes imperatively after mount to avoid SSR/CSR mismatch
   useEffect(() => {
-    setMounted(true);
-  }, []);
+    const nav = navRef.current;
+    if (!nav) return;
+
+    const updateNavClass = () => {
+      const isScrolledNow = scrolled;
+      const isHeroNow = isHeroPage;
+
+      // Remove all dynamic classes first
+      nav.classList.remove('nav-scrolled', 'py-3', 'py-4', 'md:py-8', 'bg-background', 'border-b', 'border-border');
+
+      if (isScrolledNow) {
+        nav.classList.add('nav-scrolled', 'py-3');
+      } else if (isHeroNow) {
+        nav.classList.add('py-4', 'md:py-8');
+      } else {
+        nav.classList.add('py-4', 'md:py-8', 'bg-background', 'border-b', 'border-border');
+      }
+    };
+
+    updateNavClass();
+  }, [scrolled, isHeroPage]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -102,6 +121,7 @@ export default function Header() {
     return () => { document.body.style.overflow = ''; };
   }, [menuOpen]);
 
+  // Trap focus inside mobile menu
   useEffect(() => {
     if (!menuOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -132,25 +152,18 @@ export default function Header() {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [menuOpen]);
 
-  // Always render the same static className on server and initial client render.
-  // Dynamic scroll/hero classes are applied only after mount to avoid hydration mismatch.
-  const navClassName = [
-    'fixed top-0 left-0 w-full z-50 transition-all duration-500',
-    mounted && scrolled
-      ? 'nav-scrolled py-3'
-      : mounted && isHeroPage
-      ? 'py-4 md:py-8' :'py-4 md:py-8',
-  ].join(' ');
-
   return (
     <>
       <nav
+        ref={navRef}
         aria-label="Main navigation"
-        className={navClassName}
+        className="fixed top-0 left-0 w-full z-50 transition-all duration-500 py-4 md:py-8"
+        suppressHydrationWarning
       >
         <div className="max-w-7xl mx-auto px-4 md:px-10 flex items-center justify-between gap-4">
           {/* Logo */}
           <div className="flex items-center gap-3 group shrink-0">
+            {/* Profile picture — navigates to Admin */}
             <div className="relative">
               <Link
                 href="/admin"
@@ -163,6 +176,7 @@ export default function Header() {
                 />
               </Link>
             </div>
+
             <Link href="/" className="flex items-center gap-2.5" aria-label="Broussard Legal Services — Home">
               <span
                 className="font-serif text-lg tracking-tight transition-colors duration-300"
@@ -197,16 +211,23 @@ export default function Header() {
 
           {/* Desktop CTAs */}
           <div className="hidden lg:flex items-center gap-2 shrink-0">
+            {/* Hire Me */}
             <Link
               href="/contact"
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-[11px] font-semibold uppercase tracking-widest transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent bg-accent text-accent-foreground hover:opacity-90"
             >
               Hire Me
             </Link>
+
+            {/* Pay Now */}
             <Link
               href="/checkout"
               className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-[11px] font-semibold uppercase tracking-widest transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent border"
-              style={{ borderColor: 'rgba(139,96,32,0.6)', color: '#6B4A10', background: 'rgba(139,96,32,0.08)' }}
+              style={{
+                borderColor: 'rgba(139,96,32,0.6)',
+                color: '#6B4A10',
+                background: 'rgba(139,96,32,0.08)',
+              }}
             >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
@@ -214,10 +235,16 @@ export default function Header() {
               </svg>
               Pay Now
             </Link>
+
+            {/* Client Login */}
             <Link
               href="/portal/login"
               className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-[11px] font-semibold uppercase tracking-widest transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent border"
-              style={{ borderColor: 'rgba(53,94,59,0.5)', color: '#355E3B', background: 'rgba(53,94,59,0.07)' }}
+              style={{
+                borderColor: 'rgba(53,94,59,0.5)',
+                color: '#355E3B',
+                background: 'rgba(53,94,59,0.07)',
+              }}
             >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
@@ -226,17 +253,49 @@ export default function Header() {
               </svg>
               Portal
             </Link>
+
+            {/* Staff Login */}
             <a
               href="https://legal-assistant-ai-maggimaybroussa.replit.app"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-[11px] font-semibold uppercase tracking-widest transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent border"
-              style={{ borderColor: 'rgba(53,94,59,0.5)', color: '#355E3B', background: 'rgba(53,94,59,0.07)' }}
+              style={{
+                borderColor: 'rgba(53,94,59,0.5)',
+                color: '#355E3B',
+                background: 'rgba(53,94,59,0.07)',
+              }}
             >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <circle cx="12" cy="8" r="4" />
                 <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
               </svg>
+              Staff Login
+            </a>
+          </div>
+
+          {/* Tablet Nav (md only) — simplified */}
+          <div className="hidden md:flex lg:hidden items-center gap-2">
+            <Link
+              href="/contact"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-[11px] font-semibold uppercase tracking-widest transition-all duration-300 bg-accent text-accent-foreground hover:opacity-90"
+            >
+              Hire Me
+            </Link>
+            <Link
+              href="/portal/login"
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-[11px] font-semibold uppercase tracking-widest transition-all duration-300 border"
+              style={{ borderColor: 'rgba(53,94,59,0.5)', color: '#355E3B', background: 'rgba(53,94,59,0.07)' }}
+            >
+              Portal
+            </Link>
+            <a
+              href="https://legal-assistant-ai-maggimaybroussa.replit.app"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-[11px] font-semibold uppercase tracking-widest transition-all duration-300 border"
+              style={{ borderColor: 'rgba(53,94,59,0.5)', color: '#355E3B', background: 'rgba(53,94,59,0.07)' }}
+            >
               Staff Login
             </a>
           </div>
@@ -263,7 +322,7 @@ export default function Header() {
         </div>
       </nav>
 
-      {/* Mobile Menu overlay */}
+      {/* Mobile Menu — Slide-in drawer from right */}
       {menuOpen && (
         <div
           className="fixed inset-0 z-40 md:hidden"
@@ -282,6 +341,7 @@ export default function Header() {
           menuOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
+        {/* Drawer header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">
           <Link href="/" onClick={() => setMenuOpen(false)} className="flex items-center gap-2.5">
             <AppLogo size={28} />
@@ -300,6 +360,7 @@ export default function Header() {
           </button>
         </div>
 
+        {/* Scrollable nav groups */}
         <div className="flex-1 overflow-y-auto py-4 px-5 space-y-6">
           {mobileNavGroups.map((group) => (
             <div key={group.label}>
@@ -327,6 +388,7 @@ export default function Header() {
           ))}
         </div>
 
+        {/* Sticky bottom CTAs */}
         <div className="shrink-0 px-5 py-4 border-t border-border space-y-2.5 bg-background">
           <Link
             href="/contact"

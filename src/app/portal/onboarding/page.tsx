@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
@@ -610,7 +610,7 @@ function StepPaymentMethod({
   const [amount, setAmount] = useState(500);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loadingIntent, setLoadingIntent] = useState(true);
-  const stripePromise = useMemo(() => clientSecret ? getStripe() : null, [clientSecret]);
+  const stripePromise = getStripe();
 
   useEffect(() => {
     if (!user) return;

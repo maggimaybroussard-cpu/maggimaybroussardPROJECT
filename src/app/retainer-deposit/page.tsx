@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, FormEvent, Suspense, useMemo } from 'react';
+import React, { useState, useEffect, FormEvent, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import {
@@ -135,7 +135,7 @@ function RetainerDepositInner() {
   const [referenceCode, setReferenceCode] = useState('');
   const [formattedStart, setFormattedStart] = useState('');
 
-  const stripePromise = useMemo(() => clientSecret ? getStripe() : null, [clientSecret]);
+  const stripePromise = getStripe();
 
   // Format start time client-side only to avoid hydration mismatch
   useEffect(() => {

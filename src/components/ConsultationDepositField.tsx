@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, FormEvent, useMemo } from 'react';
+import React, { useState, FormEvent } from 'react';
 import {
   useStripe,
   useElements,
@@ -120,7 +120,7 @@ export default function ConsultationDepositField({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
 
-  const stripePromise = React.useMemo(() => clientSecret ? getStripe() : null, [clientSecret]);
+  const stripePromise = getStripe();
 
   const handleEnable = () => {
     // If we already have name/email from props, skip info collection

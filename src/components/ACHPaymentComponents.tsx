@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, FormEvent, useEffect, useMemo } from 'react';
+import React, { useState, FormEvent, useEffect } from 'react';
 import {
   useStripe,
   useElements,
@@ -317,7 +317,7 @@ export function ACHPaymentModal({ isOpen, onClose, customerInfo, paymentConfig, 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const stripePromise = React.useMemo(() => (isOpen && clientSecret) ? getStripe() : null, [isOpen, clientSecret]);
+  const stripePromise = getStripe();
 
   React.useEffect(() => {
     if (!isOpen) { setClientSecret(null); setError(null); setSuccess(false); return; }
@@ -454,7 +454,7 @@ export function PaymentPlanModal({
   const [installmentAmount, setInstallmentAmount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const stripePromise = React.useMemo(() => (isOpen && setupClientSecret) ? getStripe() : null, [isOpen, setupClientSecret]);
+  const stripePromise = getStripe();
 
   React.useEffect(() => {
     if (!isOpen) { setStep('configure'); setSetupClientSecret(null); setPlanId(null); setError(null); }
