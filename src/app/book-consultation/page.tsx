@@ -258,7 +258,7 @@ export default function BookConsultationPage() {
                   className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded border-border accent-accent"
                 />
                 <label htmlFor="smsConsentBooking" className="text-xs text-muted-foreground leading-relaxed cursor-pointer">
-                  By checking this box, I consent to receive SMS text messages from Broussard Legal Services (e.g., booking confirmations, reminders) at the phone number I provide. Message frequency varies. Message &amp; data rates may apply. Reply STOP to opt out at any time. Reply HELP for help. View our{' '}
+                  By checking this box, I agree to receive SMS/text messages from Broussard Legal Services regarding my consultation booking, appointment reminders, case updates, and legal service information. Message frequency varies. Message &amp; data rates may apply. Reply STOP to unsubscribe at any time. Reply HELP for assistance. This consent is separate from our{' '}
                   <a href="/privacy-policy" className="text-accent underline hover:opacity-80">Privacy Policy</a>{' '}
                   and{' '}
                   <a href="/terms-of-service" className="text-accent underline hover:opacity-80">Terms of Service</a>.
