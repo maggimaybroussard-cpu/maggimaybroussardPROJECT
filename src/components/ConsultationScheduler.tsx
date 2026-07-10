@@ -98,6 +98,8 @@ export default function ConsultationScheduler({
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [clientName, setClientName] = useState('');
   const [clientEmail, setClientEmail] = useState('');
+  const [clientPhone, setClientPhone] = useState('');
+  const [smsConsent, setSmsConsent] = useState(false);
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
@@ -183,6 +185,8 @@ export default function ConsultationScheduler({
           bookingTime: selectedTime,
           durationMinutes: duration,
           notes: notes.trim() || undefined,
+          clientPhone: clientPhone.trim() || undefined,
+          smsConsent: smsConsent && !!clientPhone.trim(),
         }),
       });
       const data = await res.json();
@@ -503,6 +507,33 @@ export default function ConsultationScheduler({
             />
           </div>
           <div>
+            <label className="block text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-1.5">Phone Number <span className="font-normal normal-case tracking-normal">(optional — for SMS reminders)</span></label>
+            <input
+              type="tel"
+              value={clientPhone}
+              onChange={(e) => setClientPhone(e.target.value)}
+              placeholder="(555) 000-0000"
+              className="w-full px-4 py-3 rounded-xl border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent/50 transition-all"
+            />
+          </div>
+          {clientPhone.trim() && (
+            <div className="flex items-start gap-3 rounded-xl border border-border bg-secondary/40 px-4 py-3.5">
+              <input
+                id="schedulerSmsConsent"
+                type="checkbox"
+                checked={smsConsent}
+                onChange={(e) => setSmsConsent(e.target.checked)}
+                className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded border-border accent-accent"
+              />
+              <label htmlFor="schedulerSmsConsent" className="text-xs text-muted-foreground leading-relaxed cursor-pointer">
+                By checking this box, I agree to receive SMS/text messages from Broussard Legal Services regarding my consultation booking, appointment reminders, case updates, and legal service information. Message frequency varies. Message &amp; data rates may apply. Reply STOP to unsubscribe at any time. Reply HELP for assistance. This consent is separate from our{' '}
+                <a href="/privacy-policy" className="text-accent underline hover:opacity-80">Privacy Policy</a>{' '}
+                and{' '}
+                <a href="/terms-of-service" className="text-accent underline hover:opacity-80">Terms of Service</a>.
+              </label>
+            </div>
+          )}
+          <div>
             <label className="block text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-1.5">Brief Description <span className="font-normal normal-case tracking-normal">(optional)</span></label>
             <textarea
               value={notes}
@@ -561,6 +592,7 @@ export default function ConsultationScheduler({
               { label: 'Duration', value: `${duration} minutes` },
               { label: 'Name', value: clientName },
               { label: 'Email', value: clientEmail },
+              ...(clientPhone ? [{ label: 'Phone', value: clientPhone }] : []),
               ...(notes ? [{ label: 'Notes', value: notes }] : []),
             ].map((row, i, arr) => (
               <div

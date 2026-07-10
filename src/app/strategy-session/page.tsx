@@ -122,6 +122,7 @@ export default function StrategySessionPage() {
           caseSummary: form.focus,
           firm: form.firm,
           phone: form.phone,
+          smsConsent: form.smsConsent && !!form.phone,
           referralSource: form.referralSource,
         }),
       });

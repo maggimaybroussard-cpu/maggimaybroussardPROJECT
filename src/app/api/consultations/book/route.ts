@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { getGoogleAccessToken } from '@/lib/googleCalendar';
+import { sendAppointmentConfirmationSMS } from '@/lib/twilio/smsClient';
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -474,6 +475,8 @@ export async function POST(req: NextRequest) {
       durationMinutes = 30,
       notes,
       inquiryId,
+      clientPhone,
+      smsConsent,
     }: {
       clientName: string;
       clientEmail: string;
@@ -482,6 +485,8 @@ export async function POST(req: NextRequest) {
       durationMinutes?: number;
       notes?: string;
       inquiryId?: string;
+      clientPhone?: string;
+      smsConsent?: boolean;
     } = body;
 
     if (!clientName || !clientEmail || !bookingDate || !bookingTime) {
@@ -692,6 +697,22 @@ export async function POST(req: NextRequest) {
           meetingLink,
         }),
       }).catch(() => {});
+    }
+
+    // Send SMS confirmation if phone provided and consent given
+    if (clientPhone && smsConsent) {
+      const tzShort = 'CT';
+      const durationLabel =
+        durationMinutes === 15 ? '15-Min' :
+        durationMinutes === 60 ? '60-Min' : '30-Min';
+      sendAppointmentConfirmationSMS({
+        to: clientPhone,
+        clientName,
+        appointmentType: `${durationLabel} Paralegal Consultation`,
+        appointmentDate: bookingDate,
+        appointmentTime: bookingTime,
+        timezone: 'America/Chicago',
+      }).catch(() => { /* fire-and-forget */ });
     }
 
     return NextResponse.json({
