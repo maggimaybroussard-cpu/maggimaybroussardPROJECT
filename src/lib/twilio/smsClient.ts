@@ -17,6 +17,7 @@ export interface SMSResult {
  * Core SMS sender via Twilio REST API
  */
 export async function sendSMS(to: string, body: string): Promise<SMSResult> {
+  console.log("Log this please");
   if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_PHONE_NUMBER) {
     console.error('[Twilio] Missing credentials. Set TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER.');
     return { success: false, error: 'Twilio credentials not configured' };
