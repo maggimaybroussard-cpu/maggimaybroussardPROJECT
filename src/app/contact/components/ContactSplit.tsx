@@ -206,6 +206,7 @@ interface FormState {
   service: string;
   message: string;
   retainerTier: RetainerTier;
+  smsConsent: boolean;
 }
 
 interface FormErrors {
@@ -431,6 +432,7 @@ export default function ContactSplit() {
     service: '',
     message: '',
     retainerTier: '',
+    smsConsent: false,
   });
   const [errors, setErrors] = useState<FormErrors>({});
   const [touched, setTouched] = useState<TouchedFields>({});
@@ -558,6 +560,12 @@ export default function ContactSplit() {
 
     if (Object.values(allErrors).some((err) => err)) {
       trackFormError('validation_failed');
+      return;
+    }
+
+    if (!formState.smsConsent) {
+      trackFormError('sms_consent_required');
+      showToast('error', 'Please agree to receive SMS communications to submit your inquiry.');
       return;
     }
 
@@ -1094,6 +1102,23 @@ export default function ContactSplit() {
                 <p className="text-xs text-muted-foreground/70 font-light">
                   🔒 All communications are kept strictly confidential. I do not share your information with any third parties.
                 </p>
+
+                {/* SMS Consent */}
+                <div className="flex items-start gap-3 rounded-xl border border-border bg-secondary/40 px-4 py-3.5">
+                  <input
+                    id="smsConsent"
+                    type="checkbox"
+                    checked={formState.smsConsent}
+                    onChange={(e) => setFormState((prev) => ({ ...prev, smsConsent: e.target.checked }))}
+                    className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded border-border accent-accent"
+                  />
+                  <label htmlFor="smsConsent" className="text-xs text-muted-foreground leading-relaxed cursor-pointer">
+                    By checking this box, I consent to receive SMS text messages from Broussard Legal Services at the phone number provided (if applicable). Message frequency varies. Message &amp; data rates may apply. Reply STOP to opt out at any time. Reply HELP for help. View our{' '}
+                    <a href="/privacy-policy" className="text-accent underline hover:opacity-80">Privacy Policy</a>{' '}
+                    and{' '}
+                    <a href="/terms-of-service" className="text-accent underline hover:opacity-80">Terms of Service</a>.
+                  </label>
+                </div>
 
                 {/* Submit */}
                 <button

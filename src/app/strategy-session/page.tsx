@@ -76,6 +76,7 @@ interface FormData {
   phone: string;
   focus: string;
   referralSource: string;
+  smsConsent: boolean;
 }
 
 export default function StrategySessionPage() {
@@ -89,6 +90,7 @@ export default function StrategySessionPage() {
     phone: '',
     focus: '',
     referralSource: '',
+    smsConsent: false,
   });
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -102,7 +104,7 @@ export default function StrategySessionPage() {
   }, []);
 
   const canProceedStep1 = !!form.date && !!form.time;
-  const canProceedStep2 = !!form.name && !!form.email && !!form.focus;
+  const canProceedStep2 = !!form.name && !!form.email && !!form.focus && form.smsConsent;
 
   const handleSubmit = async () => {
     setSubmitting(true);
@@ -418,6 +420,23 @@ export default function StrategySessionPage() {
                         <option value="bar-association">Bar association</option>
                         <option value="other">Other</option>
                       </select>
+                    </div>
+
+                    {/* SMS Consent */}
+                    <div className="flex items-start gap-3 rounded-xl border border-border bg-secondary/40 px-4 py-3.5">
+                      <input
+                        id="smsConsentStrategy"
+                        type="checkbox"
+                        checked={form.smsConsent}
+                        onChange={(e) => setForm((f) => ({ ...f, smsConsent: e.target.checked }))}
+                        className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded border-border accent-accent"
+                      />
+                      <label htmlFor="smsConsentStrategy" className="text-xs text-muted-foreground leading-relaxed cursor-pointer">
+                        By checking this box, I consent to receive SMS text messages from Broussard Legal Services at the phone number provided (if applicable). Message frequency varies. Message &amp; data rates may apply. Reply STOP to opt out at any time. Reply HELP for help. View our{' '}
+                        <a href="/privacy-policy" className="text-accent underline hover:opacity-80">Privacy Policy</a>{' '}
+                        and{' '}
+                        <a href="/terms-of-service" className="text-accent underline hover:opacity-80">Terms of Service</a>.
+                      </label>
                     </div>
 
                     <div className="flex gap-3">
