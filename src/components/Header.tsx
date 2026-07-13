@@ -74,16 +74,19 @@ interface HeaderProps {
 export default function Header({ initialClaims }: HeaderProps) {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  // SSR-consistent auth state seeded from server-fetched claims
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(
-    initialClaims != null
-  );
+  // Always start as false on server; update on client to avoid SSR/CSR mismatch
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const navRef = useRef<HTMLElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const hamburgerRef = useRef<HTMLButtonElement>(null);
   const pathname = usePathname();
 
   const isHeroPage = pathname === '/' || pathname === '/homepage';
+
+  // Sync auth state on client only
+  useEffect(() => {
+    setIsAuthenticated(initialClaims != null);
+  }, [initialClaims]);
 
   // Apply dynamic nav classes imperatively after mount to avoid SSR/CSR mismatch
   useEffect(() => {
@@ -309,7 +312,6 @@ export default function Header({ initialClaims }: HeaderProps) {
             ref={hamburgerRef}
             onClick={() => setMenuOpen(!menuOpen)}
             aria-label="Open navigation menu"
-            aria-expanded={menuOpen}
             aria-controls="mobile-nav-menu"
             className="md:hidden p-2.5 rounded-full transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent bg-primary-foreground/10 text-accent"
             suppressHydrationWarning
