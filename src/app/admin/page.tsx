@@ -850,7 +850,7 @@ function SequencesDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
+  const [toast, setToast] = useState<{ msg: string; type: 'success\' | \'error' } | null>(null);
 
   const fetchSequences = useCallback(async () => {
     setLoading(true);
@@ -1235,7 +1235,7 @@ function PaymentRemindersDashboard() {
   const [invoiceFilter, setInvoiceFilter] = useState<string>('all');
   const [reminderFilter, setReminderFilter] = useState<string>('all');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
+  const [toast, setToast] = useState<{ msg: string; type: 'success\' | \'error' } | null>(null);
   const [rescheduleId, setRescheduleId] = useState<string | null>(null);
   const [rescheduleDate, setRescheduleDate] = useState('');
   const [rescheduleTime, setRescheduleTime] = useState('09:00');
@@ -8727,14 +8727,14 @@ id: 'retainer_renewal_notifications' as const,
                     <div className="mb-5"><p className="text-xs uppercase tracking-widest text-muted-foreground font-semibold mb-2">Message</p><p className="text-sm text-foreground/80 leading-relaxed bg-secondary/40 rounded-xl p-4 border border-border">{selectedInquiry.message}</p></div>
                     <div className="mb-5"><p className="text-xs uppercase tracking-widest text-muted-foreground font-semibold mb-2">Status</p><div className="flex flex-wrap gap-2">{STATUS_OPTIONS.map((s) => (<button key={s} onClick={() => handleStatusChange(selectedInquiry.id, s)} disabled={updatingId === selectedInquiry.id} className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all disabled:opacity-60 ${selectedInquiry.status === s ? STATUS_COLORS[s] : 'bg-transparent border-border text-muted-foreground hover:border-accent/50'}`}>{STATUS_LABELS[s]}</button>))}</div></div>
                     <div className="mb-5 flex gap-2"><a href="https://calendly.com/maggimaybroussard" target="_blank" rel="noopener noreferrer" className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 rounded-xl border border-border text-xs font-semibold text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-all"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Book</a><a href={`mailto:${selectedInquiry.email}?subject=Re: Your Inquiry — Maggi May Broussard`} className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold uppercase tracking-widest transition-all hover:opacity-90" style={{ background: '#355E3B', color: '#fff' }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Reply</a></div>
-                    <div><p className="text-xs uppercase tracking-widest text-muted-foreground font-semibold mb-2">Internal Notes</p><textarea value={notesValue} onChange={(e) => setNotesValue(e.target.value)} rows={4} placeholder="Add internal notes about this inquiry…" className="w-full px-3 py-2.5 rounded-xl border border-border bg-secondary/30 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent resize-none" /><button onClick={() => handleSaveNotes(selectedInquiry.id)} disabled={savingNotes} className="mt-2 w-full py-2 rounded-xl bg-foreground text-background text-xs font-semibold uppercase tracking-widest hover:opacity-90 transition-opacity disabled:opacity-50">{savingNotes ? 'Saving…' : 'Save Notes'}</button></div>
+                    <div><p className="text-xs uppercase tracking-widest text-muted-foreground font-semibold mb-2">Internal Notes</p><textarea value={notesValue} onChange={(e) => setNotesValue(e.target.value)} rows={4} placeholder="Add internal notes about this inquiry…" className="w-full px-3 py-2.5 rounded-xl border border-border bg-secondary/30 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent resize-none" /><button onClick={handleSaveNotes} disabled={savingNotes} className="mt-2 w-full py-2 rounded-xl bg-foreground text-background text-xs font-semibold uppercase tracking-widest hover:opacity-90 transition-opacity disabled:opacity-50">{savingNotes ? 'Saving…' : 'Save Notes'}</button></div>
                   </div>
                 </div>
               )}
             </div>
-          </div>
+          </>
         )}
-      </main>
+      </div>
     </div>
   );
 }

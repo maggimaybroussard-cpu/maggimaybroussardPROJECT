@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -61,6 +61,277 @@ const STATUS_LABELS: Record<string, string> = {
   finalized: 'Finalized',
   archived: 'Archived',
 };
+
+// ─── Outcome-Type Templates ───────────────────────────────────────────────────
+
+type OutcomeTemplateKey = 'resolved' | 'escalated' | 'ongoing' | 'pending';
+
+const OUTCOME_TEMPLATES: Record<OutcomeTemplateKey, { label: string; color: string; icon: string; html: string }> = {
+  resolved: {
+    label: 'Resolved',
+    color: 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100',
+    icon: '✓',
+    html: `<p><strong>Outcome Type: Resolved</strong></p>
+<p><strong>Issues Discussed:</strong></p>
+<ul><li>Client's primary concern addressed</li><li>Legal analysis provided</li></ul>
+<p><strong>Resolution Summary:</strong></p>
+<p>Matter has been fully resolved. Client was advised on [specific legal matter] and all questions were answered satisfactorily.</p>
+<p><strong>Client Acknowledgment:</strong></p>
+<p>Client confirmed understanding of the resolution and agreed with the recommended course of action.</p>`,
+  },
+  escalated: {
+    label: 'Escalated',
+    color: 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100',
+    icon: '↑',
+    html: `<p><strong>Outcome Type: Escalated</strong></p>
+<p><strong>Issues Discussed:</strong></p>
+<ul><li>Primary concern identified</li><li>Complexity assessed — requires escalation</li></ul>
+<p><strong>Escalation Reason:</strong></p>
+<p>Matter requires [senior attorney review / specialist involvement / additional resources] due to [complexity / urgency / specialized legal area].</p>
+<p><strong>Escalation Path:</strong></p>
+<ol><li>Refer to [attorney/department]</li><li>Schedule follow-up within [timeframe]</li><li>Notify client of escalation status</li></ol>`,
+  },
+  ongoing: {
+    label: 'Ongoing',
+    color: 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100',
+    icon: '↻',
+    html: `<p><strong>Outcome Type: Ongoing</strong></p>
+<p><strong>Issues Discussed:</strong></p>
+<ul><li>Current status of matter reviewed</li><li>Progress update provided to client</li></ul>
+<p><strong>Current Status:</strong></p>
+<p>Matter is actively in progress. [Describe current stage of legal proceedings / work being done].</p>
+<p><strong>Ongoing Actions:</strong></p>
+<ol><li>Continue [specific legal work]</li><li>Monitor [deadlines / court dates / filings]</li><li>Maintain regular client communication</li></ol>`,
+  },
+  pending: {
+    label: 'Pending',
+    color: 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100',
+    icon: '⏳',
+    html: `<p><strong>Outcome Type: Pending</strong></p>
+<p><strong>Issues Discussed:</strong></p>
+<ul><li>Matter reviewed — awaiting additional information</li><li>Client obligations outlined</li></ul>
+<p><strong>Pending Items:</strong></p>
+<ul><li>Awaiting [documents / information / third-party response] from client</li><li>Pending [court decision / regulatory approval / opposing counsel response]</li></ul>
+<p><strong>Required Actions:</strong></p>
+<ol><li>Client to provide [specific documents/information] by [date]</li><li>Follow up if no response within [timeframe]</li></ol>`,
+  },
+};
+
+// ─── Rich Text Editor ─────────────────────────────────────────────────────────
+
+function RichTextEditor({
+  value,
+  onChange,
+  placeholder,
+}: {
+  value: string;
+  onChange: (html: string) => void;
+  placeholder?: string;
+}) {
+  const editorRef = useRef<HTMLDivElement>(null);
+  const [activeFormats, setActiveFormats] = useState<Set<string>>(new Set());
+  const [showTemplates, setShowTemplates] = useState(false);
+  const isInternalUpdate = useRef(false);
+
+  // Sync external value → editor (only when value changes externally)
+  useEffect(() => {
+    if (!editorRef.current) return;
+    if (isInternalUpdate.current) {
+      isInternalUpdate.current = false;
+      return;
+    }
+    const current = editorRef.current.innerHTML;
+    if (current !== value) {
+      editorRef.current.innerHTML = value || '';
+    }
+  }, [value]);
+
+  const updateActiveFormats = () => {
+    const formats = new Set<string>();
+    if (document.queryCommandState('bold')) formats.add('bold');
+    if (document.queryCommandState('italic')) formats.add('italic');
+    if (document.queryCommandState('underline')) formats.add('underline');
+    setActiveFormats(formats);
+  };
+
+  const execCommand = (command: string, value?: string) => {
+    editorRef.current?.focus();
+    document.execCommand(command, false, value);
+    updateActiveFormats();
+    if (editorRef.current) {
+      isInternalUpdate.current = true;
+      onChange(editorRef.current.innerHTML);
+    }
+  };
+
+  const handleInput = () => {
+    if (editorRef.current) {
+      isInternalUpdate.current = true;
+      onChange(editorRef.current.innerHTML);
+      updateActiveFormats();
+    }
+  };
+
+  const applyTemplate = (key: OutcomeTemplateKey) => {
+    const template = OUTCOME_TEMPLATES[key];
+    if (!editorRef.current) return;
+    const current = editorRef.current.innerHTML.trim();
+    const newContent = current && current !== '<br>' ? current +'<br>' + template.html
+      : template.html;
+    editorRef.current.innerHTML = newContent;
+    isInternalUpdate.current = true;
+    onChange(newContent);
+    setShowTemplates(false);
+    // Move cursor to end
+    const range = document.createRange();
+    const sel = window.getSelection();
+    range.selectNodeContents(editorRef.current);
+    range.collapse(false);
+    sel?.removeAllRanges();
+    sel?.addRange(range);
+    editorRef.current.focus();
+  };
+
+  const ToolbarBtn = ({
+    cmd,
+    label,
+    title,
+  }: {
+    cmd: string;
+    label: React.ReactNode;
+    title: string;
+  }) => (
+    <button
+      type="button"
+      title={title}
+      onMouseDown={e => {
+        e.preventDefault();
+        execCommand(cmd);
+      }}
+      className={`px-2 py-1 rounded text-sm font-medium transition-colors ${
+        activeFormats.has(cmd)
+          ? 'bg-[#1B2A4A] text-white'
+          : 'text-gray-600 hover:bg-gray-100'
+      }`}
+    >
+      {label}
+    </button>
+  );
+
+  return (
+    <div className="rounded-xl border border-gray-200 overflow-hidden focus-within:ring-2 focus-within:ring-[#1B2A4A]/20 focus-within:border-[#1B2A4A] transition-all">
+      {/* Toolbar */}
+      <div className="flex items-center gap-0.5 px-2 py-1.5 bg-gray-50 border-b border-gray-200 flex-wrap">
+        <ToolbarBtn cmd="bold" label={<strong>B</strong>} title="Bold" />
+        <ToolbarBtn cmd="italic" label={<em>I</em>} title="Italic" />
+        <ToolbarBtn cmd="underline" label={<span className="underline">U</span>} title="Underline" />
+
+        <div className="w-px h-4 bg-gray-300 mx-1" />
+
+        <button
+          type="button"
+          title="Unordered List"
+          onMouseDown={e => { e.preventDefault(); execCommand('insertUnorderedList'); }}
+          className="px-2 py-1 rounded text-sm text-gray-600 hover:bg-gray-100 transition-colors"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="9" y1="6" x2="20" y2="6"/><line x1="9" y1="12" x2="20" y2="12"/><line x1="9" y1="18" x2="20" y2="18"/>
+            <circle cx="4" cy="6" r="1.5" fill="currentColor" stroke="none"/>
+            <circle cx="4" cy="12" r="1.5" fill="currentColor" stroke="none"/>
+            <circle cx="4" cy="18" r="1.5" fill="currentColor" stroke="none"/>
+          </svg>
+        </button>
+
+        <button
+          type="button"
+          title="Ordered List"
+          onMouseDown={e => { e.preventDefault(); execCommand('insertOrderedList'); }}
+          className="px-2 py-1 rounded text-sm text-gray-600 hover:bg-gray-100 transition-colors"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/>
+            <path d="M4 6h1v4" strokeLinecap="round"/><path d="M4 10h2" strokeLinecap="round"/>
+            <path d="M6 14H4c0-1 2-2 2-3s-1-1-2-1" strokeLinecap="round"/>
+          </svg>
+        </button>
+
+        <div className="w-px h-4 bg-gray-300 mx-1" />
+
+        <button
+          type="button"
+          title="Clear Formatting"
+          onMouseDown={e => { e.preventDefault(); execCommand('removeFormat'); }}
+          className="px-2 py-1 rounded text-sm text-gray-600 hover:bg-gray-100 transition-colors"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/>
+            <line x1="3" y1="3" x2="21" y2="21" strokeWidth="1.5"/>
+          </svg>
+        </button>
+
+        {/* Templates button */}
+        <div className="relative ml-auto">
+          <button
+            type="button"
+            onClick={() => setShowTemplates(s => !s)}
+            className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#1B2A4A]/8 border border-[#1B2A4A]/20 text-xs font-medium text-[#1B2A4A] hover:bg-[#1B2A4A]/15 transition-colors"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+              <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+            </svg>
+            Templates
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </button>
+
+          {showTemplates && (
+            <div className="absolute right-0 top-full mt-1.5 z-20 bg-white rounded-xl shadow-lg border border-gray-200 p-2 w-52">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide px-2 pb-1.5">Outcome Templates</p>
+              {(Object.keys(OUTCOME_TEMPLATES) as OutcomeTemplateKey[]).map(key => {
+                const t = OUTCOME_TEMPLATES[key];
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => applyTemplate(key)}
+                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium border mb-1 last:mb-0 transition-colors ${t.color}`}
+                  >
+                    <span className="text-sm leading-none">{t.icon}</span>
+                    {t.label}
+                  </button>
+                );
+              })}
+              <button
+                type="button"
+                onClick={() => setShowTemplates(false)}
+                className="w-full text-center text-xs text-gray-400 hover:text-gray-600 pt-1 mt-0.5 border-t border-gray-100"
+              >
+                Close
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Editable area */}
+      <div
+        ref={editorRef}
+        contentEditable
+        suppressContentEditableWarning
+        onInput={handleInput}
+        onKeyUp={updateActiveFormats}
+        onMouseUp={updateActiveFormats}
+        data-placeholder={placeholder}
+        className="min-h-[140px] max-h-[320px] overflow-y-auto px-3 py-2.5 text-sm text-gray-700 focus:outline-none prose prose-sm max-w-none
+          [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5
+          [&_li]:my-0.5 [&_p]:my-1 [&_strong]:font-semibold
+          empty:before:content-[attr(data-placeholder)] empty:before:text-gray-400 empty:before:pointer-events-none"
+      />
+    </div>
+  );
+}
 
 // ─── Outcome Form Modal ───────────────────────────────────────────────────────
 
@@ -289,15 +560,18 @@ function OutcomeFormModal({
             />
           </div>
 
-          {/* Consultation Notes */}
+          {/* Consultation Notes — Rich Text Editor */}
           <div>
-            <label className="block text-xs font-medium text-[#1B2A4A] mb-1.5">Consultation Notes</label>
-            <textarea
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-xs font-medium text-[#1B2A4A]">
+                Consultation Notes
+              </label>
+              <span className="text-xs text-gray-400">Rich text · Use Templates for quick capture</span>
+            </div>
+            <RichTextEditor
               value={form.consultation_notes}
-              onChange={e => setForm(f => ({ ...f, consultation_notes: e.target.value }))}
-              rows={4}
-              placeholder="Detailed notes from the consultation — issues discussed, client concerns, legal analysis..."
-              className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#1B2A4A]/20 focus:border-[#1B2A4A] resize-none"
+              onChange={html => setForm(f => ({ ...f, consultation_notes: html }))}
+              placeholder="Detailed notes from the consultation — issues discussed, client concerns, legal analysis… or pick a template above."
             />
           </div>
 
@@ -375,11 +649,20 @@ function OutcomeDetailPanel({
 }) {
   const linkedMatter = clioMatters.find(m => m.id === outcome.clio_matter_id);
 
-  const Section = ({ label, value }: { label: string; value: string | null | undefined }) =>
+  const Section = ({ label, value, isHtml }: { label: string; value: string | null | undefined; isHtml?: boolean }) =>
     value ? (
       <div>
         <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">{label}</p>
-        <p className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">{value}</p>
+        {isHtml ? (
+          <div
+            className="text-sm text-gray-800 leading-relaxed prose prose-sm max-w-none
+              [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5
+              [&_li]:my-0.5 [&_p]:my-1 [&_strong]:font-semibold"
+            dangerouslySetInnerHTML={{ __html: value }}
+          />
+        ) : (
+          <p className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">{value}</p>
+        )}
       </div>
     ) : null;
 
@@ -461,7 +744,7 @@ function OutcomeDetailPanel({
           )}
 
           <Section label="Outcome Summary" value={outcome.outcome_summary} />
-          <Section label="Consultation Notes" value={outcome.consultation_notes} />
+          <Section label="Consultation Notes" value={outcome.consultation_notes} isHtml />
           <Section label="Next Steps" value={outcome.next_steps} />
           <Section label="Deliverables" value={outcome.deliverables} />
 
