@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import ConsultationAvailabilityManager from './ConsultationAvailabilityManager';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -50,12 +51,21 @@ interface ClioTimeEntry {
   synced_at: string | null;
 }
 
+interface ConsultationBooking {
+  id: string;
+  name: string | null;
+  email: string | null;
+  booking_date: string | null;
+  booking_time: string | null;
+  status: string | null;
+}
+
 interface SyncResult {
   synced: number;
   error?: string;
 }
 
-type ActiveDataTab = 'matters' | 'contacts' | 'time_entries';
+type ActiveDataTab = 'matters' | 'contacts' | 'time_entries' | 'availability';
 
 const SYNC_TYPES = [
   { key: 'matters', label: 'Matters', icon: '⚖️' },
@@ -193,6 +203,99 @@ function ConvertToBookingModal({
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ─── Linked Consultations Cell ────────────────────────────────────────────────
+
+function LinkedConsultationsCell({ email, name }: { email: string | null; name: string | null }) {
+  const [bookings, setBookings] = useState<ConsultationBooking[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetch = async () => {
+      if (!email && !name) {
+        setLoading(false);
+        return;
+      }
+      const supabase = createClient();
+      let query = supabase
+        .from('consultation_bookings')
+        .select('id, name, email, booking_date, booking_time, status')
+        .order('booking_date', { ascending: true });
+
+      if (email) {
+        query = query.eq('email', email);
+      } else if (name) {
+        query = query.ilike('name', `%${name}%`);
+      }
+
+      const { data } = await query;
+      setBookings((data ?? []) as ConsultationBooking[]);
+      setLoading(false);
+    };
+    fetch();
+  }, [email, name]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center gap-1.5 text-gray-400 text-xs">
+        <div className="w-3 h-3 border border-gray-300 border-t-transparent rounded-full animate-spin" />
+        <span>Loading…</span>
+      </div>
+    );
+  }
+
+  if (bookings.length === 0) {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-500">
+        None
+      </span>
+    );
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const upcoming = bookings.filter(b => {
+    if (!b.booking_date) return false;
+    return new Date(b.booking_date) >= today;
+  });
+
+  const nextBooking = upcoming[0] ?? null;
+
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center gap-1.5">
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+          {bookings.length} booked
+        </span>
+        {upcoming.length > 0 && (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700">
+            {upcoming.length} upcoming
+          </span>
+        )}
+      </div>
+      {nextBooking && nextBooking.booking_date && (
+        <p className="text-xs text-gray-500 leading-tight">
+          <span className="font-medium text-gray-700">Next:</span>{' '}
+          {new Date(nextBooking.booking_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+          {nextBooking.booking_time && (
+            <span className="ml-1 text-gray-500">
+              {(() => {
+                const [h, m] = nextBooking.booking_time.split(':').map(Number);
+                const ampm = h >= 12 ? 'PM' : 'AM';
+                const hour = h % 12 || 12;
+                return `${hour}:${m.toString().padStart(2, '0')} ${ampm}`;
+              })()}
+            </span>
+          )}
+        </p>
+      )}
     </div>
   );
 }
@@ -416,11 +519,12 @@ export default function ClioSyncDashboard() {
       )}
 
       {/* Stats row */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
           { label: 'Matters', count: matters.length, icon: '⚖️', tab: 'matters' as ActiveDataTab },
           { label: 'Contacts', count: contacts.length, icon: '👥', tab: 'contacts' as ActiveDataTab },
           { label: 'Time Entries', count: timeEntries.length, icon: '⏱️', tab: 'time_entries' as ActiveDataTab },
+          { label: 'Availability', count: null, icon: '📅', tab: 'availability' as ActiveDataTab },
         ].map(stat => (
           <button
             key={stat.tab}
@@ -428,7 +532,11 @@ export default function ClioSyncDashboard() {
             className={`rounded-xl border p-4 text-center transition-all ${activeDataTab === stat.tab ? 'border-[#1B2A4A] bg-[#1B2A4A]/5' : 'border-gray-200 bg-white hover:border-gray-300'}`}
           >
             <div className="text-2xl mb-1">{stat.icon}</div>
-            <div className="text-xl font-bold text-[#1B2A4A]">{stat.count}</div>
+            {stat.count !== null ? (
+              <div className="text-xl font-bold text-[#1B2A4A]">{stat.count}</div>
+            ) : (
+              <div className="text-xl font-bold text-[#1B2A4A]">—</div>
+            )}
             <div className="text-xs text-gray-500 mt-0.5">{stat.label}</div>
           </button>
         ))}
@@ -436,7 +544,7 @@ export default function ClioSyncDashboard() {
 
       {/* Tab bar + per-type sync button */}
       <div className="flex items-center justify-between border-b border-gray-200">
-        <div className="flex gap-1">
+        <div className="flex gap-1 flex-wrap">
           {SYNC_TYPES.map(t => (
             <button
               key={t.key}
@@ -450,8 +558,16 @@ export default function ClioSyncDashboard() {
               {t.icon} {t.label}
             </button>
           ))}
+          <button
+            onClick={() => { setActiveDataTab('availability'); setSearch(''); setStatusFilter('all'); setBillableFilter('all'); }}
+            className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
+              activeDataTab === 'availability' ?'border-[#1B2A4A] text-[#1B2A4A]' :'border-transparent text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            📅 Availability
+          </button>
         </div>
-        {clioConnected && (
+        {clioConnected && activeDataTab !== 'availability' && (
           <button
             onClick={() => handleSync(activeDataTab)}
             disabled={syncing !== null}
@@ -474,74 +590,78 @@ export default function ClioSyncDashboard() {
         )}
       </div>
 
-      {/* Search + filters */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-          </svg>
-          <input
-            type="text"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder={`Search ${activeDataTab.replace('_', ' ')}…`}
-            className="w-full pl-9 pr-4 py-2 rounded-xl border border-gray-200 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#1B2A4A]/20 focus:border-[#1B2A4A]"
-          />
-        </div>
+      {/* Search + filters — only for data tabs */}
+      {activeDataTab !== 'availability' && (
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
+            <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder={`Search ${activeDataTab.replace('_', ' ')}…`}
+              className="w-full pl-9 pr-4 py-2 rounded-xl border border-gray-200 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#1B2A4A]/20 focus:border-[#1B2A4A]"
+            />
+          </div>
 
-        {activeDataTab === 'matters' && (
-          <>
+          {activeDataTab === 'matters' && (
+            <>
+              <select
+                value={statusFilter}
+                onChange={e => setStatusFilter(e.target.value)}
+                className="px-3 py-2 rounded-xl border border-gray-200 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#1B2A4A]/20 focus:border-[#1B2A4A] bg-white"
+              >
+                <option value="all">All Statuses</option>
+                <option value="open">Open</option>
+                <option value="closed">Closed</option>
+                <option value="pending">Pending</option>
+              </select>
+              <select
+                value={billableFilter}
+                onChange={e => setBillableFilter(e.target.value)}
+                className="px-3 py-2 rounded-xl border border-gray-200 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#1B2A4A]/20 focus:border-[#1B2A4A] bg-white"
+              >
+                <option value="all">All Types</option>
+                <option value="billable">Billable</option>
+                <option value="non_billable">Non-Billable</option>
+              </select>
+            </>
+          )}
+
+          {activeDataTab === 'contacts' && (
             <select
               value={statusFilter}
               onChange={e => setStatusFilter(e.target.value)}
               className="px-3 py-2 rounded-xl border border-gray-200 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#1B2A4A]/20 focus:border-[#1B2A4A] bg-white"
             >
-              <option value="all">All Statuses</option>
-              <option value="open">Open</option>
-              <option value="closed">Closed</option>
-              <option value="pending">Pending</option>
+              <option value="all">All Types</option>
+              <option value="person">Person</option>
+              <option value="company">Company</option>
             </select>
+          )}
+
+          {activeDataTab === 'time_entries' && (
             <select
               value={billableFilter}
               onChange={e => setBillableFilter(e.target.value)}
               className="px-3 py-2 rounded-xl border border-gray-200 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#1B2A4A]/20 focus:border-[#1B2A4A] bg-white"
             >
-              <option value="all">All Types</option>
+              <option value="all">All Entries</option>
               <option value="billable">Billable</option>
               <option value="non_billable">Non-Billable</option>
+              <option value="billed">Billed</option>
+              <option value="unbilled">Unbilled</option>
             </select>
-          </>
-        )}
-
-        {activeDataTab === 'contacts' && (
-          <select
-            value={statusFilter}
-            onChange={e => setStatusFilter(e.target.value)}
-            className="px-3 py-2 rounded-xl border border-gray-200 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#1B2A4A]/20 focus:border-[#1B2A4A] bg-white"
-          >
-            <option value="all">All Types</option>
-            <option value="person">Person</option>
-            <option value="company">Company</option>
-          </select>
-        )}
-
-        {activeDataTab === 'time_entries' && (
-          <select
-            value={billableFilter}
-            onChange={e => setBillableFilter(e.target.value)}
-            className="px-3 py-2 rounded-xl border border-gray-200 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#1B2A4A]/20 focus:border-[#1B2A4A] bg-white"
-          >
-            <option value="all">All Entries</option>
-            <option value="billable">Billable</option>
-            <option value="non_billable">Non-Billable</option>
-            <option value="billed">Billed</option>
-            <option value="unbilled">Unbilled</option>
-          </select>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
       {/* Data tables */}
-      {loadingData ? (
+      {activeDataTab === 'availability' ? (
+        <ConsultationAvailabilityManager />
+      ) : loadingData ? (
         <div className="flex items-center justify-center py-16">
           <div className="w-8 h-8 border-2 border-[#1B2A4A] border-t-transparent rounded-full animate-spin" />
         </div>
@@ -618,6 +738,7 @@ export default function ClioSyncDashboard() {
                           <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Phone</th>
                           <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Company</th>
                           <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Type</th>
+                          <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Linked Consultations</th>
                           <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Action</th>
                         </tr>
                       </thead>
@@ -637,6 +758,9 @@ export default function ClioSyncDashboard() {
                                   {c.contact_type}
                                 </span>
                               ) : '—'}
+                            </td>
+                            <td className="px-4 py-3 min-w-[180px]">
+                              <LinkedConsultationsCell email={c.email} name={c.name} />
                             </td>
                             <td className="px-4 py-3">
                               <button
