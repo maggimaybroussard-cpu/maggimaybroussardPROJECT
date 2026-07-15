@@ -1,5 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sendMFACode, sendPaymentReminderSMS, sendAppointmentReminderSMS, sendSMS } from '@/lib/twilio/smsClient';
+import {
+  sendSMS,
+  sendMFACode,
+  sendPaymentReminderSMS,
+  sendAppointmentReminderSMS,
+  sendAppointmentConfirmationSMS,
+  sendLeadResponseSMS,
+  sendAbandonedBookingSMS,
+} from '@/lib/twilio/smsClient';
 
 export async function POST(req: NextRequest) {
   try {
@@ -8,7 +16,6 @@ export async function POST(req: NextRequest) {
 
     // booking_confirmation uses a different shape — handle it before the type check
     if (!type && params.reminderType === 'booking_confirmation') {
-      // Called from BookingReminderSection — send a direct SMS reminder
       const { name, bookingDate, bookingTime, meetingLink } = params;
       if (!to || !name || !bookingDate || !bookingTime) {
         return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -26,9 +33,10 @@ export async function POST(req: NextRequest) {
 
       const message =
         `Maggi May Broussard Legal Services\n\n` +
-        `Hi ${firstName}! Your consultation reminder is set.\n\n` +
+        `Hi ${firstName}! ✅ Your consultation is CONFIRMED.\n\n` +
         `📅 ${formattedDate}\n⏰ ${formattedTime}\n🔗 Google Meet: ${meetUrl}\n\n` +
-        `You'll receive another reminder 24 hours before your session.\n\nReply STOP to opt out.`;
+        `You'll receive a reminder 24 hours before your session.\n\n` +
+        `Questions? Visit broussardlegalservices.com\n\nReply STOP to opt out.`;
 
       let result = await sendSMS(to, message);
       if (!result.success) {
@@ -66,6 +74,56 @@ export async function POST(req: NextRequest) {
           return NextResponse.json({ error: 'Missing appointment reminder fields' }, { status: 400 });
         }
         result = await sendAppointmentReminderSMS({ to, clientName, eventName, eventDate, eventTime, reminderType });
+        break;
+      }
+
+      case 'booking_confirmation': {
+        const { clientName, appointmentType, appointmentDate, appointmentTime, timezone } = params;
+        if (!clientName || !appointmentDate || !appointmentTime) {
+          return NextResponse.json({ error: 'Missing booking confirmation fields' }, { status: 400 });
+        }
+        result = await sendAppointmentConfirmationSMS({
+          to,
+          clientName,
+          appointmentType: appointmentType ?? 'Paralegal Consultation',
+          appointmentDate,
+          appointmentTime,
+          timezone: timezone ?? 'America/Chicago',
+        });
+        break;
+      }
+
+      case 'lead_response': {
+        const { clientName, service } = params;
+        if (!clientName) return NextResponse.json({ error: 'Missing clientName for lead response SMS' }, { status: 400 });
+        result = await sendLeadResponseSMS({ to, clientName, service: service ?? 'legal services' });
+        break;
+      }
+
+      case 'abandoned_booking': {
+        const { clientName, service } = params;
+        if (!clientName) return NextResponse.json({ error: 'Missing clientName for abandoned booking SMS' }, { status: 400 });
+        result = await sendAbandonedBookingSMS({ to, clientName, service });
+        break;
+      }
+
+      case 'consultation_followup': {
+        const { clientName, bookingDate, service } = params;
+        if (!clientName || !bookingDate) {
+          return NextResponse.json({ error: 'Missing fields for consultation follow-up SMS' }, { status: 400 });
+        }
+        const firstName = clientName.split(' ')[0];
+        const [y, m, d] = bookingDate.split('-').map(Number);
+        const formattedDate = new Date(y, m - 1, d).toLocaleDateString('en-US', {
+          weekday: 'long', month: 'long', day: 'numeric',
+        });
+        const message =
+          `Maggi May Broussard Legal Services\n\n` +
+          `Hi ${firstName}, it's been 48 hours since your ${service ?? 'consultation'} on ${formattedDate}.\n\n` +
+          `We'd love your feedback and want to make sure you have your next steps.\n\n` +
+          `Access your portal: https://broussardlegalservices.com/portal/dashboard\n\n` +
+          `Reply STOP to opt out.`;
+        result = await sendSMS(to, message);
         break;
       }
 

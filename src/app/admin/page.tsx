@@ -138,6 +138,7 @@ const LinearProjectsDashboard = dynamic(() => import('./components/LinearProject
 const ClioSyncDashboard = dynamic(() => import('./components/ClioSyncDashboard'), { ssr: false });
 const ConsultationOutcomesDashboard = dynamic(() => import('./components/ConsultationOutcomesDashboard'), { ssr: false });
 const ConsultationPipelineReport = dynamic(() => import('./components/ConsultationPipelineReport'), { ssr: false });
+const ConsultationAutomationDashboard = dynamic(() => import('./components/ConsultationAutomationDashboard'), { ssr: false });
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -5138,7 +5139,7 @@ function IntegrationsDashboard() {
 // ─── Main Admin Page ──────────────────────────────────────────────────────────
 
 export default function AdminInquiriesPage() {
-  const [activeTab, setActiveTab] = useState<'overview' | 'inquiries' | 'bookings' | 'payments' | 'analytics' | 'sequences' | 'documents' | 'reminders' | 'cases' | 'emails' | 'consultations' | 'testimonials' | 'clients' | 'client_profiles' | 'integrations' | 'operations' | 'intake_nurture' | 'analytics_dashboard' | 'prospect_scoring' | 'billing_history' | 'retainer_subscriptions' | 'retainer_balance' | 'email_templates' | 'billing_test' | 'billable_hours' | 'invoice_generator' | 'invoice_reminders' | 'invoice_tracking' | 'invoices' | 'reporting' | 'practice_insights' | 'kanban' | 'tasks' | 'notification_emails' | 'messages' | 'security' | 'doc_templates' | 'client_doc_templates' | 'contracts_repository' | 'intake_analytics' | 'intake_routing' | 'audit_trail' | 'routing_admin' | 'scheduling' | 'availability' | 'growth_analytics' | 'strategic_analytics' | 'notifications' | 'roster' | 'retainer_invoice_scheduler' | 'stripe_reconciliation' | 'billing_ops_hub' | 'client_invoices_overview' | 'consultation_funnel' | 'booking_analytics' | 'financial_dashboard' | 'deliverables' | 'case_actions' | 'post_case_close' | 'lifecycle_emails' | 'realtime_feed' | 'ga4_conversion' | 'iolta_ledger' | 'lexi_admin_tools' | 'lexi_document_drafts' | 'monthly_reports' | 'referral_claims' | 'contact_leads' | 'hours_reporting' | 'paralegal_hours' | 'event_notifications' | 'practice_analytics' | 'billing' | 'matter_profitability' | 'matter_time_logger' | 'court_deadlines' | 'staff_time' | 'webhooks' | 'nps_surveys' | 'retainer_alerts' | 'secure_sharing' | 'intake_templates' | 'reporting_exports' | 'billable_allocation' | 'practice_kpi' | 'email_reminders' | 'doc_extractor' | 'matter_invoice_builder' | 'cash_position' | 'portal_adoption' | 'scheduled_consultations' | 'consultation_availability' | 'submissions_inbox' | 'assistant_conversations' | 'lexi_assistant' | 'sms_reminders' | 'client_task_portal' | 'consultation_admin' | 'case_studies_manager' | 'lead_nurture' | 'calendly_pipeline' | 'conversion_funnel' | 'client_dashboard_view' | 'retainer_doc_analyzer' | 'client_intake_forms' | 'engagement_letters' | 'gemini_case_analyzer' | 'email_sms_templates' | 'active_cases' | 'realtime_case_notifications' | 'doc_esignature_manager' | 'retainer_invoice_automation' | 'caseflow_manager' | 'retainer_renewal_notifications' | 'client_communication_hub' | 'notion_integration' | 'time_entry' | 'case_file_repository' | 'case_pipeline' | 'admin_kpi' | 'transactional_emails' | 'email_nurture_templates' | 'case_calendar' | 'automated_intake' | 'client_journey_automation' | 'document_management' | 'practice_management_suite' | 'ai_legal_secretary' | 'linear_projects' | 'clio_sync' | 'consultation_outcomes' | 'consultation_pipeline_report'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'inquiries' | 'bookings' | 'payments' | 'analytics' | 'sequences' | 'documents' | 'reminders' | 'cases' | 'emails' | 'consultations' | 'testimonials' | 'clients' | 'client_profiles' | 'integrations' | 'operations' | 'intake_nurture' | 'analytics_dashboard' | 'prospect_scoring' | 'billing_history' | 'retainer_subscriptions' | 'retainer_balance' | 'email_templates' | 'billing_test' | 'billable_hours' | 'invoice_generator' | 'invoice_reminders' | 'invoice_tracking' | 'invoices' | 'reporting' | 'practice_insights' | 'kanban' | 'tasks' | 'notification_emails' | 'messages' | 'security' | 'doc_templates' | 'client_doc_templates' | 'contracts_repository' | 'intake_analytics' | 'intake_routing' | 'audit_trail' | 'routing_admin' | 'scheduling' | 'availability' | 'growth_analytics' | 'strategic_analytics' | 'notifications' | 'roster' | 'retainer_invoice_scheduler' | 'stripe_reconciliation' | 'billing_ops_hub' | 'client_invoices_overview' | 'consultation_funnel' | 'booking_analytics' | 'financial_dashboard' | 'deliverables' | 'case_actions' | 'post_case_close' | 'lifecycle_emails' | 'realtime_feed' | 'ga4_conversion' | 'iolta_ledger' | 'lexi_admin_tools' | 'lexi_document_drafts' | 'monthly_reports' | 'referral_claims' | 'contact_leads' | 'hours_reporting' | 'paralegal_hours' | 'event_notifications' | 'practice_analytics' | 'billing' | 'matter_profitability' | 'matter_time_logger' | 'court_deadlines' | 'staff_time' | 'webhooks' | 'nps_surveys' | 'retainer_alerts' | 'secure_sharing' | 'intake_templates' | 'reporting_exports' | 'billable_allocation' | 'practice_kpi' | 'email_reminders' | 'doc_extractor' | 'matter_invoice_builder' | 'cash_position' | 'portal_adoption' | 'scheduled_consultations' | 'consultation_availability' | 'submissions_inbox' | 'assistant_conversations' | 'lexi_assistant' | 'sms_reminders' | 'client_task_portal' | 'consultation_admin' | 'case_studies_manager' | 'lead_nurture' | 'calendly_pipeline' | 'conversion_funnel' | 'client_dashboard_view' | 'retainer_doc_analyzer' | 'client_intake_forms' | 'engagement_letters' | 'gemini_case_analyzer' | 'email_sms_templates' | 'active_cases' | 'realtime_case_notifications' | 'doc_esignature_manager' | 'retainer_invoice_automation' | 'caseflow_manager' | 'retainer_renewal_notifications' | 'client_communication_hub' | 'notion_integration' | 'time_entry' | 'case_file_repository' | 'case_pipeline' | 'admin_kpi' | 'transactional_emails' | 'email_nurture_templates' | 'case_calendar' | 'automated_intake' | 'client_journey_automation' | 'document_management' | 'practice_management_suite' | 'ai_legal_secretary' | 'linear_projects' | 'clio_sync' | 'consultation_outcomes' | 'consultation_pipeline_report' | 'consultation_automation'>('overview');
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -7511,6 +7512,18 @@ export default function AdminInquiriesPage() {
       ),
     },
     {
+      id: 'consultation_automation' as const,
+      label: 'Consultation Automation',
+      description: 'Auto-trigger SMS & email reminders 24hr before consultations and follow-up prompts 48hr after for feedback and next steps',
+      badge: 'Auto',
+      badgeColor: 'bg-emerald-100 text-emerald-700',
+      icon: (
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+        </svg>
+      ),
+    },
+    {
       id: 'client_task_portal' as const,
       label: 'Client Tasks',
       description: 'Assign and track tasks for active clients — manage pending, in-progress, and completed deliverables with Resend email alerts',
@@ -8352,6 +8365,9 @@ id: 'retainer_renewal_notifications' as const,
 
         {/* ── SMS Reminders Tab ── */}
         {activeTab === 'sms_reminders' && <SMSRemindersDashboard />}
+
+        {/* ── Consultation Automation Tab ── */}
+        {activeTab === 'consultation_automation' && <ConsultationAutomationDashboard />}
 
         {/* ── Submissions Inbox Tab ── */}
         {activeTab === 'submissions_inbox' && <SubmissionsInboxDashboard />}
