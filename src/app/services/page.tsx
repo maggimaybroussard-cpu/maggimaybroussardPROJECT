@@ -13,8 +13,9 @@ import EmailOptInSection from '../components/EmailOptInSection';
 import CaseStudiesSocialProof from '../components/CaseStudiesSocialProof';
 import TestimonialsCompact from '../components/TestimonialsCompact';
 import Link from 'next/link';
-
 import ServicesFAQ from './components/ServicesFAQ';
+import TrustSignalsBar from '@/components/TrustSignalsBar';
+import AttorneyDisclaimer from '@/components/AttorneyDisclaimer';
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
@@ -211,9 +212,11 @@ export default function ServicesPage() {
         }}
       />
       <Header />
+      <AttorneyDisclaimer variant="banner" />
       <main>
         <ServicesPageTracker />
         <ServicesHero />
+        <TrustSignalsBar />
         <section id="services-overview" aria-label="Overview of paralegal services offered">
           <ServicesBentoGrid />
         </section>

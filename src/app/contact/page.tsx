@@ -7,6 +7,8 @@ import ContactSplit from './components/ContactSplit';
 import CalendlyBookingSection from './components/CalendlyBookingSection';
 import GoogleCalendarBookingSection from './components/GoogleCalendarBookingSection';
 import BookingReminderSection from './components/BookingReminderSection';
+import TrustSignalsBar from '@/components/TrustSignalsBar';
+import AttorneyDisclaimer from '@/components/AttorneyDisclaimer';
 
 export const metadata: Metadata = {
   title: 'Contact Broussard Legal Services — Legal Services Inquiry',
@@ -154,8 +156,10 @@ export default function ContactPage() {
         }}
       />
       <Header />
+      <AttorneyDisclaimer variant="banner" />
       <main>
         <ContactHero />
+        <TrustSignalsBar />
         <ContactSplit />
         <CalendlyBookingSection />
         <GoogleCalendarBookingSection />

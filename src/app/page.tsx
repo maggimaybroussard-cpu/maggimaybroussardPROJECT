@@ -15,6 +15,8 @@ import EmailOptInModal from './components/EmailOptInModal';
 import HomepageTracker from './components/HomepageTracker';
 import MobileAppSection from './components/MobileAppSection';
 import BrandVideoSection from './components/BrandVideoSection';
+import TrustSignalsBar from '@/components/TrustSignalsBar';
+import AttorneyDisclaimer from '@/components/AttorneyDisclaimer';
 
 export const metadata: Metadata = {
   title: 'Contract Paralegal Services New Orleans — Broussard Legal Services',
@@ -117,9 +119,11 @@ export default function HomePage() {
         }}
       />
       <Header />
+      <AttorneyDisclaimer variant="banner" />
       <main id="main-content" suppressHydrationWarning>
         <HomepageTracker />
         <HeroSection />
+        <TrustSignalsBar />
         <BrandVideoSection />
         <AboutSection />
         <ServicesPreviewSection />
