@@ -616,7 +616,8 @@ export default function ContactSplit() {
   };
 
   const fieldClass = (field: keyof FormErrors, extra = '') => {
-    const base = 'w-full px-4 py-3 rounded-xl border bg-input text-foreground text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 transition-all duration-200';
+    // min-h-[52px] ensures 44px+ tap target; text-base (16px) prevents iOS zoom
+    const base = 'w-full px-4 py-3 min-h-[52px] rounded-xl border bg-input text-foreground text-base placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 transition-all duration-200 touch-manipulation';
     if (touched[field] && errors[field]) {
       return `${base} border-red-400 focus:ring-red-300/40 focus:border-red-400 ${extra}`;
     }
@@ -636,7 +637,7 @@ export default function ContactSplit() {
     : null;
 
   return (
-    <section className="py-12 md:py-24 bg-background">
+    <section className="py-10 sm:py-14 md:py-24 bg-background">
       {/* Toast Notification */}
       <div
         aria-live="polite"
@@ -686,7 +687,7 @@ export default function ContactSplit() {
         <div className="grid lg:grid-cols-5 gap-8 lg:gap-20 items-start">
 
           {/* Left — Contact Info */}
-          <div className="lg:col-span-2 flex flex-col gap-7 md:gap-10">
+          <div className="lg:col-span-2 flex flex-col gap-6 sm:gap-7 md:gap-10">
             {/* Personal note */}
             <div className="bg-secondary/60 border border-border card-rounded p-6 md:p-8">
               <p className="font-serif text-xl md:text-2xl italic text-foreground mb-3 md:mb-4 leading-snug">
@@ -883,7 +884,7 @@ export default function ContactSplit() {
                 </div>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} noValidate className="bg-card border border-border card-rounded p-6 md:p-10 flex flex-col gap-5 md:gap-6">
+              <form onSubmit={handleSubmit} noValidate className="bg-card border border-border card-rounded p-5 sm:p-6 md:p-10 flex flex-col gap-5 md:gap-6">
                 <div>
                   <h2 className="font-serif text-3xl text-foreground mb-2">Send a Message</h2>
                   <p className="text-sm text-muted-foreground font-light">All fields are required. Your information is kept strictly confidential.</p>
@@ -1110,7 +1111,7 @@ export default function ContactSplit() {
                     type="checkbox"
                     checked={formState.smsConsent}
                     onChange={(e) => setFormState((prev) => ({ ...prev, smsConsent: e.target.checked }))}
-                    className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded border-border accent-accent"
+                    className="mt-0.5 h-5 w-5 min-w-[20px] shrink-0 cursor-pointer rounded border-border accent-accent touch-manipulation"
                   />
                   <label htmlFor="smsConsent" className="text-xs text-muted-foreground leading-relaxed cursor-pointer">
                     By checking this box, I agree to receive SMS/text messages from Broussard Legal Services regarding my inquiry, appointment reminders, case updates, and legal service information. Message frequency varies. Message &amp; data rates may apply. Reply STOP to unsubscribe at any time. Reply HELP for assistance. This consent is separate from our{' '}
@@ -1124,7 +1125,7 @@ export default function ContactSplit() {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full py-4 bg-primary text-primary-foreground rounded-full text-sm font-semibold uppercase tracking-widest hover:opacity-90 transition-all duration-300 flex items-center justify-center gap-2 hover:gap-3 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:gap-2"
+                  className="w-full py-4 min-h-[56px] bg-primary text-primary-foreground rounded-full text-sm font-semibold uppercase tracking-widest hover:opacity-90 active:scale-[0.98] transition-all duration-300 flex items-center justify-center gap-2 hover:gap-3 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:gap-2 touch-manipulation"
                 >
                   {isLoading ? (
                     <>
