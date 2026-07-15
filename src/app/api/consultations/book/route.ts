@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { getGoogleAccessToken } from '@/lib/googleCalendar';
 import { sendAppointmentConfirmationSMS } from '@/lib/twilio/smsClient';
+import { sendGmailEmail } from '@/lib/gmail/gmailClient';
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -9,7 +10,6 @@ const supabaseAdmin = createClient(
 );
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://broussardlegalservices.com';
-const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
 
 const brand = {
   bg: '#FAF7F2',
@@ -580,11 +580,11 @@ export async function POST(req: NextRequest) {
 
     const icsDownloadUrl = `${SITE_URL}/api/consultations/calendar-invite?bookingId=${booking.id}`;
 
-    // Send confirmation email via Resend
+    // Send confirmation email via Gmail (Google Workspace)
     let emailSent = false;
     let emailError: string | null = null;
 
-    if (RESEND_API_KEY && RESEND_API_KEY !== 'your-resend-api-key-here') {
+    {
       const durationLabel =
         durationMinutes === 15 ? '15-Min' : durationMinutes === 60 ? '60-Min' : '30-Min';
       const subject = `Consultation Confirmed — ${durationLabel} on ${formatDate(bookingDate)} at ${formatTime(bookingTime)} CST`;
@@ -631,35 +631,25 @@ export async function POST(req: NextRequest) {
       });
 
       try {
-        const resendRes = await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${RESEND_API_KEY}`,
-          },
-          body: JSON.stringify({
-            from: 'onboarding@resend.dev',
-            to: [clientEmail],
-            subject,
-            html,
-          }),
+        const result = await sendGmailEmail({
+          to: clientEmail,
+          subject,
+          html,
+          fromName: 'Broussard Legal Services',
         });
 
-        if (resendRes.ok) {
+        if (result.success) {
           emailSent = true;
           await supabaseAdmin
             .from('consultation_bookings')
             .update({ confirmation_sent: true })
             .eq('id', booking.id);
         } else {
-          const errBody = await resendRes.json().catch(() => ({}));
-          emailError = (errBody as { message?: string }).message || `Resend error ${resendRes.status}`;
+          emailError = result.error ?? 'Email send failed';
         }
       } catch (e) {
         emailError = e instanceof Error ? e.message : 'Email send failed';
       }
-    } else {
-      emailError = 'RESEND_API_KEY not configured';
     }
 
     // Schedule follow-up sequences
