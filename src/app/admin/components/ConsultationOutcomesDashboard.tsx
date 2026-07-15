@@ -365,6 +365,19 @@ function OutcomeFormModal({
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [clioSyncStatus, setClioSyncStatus] = useState<'idle' | 'syncing' | 'synced' | 'error'>('idle');
+  const [clioSyncMessage, setClioSyncMessage] = useState<string | null>(null);
+
+  // Detect outcome type from notes HTML content
+  const detectOutcomeType = (notesHtml: string): string | null => {
+    const lower = notesHtml.toLowerCase();
+    if (lower.includes('outcome type: resolved')) return 'resolved';
+    if (lower.includes('outcome type: escalated')) return 'escalated';
+    if (lower.includes('outcome type: ongoing')) return 'ongoing';
+    if (lower.includes('outcome type: pending')) return 'pending';
+    // Also check outcome_summary
+    return null;
+  };
 
   // Auto-fill client info when booking is selected
   const handleBookingChange = (bookingId: string) => {
@@ -385,6 +398,8 @@ function OutcomeFormModal({
     }
     setSaving(true);
     setError(null);
+    setClioSyncStatus('idle');
+    setClioSyncMessage(null);
     try {
       const supabase = createClient();
       const selectedMatter = clioMatters.find(m => m.id === form.clio_matter_id);
@@ -417,6 +432,47 @@ function OutcomeFormModal({
           .eq('id', outcome.id);
         if (updateError) throw new Error(updateError.message);
       }
+
+      // ── Auto-update Clio matter status + notes ──────────────────────────
+      if (selectedMatter?.clio_id) {
+        const outcomeType =
+          detectOutcomeType(form.consultation_notes) ||
+          detectOutcomeType(form.outcome_summary);
+
+        if (outcomeType) {
+          setClioSyncStatus('syncing');
+          try {
+            const clioRes = await fetch('/api/clio/update-matter', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                clio_matter_clio_id: selectedMatter.clio_id,
+                outcome_type: outcomeType,
+                notes_html: form.consultation_notes,
+                client_name: form.client_name.trim(),
+                consultation_date: form.consultation_date || null,
+              }),
+            });
+            const clioData = await clioRes.json();
+            if (!clioRes.ok) {
+              setClioSyncStatus('error');
+              setClioSyncMessage(`Clio sync warning: ${clioData.error ?? 'Unknown error'}`);
+            } else {
+              setClioSyncStatus('synced');
+              setClioSyncMessage(`Clio matter updated → ${clioData.clio_status}`);
+              // Brief pause so user sees the sync confirmation
+              await new Promise(r => setTimeout(r, 1200));
+            }
+          } catch (clioErr) {
+            setClioSyncStatus('error');
+            setClioSyncMessage(`Clio sync failed: ${(clioErr as Error).message}`);
+            // Don't block the save — outcome is already saved
+            await new Promise(r => setTimeout(r, 1200));
+          }
+        }
+      }
+      // ────────────────────────────────────────────────────────────────────
+
       onSaved();
     } catch (err) {
       setError((err as Error).message);
@@ -602,6 +658,30 @@ function OutcomeFormModal({
           {error && (
             <p className="text-sm text-red-500 bg-red-50 rounded-xl px-3 py-2">{error}</p>
           )}
+
+          {/* Clio Sync Status Banner */}
+          {clioSyncStatus === 'syncing' && (
+            <div className="flex items-center gap-2 rounded-xl bg-blue-50 border border-blue-200 px-3 py-2 text-sm text-blue-700">
+              <div className="w-3.5 h-3.5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin shrink-0" />
+              Syncing outcome to Clio…
+            </div>
+          )}
+          {clioSyncStatus === 'synced' && clioSyncMessage && (
+            <div className="flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-200 px-3 py-2 text-sm text-emerald-700">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+              {clioSyncMessage}
+            </div>
+          )}
+          {clioSyncStatus === 'error' && clioSyncMessage && (
+            <div className="flex items-center gap-2 rounded-xl bg-amber-50 border border-amber-200 px-3 py-2 text-sm text-amber-700">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+              {clioSyncMessage}
+            </div>
+          )}
         </div>
 
         {/* Footer */}
@@ -620,7 +700,7 @@ function OutcomeFormModal({
             {saving ? (
               <>
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                Saving…
+                {clioSyncStatus === 'syncing' ? 'Syncing to Clio…' : 'Saving…'}
               </>
             ) : (
               mode === 'create' ? 'Create Outcome' : 'Save Changes'

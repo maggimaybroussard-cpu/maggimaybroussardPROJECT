@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { createClient } from '@/lib/supabase/client';
 import AppLogo from '@/components/ui/AppLogo';
 import PaymentModal, { PAYMENT_OPTIONS, PaymentType } from '@/components/PaymentModal';
+import MakePaymentButton from '@/components/MakePaymentButton';
 import { ACHPaymentModal, PaymentPlanModal } from '@/components/ACHPaymentComponents';
 import PaymentMethodsPanel from '@/components/PaymentMethodsPanel';
 import BillingPaymentStatusReader from './BillingPaymentStatusReader';
@@ -871,6 +872,26 @@ export default function BillingPortalPage() {
             </button>
           </div>
         )}
+
+        {/* ── Make Payment Button (Stripe) ── */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-6 mb-8 p-6 bg-card border border-border rounded-2xl">
+          <div>
+            <h2 className="text-base font-semibold text-foreground">Secure Online Payment</h2>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              Pay invoices, deposits, or retainer fees securely via Stripe. Funds are deposited directly to Broussard Legal Services.
+            </p>
+          </div>
+          <div className="shrink-0">
+            <MakePaymentButton
+              amount={outstandingTotal > 0 ? outstandingTotal : 0}
+              description={outstandingTotal > 0 ? `Outstanding balance — ${outstandingInvoices.length} invoice${outstandingInvoices.length !== 1 ? 's' : ''}` : 'Legal Services Payment'}
+              customerName={inquiry?.name ?? ''}
+              customerEmail={user?.email ?? ''}
+              paymentType="portal_payment"
+              showCardLogos={true}
+            />
+          </div>
+        </div>
 
         {/* ── Enhanced Summary stat cards ── */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
