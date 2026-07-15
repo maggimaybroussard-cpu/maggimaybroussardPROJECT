@@ -52,7 +52,7 @@ export default function AttorneyDisclaimer({ variant = 'banner', className = '' 
   // banner variant
   return (
     <div
-      className={`w-full bg-[#355E3B]/5 border-b border-[#355E3B]/15 ${className}`}
+      className={`fixed top-0 left-0 w-full z-40 bg-[#355E3B]/5 border-b border-[#355E3B]/15 ${className}`}
       role="note"
       aria-label="Attorney disclaimer notice"
     >
