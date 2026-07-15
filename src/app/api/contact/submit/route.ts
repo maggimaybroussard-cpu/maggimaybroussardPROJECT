@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
+import { validateContactForm } from '@/lib/sanitize';
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://broussardlegalservices.com';
@@ -261,11 +262,19 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { name, firm, email, service, message, retainerTier, assigned_paralegal, suggested_service } = body;
 
-    if (!name || !firm || !email || !service || !message) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    // ── Input validation & sanitization ─────────────────────────────────
+    const validation = validateContactForm(body);
+    if (!validation.valid) {
+      return NextResponse.json(
+        { error: validation.errors[0] || 'Invalid form data', errors: validation.errors },
+        { status: 400 }
+      );
     }
+
+    const { name, firm, email, service, message, retainerTier, phone } = validation.sanitized;
+    const { assigned_paralegal, suggested_service } = body;
+    // ────────────────────────────────────────────────────────────────────
 
     // 1. Store in Supabase
     let inquiryId: string | null = null;
@@ -304,7 +313,7 @@ export async function POST(req: NextRequest) {
             inquiry_id: inquiryId,
             form_id: 'contact_inquiry',
           },
-          email // use email as stable client_id proxy
+          email
         );
         // ── GA4 Measurement Protocol: workflow funnel step 1 ──────────────
         await sendGA4Event(
@@ -326,7 +335,6 @@ export async function POST(req: NextRequest) {
 
     // 2. Send emails via Resend
     if (!RESEND_API_KEY || RESEND_API_KEY === 'your-resend-api-key-here') {
-      // No Resend key — still return success if DB insert worked
       return NextResponse.json({
         success: true,
         inquiryId,
@@ -371,7 +379,7 @@ export async function POST(req: NextRequest) {
       }),
     }).catch(() => {});
 
-    // Schedule 3-step follow-up sequence (Day 0 confirmation, Day 2 case study, Day 7 offer)
+    // Schedule 3-step follow-up sequence
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     if (supabaseUrl && supabaseServiceKey) {
@@ -392,14 +400,13 @@ export async function POST(req: NextRequest) {
     }
 
     // ── Instant SMS lead response (fire-and-forget while lead is warm) ──────
-    const submittedPhone: string | undefined = body.phone;
-    if (submittedPhone) {
+    if (phone) {
       const siteOrigin = process.env.NEXT_PUBLIC_SITE_URL || 'https://broussardlegalservices.com';
       fetch(`${siteOrigin}/api/sms/lead-response`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          to: submittedPhone,
+          to: phone,
           clientName: name,
           service,
           inquiryId,

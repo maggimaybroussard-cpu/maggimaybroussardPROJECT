@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
+import { validateEmailOptIn } from '@/lib/sanitize';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -179,14 +181,31 @@ async function generateToken(): Promise<string> {
 // ─── Route Handler ────────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
+  // ── Rate limit: 3 opt-ins / 10 min per IP ───────────────────────────────
+  const ip = getClientIp(req);
+  const rl = checkRateLimit(`email-optin:${ip}`, { limit: 3, windowMs: 10 * 60_000 });
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: 'Too many requests. Please wait a few minutes before trying again.' },
+      {
+        status: 429,
+        headers: { 'Retry-After': String(Math.ceil((rl.resetAt - Date.now()) / 1000)) },
+      }
+    );
+  }
+  // ────────────────────────────────────────────────────────────────────────
+
   try {
-    const { email, leadMagnet } = await req.json();
+    const body = await req.json();
 
-    if (!email || typeof email !== 'string' || !email.includes('@')) {
-      return NextResponse.json({ error: 'A valid email address is required.' }, { status: 400 });
+    // ── Input validation & sanitization ─────────────────────────────────
+    const validation = validateEmailOptIn(body);
+    if (!validation.valid) {
+      return NextResponse.json({ error: validation.error }, { status: 400 });
     }
-
-    const normalizedEmail = email.toLowerCase().trim();
+    const normalizedEmail = validation.email;
+    const leadMagnet = typeof body.leadMagnet === 'string' ? body.leadMagnet.slice(0, 100) : '';
+    // ────────────────────────────────────────────────────────────────────
 
     // Check if subscriber already exists and is confirmed
     const { data: existing } = await supabase
@@ -196,7 +215,6 @@ export async function POST(req: NextRequest) {
       .maybeSingle();
 
     if (existing?.confirmed) {
-      // Already confirmed — return success without re-sending
       return NextResponse.json({ success: true, alreadyConfirmed: true });
     }
 
@@ -231,7 +249,6 @@ export async function POST(req: NextRequest) {
       await sendConfirmationEmail(normalizedEmail, confirmUrl);
     } catch (emailErr) {
       console.error('Confirmation email delivery failed:', emailErr);
-      // Still return success — subscriber is saved; they can re-trigger via re-submit
     }
 
     return NextResponse.json({ success: true, pendingConfirmation: true });

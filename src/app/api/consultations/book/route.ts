@@ -3,6 +3,8 @@ import { createClient } from '@supabase/supabase-js';
 import { getGoogleAccessToken } from '@/lib/googleCalendar';
 import { sendAppointmentConfirmationSMS } from '@/lib/twilio/smsClient';
 import { sendGmailEmail } from '@/lib/gmail/gmailClient';
+import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
+import { validateBookingForm } from '@/lib/sanitize';
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -465,29 +467,35 @@ function buildConfirmationEmail(params: {
 }
 
 export async function POST(req: NextRequest) {
+  // ── Rate limit: 10 bookings / 15 min per IP ──────────────────────────────
+  const ip = getClientIp(req);
+  const rl = checkRateLimit(`booking:${ip}`, { limit: 10, windowMs: 15 * 60_000 });
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: 'Too many booking attempts. Please wait before trying again.' },
+      {
+        status: 429,
+        headers: { 'Retry-After': String(Math.ceil((rl.resetAt - Date.now()) / 1000)) },
+      }
+    );
+  }
+  // ────────────────────────────────────────────────────────────────────────
+
   try {
     const body = await req.json();
-    const {
-      clientName,
-      clientEmail,
-      bookingDate,
-      bookingTime,
-      durationMinutes = 30,
-      notes,
-      inquiryId,
-      clientPhone,
-      smsConsent,
-    }: {
-      clientName: string;
-      clientEmail: string;
-      bookingDate: string;
-      bookingTime: string;
-      durationMinutes?: number;
-      notes?: string;
-      inquiryId?: string;
-      clientPhone?: string;
-      smsConsent?: boolean;
-    } = body;
+
+    // ── Input validation & sanitization ─────────────────────────────────
+    const validation = validateBookingForm({ ...body, durationMinutes: body.durationMinutes ?? 30 });
+    if (!validation.valid) {
+      return NextResponse.json(
+        { error: validation.errors[0] || 'Invalid booking data', errors: validation.errors },
+        { status: 400 }
+      );
+    }
+    const { clientName, clientEmail, bookingDate, bookingTime, durationMinutes, notes, clientPhone } = validation.sanitized;
+    const inquiryId: string | undefined = typeof body.inquiryId === 'string' ? body.inquiryId.slice(0, 100) : undefined;
+    const smsConsent: boolean = body.smsConsent === true;
+    // ────────────────────────────────────────────────────────────────────
 
     if (!clientName || !clientEmail || !bookingDate || !bookingTime) {
       return NextResponse.json(
