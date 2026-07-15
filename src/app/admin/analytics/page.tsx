@@ -7,6 +7,7 @@ import {
   Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend,
 } from 'recharts';
 import Link from 'next/link';
+import ClientAcquisitionDashboard from '@/app/admin/components/ClientAcquisitionDashboard';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -139,7 +140,7 @@ export default function AdminAnalyticsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [range, setRange] = useState<7 | 30 | 90>(30);
-  const [activeTab, setActiveTab] = useState<'overview' | 'submissions' | 'bookings' | 'ga4'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'submissions' | 'bookings' | 'ga4' | 'acquisition'>('overview');
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
 
   const fetchData = useCallback(async () => {
@@ -302,6 +303,7 @@ export default function AdminAnalyticsPage() {
     { key: 'overview' as const, label: 'Overview' },
     { key: 'submissions' as const, label: 'Form Submissions' },
     { key: 'bookings' as const, label: 'Booking Conversion' },
+    { key: 'acquisition' as const, label: 'Client Acquisition' },
     { key: 'ga4' as const, label: 'GA4 Performance' },
   ];
 
@@ -765,6 +767,11 @@ export default function AdminAnalyticsPage() {
               </div>
             </div>
           </div>
+        )}
+
+        {/* ── Client Acquisition Tab ── */}
+        {activeTab === 'acquisition' && (
+          <ClientAcquisitionDashboard />
         )}
 
       </div>
