@@ -55,6 +55,58 @@ export default function ServicesPage() {
         dangerouslySetInnerHTML={{
           __html: JSON.stringify({
             '@context': 'https://schema.org',
+            '@type': 'BreadcrumbList',
+            itemListElement: [
+              {
+                '@type': 'ListItem',
+                position: 1,
+                name: 'Home',
+                item: baseUrl,
+              },
+              {
+                '@type': 'ListItem',
+                position: 2,
+                name: 'Services',
+                item: `${baseUrl}/services`,
+              },
+            ],
+          }),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'WebPage',
+            name: 'Legal Services',
+            description: 'Comprehensive legal services including litigation support, legal research, document drafting, case management, discovery assistance, contract review, court filing, and more.',
+            url: `${baseUrl}/services`,
+            image: `${baseUrl}/assets/images/og-image.png`,
+            datePublished: '2024-01-01',
+            dateModified: new Date().toISOString().split('T')[0],
+            inLanguage: 'en-US',
+            isPartOf: {
+              '@type': 'WebSite',
+              name: 'Broussard Legal Services',
+              url: baseUrl,
+            },
+            publisher: {
+              '@type': 'Organization',
+              name: 'Broussard Legal Services',
+              logo: {
+                '@type': 'ImageObject',
+                url: `${baseUrl}/assets/images/app_logo.png`,
+              },
+            },
+          }),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
             '@type': 'LocalBusiness',
             name: 'Broussard Legal Services — Contract Paralegal Services',
             description: 'Professional contract paralegal services for law firms nationwide.',

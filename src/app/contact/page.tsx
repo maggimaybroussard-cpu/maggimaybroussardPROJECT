@@ -46,11 +46,42 @@ export default function ContactPage() {
         dangerouslySetInnerHTML={{
           __html: JSON.stringify({
             '@context': 'https://schema.org',
+            '@type': 'BreadcrumbList',
+            itemListElement: [
+              {
+                '@type': 'ListItem',
+                position: 1,
+                name: 'Home',
+                item: baseUrl,
+              },
+              {
+                '@type': 'ListItem',
+                position: 2,
+                name: 'Contact',
+                item: `${baseUrl}/contact`,
+              },
+            ],
+          }),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
             '@type': 'WebPage',
             name: 'Contact',
             description: 'Get in touch with Broussard Legal Services for contract paralegal services.',
             url: `${baseUrl}/contact`,
             image: `${baseUrl}/assets/images/og-image.png`,
+            datePublished: '2024-01-01',
+            dateModified: new Date().toISOString().split('T')[0],
+            inLanguage: 'en-US',
+            isPartOf: {
+              '@type': 'WebSite',
+              name: 'Broussard Legal Services',
+              url: baseUrl,
+            },
             publisher: {
               '@type': 'Organization',
               name: 'Broussard Legal Services',
