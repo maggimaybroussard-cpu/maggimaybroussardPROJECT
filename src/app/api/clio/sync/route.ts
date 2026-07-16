@@ -98,6 +98,9 @@ async function syncMatters(accessToken: string, supabase: Awaited<ReturnType<typ
         .upsert(row, { onConflict: 'clio_id' });
     }
 
+    // Auto-link Notion matter notes for each synced matter (fire-and-forget)
+    void linkNotionMatterNotes(matters);
+
     totalSynced += matters.length;
 
     if (!data.meta?.paging?.next) break;
@@ -105,6 +108,33 @@ async function syncMatters(accessToken: string, supabase: Awaited<ReturnType<typ
   }
 
   return totalSynced;
+}
+
+/**
+ * Fire-and-forget: link Notion matter notes to each Clio matter.
+ * Calls the internal API route so it runs asynchronously without blocking sync.
+ */
+async function linkNotionMatterNotes(matters: Record<string, unknown>[]) {
+  const notionApiKey = process.env.NOTION_API_KEY;
+  if (!notionApiKey || notionApiKey === 'your-notion-api-key-here') return;
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+
+  for (const matter of matters.slice(0, 10)) { // limit to 10 per sync to avoid rate limits
+    try {
+      await fetch(`${siteUrl}/api/notion/link-matter-notes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          clioMatterId: String(matter.clio_id ?? matter.id),
+          matterDescription: matter.description ?? '',
+          clientName: (matter.client as Record<string, unknown>)?.name ?? '',
+        }),
+      });
+    } catch {
+      // Non-blocking — Notion linking failure should not break Clio sync
+    }
+  }
 }
 
 async function syncContacts(accessToken: string, supabase: Awaited<ReturnType<typeof createClient>>) {

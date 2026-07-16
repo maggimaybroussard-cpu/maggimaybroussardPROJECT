@@ -1,7 +1,11 @@
 /**
  * Notion Knowledge Base Fetcher for Lexi AI Secretary
- * Pulls pages from Notion workspace and formats them as context
- * for Lexi's system prompt. Cached in-memory for 30 minutes.
+ * Pulls four categories of Notion content into Lexi's AI context:
+ *   1. Contract Templates & Legal SOPs
+ *   2. Knowledge Base / FAQs (client-facing answers)
+ *   3. Matter Notes & Case Research
+ *   4. General Legal Guides
+ * Cached in-memory for 30 minutes per category.
  */
 
 const NOTION_API_KEY = process.env.NOTION_API_KEY;
@@ -62,7 +66,6 @@ function extractBlockText(block: Record<string, unknown>): string {
   const text = richText.map((t) => t.plain_text).join('');
   if (!text.trim()) return '';
 
-  // Format headings
   if (type === 'heading_1') return `\n## ${text}`;
   if (type === 'heading_2') return `\n### ${text}`;
   if (type === 'heading_3') return `\n#### ${text}`;
@@ -92,11 +95,141 @@ async function fetchPageContent(pageId: string): Promise<string> {
   }
 }
 
+/**
+ * Search Notion for pages matching a query and return up to `limit` unique page IDs + titles.
+ */
+async function searchNotion(
+  query: string,
+  limit: number,
+  existingIds: Set<string>
+): Promise<Map<string, string>> {
+  const results = new Map<string, string>();
+  try {
+    const body: Record<string, unknown> = {
+      query,
+      sort: { direction: 'descending', timestamp: 'last_edited_time' },
+      page_size: limit + 2,
+      filter: { property: 'object', value: 'page' },
+    };
+    const data = await notionFetch('/search', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }) as Record<string, unknown>;
+
+    const pages = (data.results as Record<string, unknown>[]) ?? [];
+    for (const page of pages) {
+      const id = page.id as string;
+      if (!existingIds.has(id) && !results.has(id)) {
+        results.set(id, extractPageTitle(page));
+        if (results.size >= limit) break;
+      }
+    }
+  } catch {
+    // Non-blocking
+  }
+  return results;
+}
+
+// ─── Category Fetchers ────────────────────────────────────────────────────────
+
+/**
+ * Fetch contract templates and legal SOPs from Notion.
+ */
+async function fetchContractTemplatesAndSOPs(existingIds: Set<string>): Promise<string> {
+  const queries = [
+    'contract template agreement',
+    'standard operating procedure SOP legal',
+    'retainer agreement template',
+    'legal document template checklist',
+  ];
+
+  const pageMap = new Map<string, string>();
+  for (const q of queries) {
+    const found = await searchNotion(q, 3, new Set([...existingIds, ...pageMap.keys()]));
+    found.forEach((title, id) => pageMap.set(id, title));
+    if (pageMap.size >= 4) break;
+  }
+
+  if (pageMap.size === 0) return '';
+
+  const sections: string[] = [];
+  for (const [pageId, title] of [...pageMap.entries()].slice(0, 4)) {
+    existingIds.add(pageId);
+    const content = await fetchPageContent(pageId);
+    if (content.trim()) sections.push(`#### ${title}\n${content}`);
+  }
+
+  if (sections.length === 0) return '';
+  return `\n### CONTRACT TEMPLATES & LEGAL SOPs\nUse these templates and procedures when drafting documents or explaining processes:\n\n${sections.join('\n\n---\n\n')}`;
+}
+
+/**
+ * Fetch knowledge base articles and FAQs for client-facing answers.
+ */
+async function fetchKnowledgeBaseAndFAQs(existingIds: Set<string>): Promise<string> {
+  const queries = [
+    'FAQ frequently asked questions legal services',
+    'knowledge base client guide Louisiana law',
+    'paralegal services what clients need to know',
+    'legal process explained plain language',
+  ];
+
+  const pageMap = new Map<string, string>();
+  for (const q of queries) {
+    const found = await searchNotion(q, 3, new Set([...existingIds, ...pageMap.keys()]));
+    found.forEach((title, id) => pageMap.set(id, title));
+    if (pageMap.size >= 5) break;
+  }
+
+  if (pageMap.size === 0) return '';
+
+  const sections: string[] = [];
+  for (const [pageId, title] of [...pageMap.entries()].slice(0, 5)) {
+    existingIds.add(pageId);
+    const content = await fetchPageContent(pageId);
+    if (content.trim()) sections.push(`#### ${title}\n${content}`);
+  }
+
+  if (sections.length === 0) return '';
+  return `\n### KNOWLEDGE BASE & FAQs\nUse these articles to answer client questions accurately:\n\n${sections.join('\n\n---\n\n')}`;
+}
+
+/**
+ * Fetch matter notes and case research from Notion.
+ */
+async function fetchMatterNotesAndResearch(existingIds: Set<string>): Promise<string> {
+  const queries = [
+    'case research matter notes Louisiana',
+    'case law analysis legal research',
+    'matter file notes case strategy',
+    'court filing research jurisdiction',
+  ];
+
+  const pageMap = new Map<string, string>();
+  for (const q of queries) {
+    const found = await searchNotion(q, 3, new Set([...existingIds, ...pageMap.keys()]));
+    found.forEach((title, id) => pageMap.set(id, title));
+    if (pageMap.size >= 4) break;
+  }
+
+  if (pageMap.size === 0) return '';
+
+  const sections: string[] = [];
+  for (const [pageId, title] of [...pageMap.entries()].slice(0, 4)) {
+    existingIds.add(pageId);
+    const content = await fetchPageContent(pageId);
+    if (content.trim()) sections.push(`#### ${title}\n${content}`);
+  }
+
+  if (sections.length === 0) return '';
+  return `\n### MATTER NOTES & CASE RESEARCH\nReference these research notes when discussing case strategy or legal precedents:\n\n${sections.join('\n\n---\n\n')}`;
+}
+
 // ─── Main Export ──────────────────────────────────────────────────────────────
 
 /**
- * Fetch and format Notion knowledge base content for Lexi's system prompt.
- * Returns a formatted string ready to be injected into the AI context.
+ * Fetch and format all Notion knowledge base content for Lexi's system prompt.
+ * Covers: contract templates/SOPs, FAQs/KB articles, matter notes/case research.
  * Results are cached for 30 minutes.
  */
 export async function getNotionKnowledgeBaseContext(): Promise<string> {
@@ -110,66 +243,22 @@ export async function getNotionKnowledgeBaseContext(): Promise<string> {
   }
 
   try {
-    // Search for KB/FAQ pages and legal articles
-    const searchQueries = [
-      { query: 'FAQ frequently asked questions', filter: 'page' },
-      { query: 'knowledge base legal services', filter: 'page' },
-      { query: 'paralegal services Louisiana law', filter: 'page' },
-    ];
+    const seenIds = new Set<string>();
 
-    const pageIds = new Set<string>();
-    const pageTitles = new Map<string, string>();
+    // Fetch all four categories in parallel
+    const [contractsAndSOPs, kbAndFAQs, matterNotes] = await Promise.all([
+      fetchContractTemplatesAndSOPs(seenIds),
+      fetchKnowledgeBaseAndFAQs(seenIds),
+      fetchMatterNotesAndResearch(seenIds),
+    ]);
 
-    for (const { query, filter } of searchQueries) {
-      try {
-        const body: Record<string, unknown> = {
-          query,
-          sort: { direction: 'descending', timestamp: 'last_edited_time' },
-          page_size: 8,
-          filter: { property: 'object', value: filter },
-        };
-
-        const data = await notionFetch('/search', {
-          method: 'POST',
-          body: JSON.stringify(body),
-        }) as Record<string, unknown>;
-
-        const results = (data.results as Record<string, unknown>[]) ?? [];
-        for (const page of results) {
-          const id = page.id as string;
-          if (!pageIds.has(id)) {
-            pageIds.add(id);
-            pageTitles.set(id, extractPageTitle(page));
-          }
-          if (pageIds.size >= 12) break;
-        }
-      } catch {
-        // Continue with other queries
-      }
-      if (pageIds.size >= 12) break;
-    }
-
-    if (pageIds.size === 0) {
-      return '';
-    }
-
-    // Fetch content for top pages (limit to 6 to stay token-efficient)
-    const topPageIds = [...pageIds].slice(0, 6);
-    const sections: string[] = [];
-
-    for (const pageId of topPageIds) {
-      const title = pageTitles.get(pageId) ?? 'Untitled';
-      const content = await fetchPageContent(pageId);
-      if (content.trim()) {
-        sections.push(`### ${title}\n${content}`);
-      }
-    }
+    const sections = [contractsAndSOPs, kbAndFAQs, matterNotes].filter(Boolean);
 
     if (sections.length === 0) {
       return '';
     }
 
-    const formatted = `\n\n---\n## KNOWLEDGE BASE (from Notion)\nThe following articles and FAQs are from the Broussard Legal Services knowledge base. Use them to answer client questions accurately:\n\n${sections.join('\n\n---\n\n')}\n\n---`;
+    const formatted = `\n\n---\n## NOTION WORKSPACE CONTEXT\nThe following content is pulled directly from the Broussard Legal Services Notion workspace. Use it to answer questions, draft documents, and provide accurate legal guidance:\n${sections.join('\n\n')}\n\n---`;
 
     // Cache the result
     kbCache = { content: formatted, fetchedAt: Date.now() };
