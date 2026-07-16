@@ -1,0 +1,27 @@
+kind = "web"
+previewPath = "/"
+title = "Broussard Legal Services"
+version = "1.0.0"
+id = "artifacts/broussard-legal"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 21487
+
+[services.development]
+run = "pnpm --filter @workspace/broussard-legal run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/broussard-legal", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/broussard-legal/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "21487"
+BASE_PATH = "/"
