@@ -28,6 +28,51 @@ import {
 } from '@/lib/lexi/lexiConfig';
 import { getNotionKnowledgeBaseContext } from '@/lib/lexi/notionKnowledgeBase';
 
+// ── Congress.gov intent detection ─────────────────────────────────────────────
+const CONGRESS_PATTERNS = [
+  /\b(bill|bills|legislation|act|statute|congress|senate|house|h\.r\.|s\.\s?\d|hr\s?\d|federal law|enacted|signed into law|pending legislation|congressional record|floor vote|committee hearing|amendment to)\b/i,
+  /\b(congress\.gov|118th congress|119th congress|120th congress|public law|pl \d|usc|u\.s\.c\.)\b/i,
+  /\b(what bills?|any bills?|recent bills?|new legislation|latest legislation|introduced in congress|passed by (congress|senate|house))\b/i,
+];
+
+function hasCongressIntent(message: string): boolean {
+  return CONGRESS_PATTERNS.some((p) => p.test(message));
+}
+
+async function fetchCongressContext(query: string): Promise<string> {
+  try {
+    const apiKey = process.env.CONGRESS_API_KEY;
+    if (!apiKey) return '';
+
+    const url = new URL(`${process.env.NEXT_PUBLIC_SITE_URL ?? ''}/api/lexi/congress`);
+    // Call internally via fetch with absolute URL
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+    const res = await fetch(`${baseUrl}/api/lexi/congress`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, limit: 5, sort: 'updateDate+desc' }),
+    });
+
+    if (!res.ok) return '';
+
+    const data = await res.json();
+    if (!data?.bills?.length) return '';
+
+    const billSummaries = data.bills
+      .map((b: any) => {
+        const latestAction = b.latestAction
+          ? ` | Latest action (${b.latestAction.actionDate ?? ''}): ${b.latestAction.text ?? ''}`
+          : '';
+        return `• ${b.type ?? ''} ${b.number ?? ''} (${b.congress}th Congress, ${b.originChamber ?? ''}): ${b.title ?? ''}${latestAction}`;
+      })
+      .join('\n');
+
+    return `\n\n---\n**Live Congress.gov Data** (retrieved in real time):\n${billSummaries}\n---\n`;
+  } catch {
+    return '';
+  }
+}
+
 const OFF_TOPIC_REPLY =
   "I'm Lexi, Broussard Legal's AI assistant — I'm only able to help with legal questions and information about our services. Is there a legal matter I can help you with today?";
 
@@ -129,9 +174,19 @@ export async function POST(req: NextRequest) {
   // ── Build Final Message Array ─────────────────────────────────────────────
   // System prompt → prior session memory → current conversation
   const notionKBContext = await getNotionKnowledgeBaseContext().catch(() => '');
-  const systemPromptWithKB = notionKBContext
-    ? `${LEXI_SYSTEM_PROMPT}${notionKBContext}`
-    : LEXI_SYSTEM_PROMPT;
+
+  // ── Congress.gov real-time enrichment ─────────────────────────────────────
+  const congressContext = (userText && hasCongressIntent(userText))
+    ? await fetchCongressContext(userText).catch(() => '')
+    : '';
+
+  const systemPromptWithKB = [
+    LEXI_SYSTEM_PROMPT,
+    notionKBContext || '',
+    congressContext
+      ? `\nREAL-TIME CONGRESS.GOV DATA FOR THIS QUERY:\n${congressContext}\nUse the above live data to inform your response. Cite bill numbers and latest actions accurately.`
+      : '',
+  ].filter(Boolean).join('');
 
   const apiMessages = [
     { role: 'system', content: systemPromptWithKB },
