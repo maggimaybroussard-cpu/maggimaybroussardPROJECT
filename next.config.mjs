@@ -5,6 +5,7 @@ const nextConfig = {
   productionBrowserSourceMaps: false,
   compress: true,
   distDir: process.env.DIST_DIR || '.next',
+  transpilePackages: ['mixpanel-browser'],
 
   experimental: {
     optimizePackageImports: ['@heroicons/react', 'recharts'],
