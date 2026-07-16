@@ -5,11 +5,11 @@ import Link from 'next/link';
 import AppImage from '@/components/ui/AppImage';
 
 const stats = [
-  { number: '3+', label: 'Years Experience' },
-  { number: 'Remote', label: 'Nationwide Service' },
-  { number: '100%', label: 'Remote & Flexible' },
-  { number: 'Flat-Rate', label: 'Transparent Pricing' },
-];
+{ number: '3+', label: 'Years Experience' },
+{ number: 'Remote', label: 'Nationwide Service' },
+{ number: '100%', label: 'Remote & Flexible' },
+{ number: 'Flat-Rate', label: 'Transparent Pricing' }];
+
 
 export default function AboutSection() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -101,7 +101,7 @@ export default function AboutSection() {
               className="scroll-reveal-hidden grid grid-cols-2 gap-x-4 sm:gap-x-6 gap-y-4 sm:gap-y-5 pt-5 sm:pt-6 md:pt-8 border-t border-border/60"
               style={{ transitionDelay: '0.25s' }}>
               {stats.map((stat) =>
-                <div suppressHydrationWarning key={stat.label} className="space-y-1.5">
+              <div suppressHydrationWarning key={stat.label} className="space-y-1.5">
                   <p suppressHydrationWarning className="stat-number">{stat.number}</p>
                   <p suppressHydrationWarning className="text-[10px] sm:text-[11px] uppercase tracking-[0.2em] text-muted-foreground font-medium">{stat.label}</p>
                 </div>
@@ -130,6 +130,6 @@ export default function AboutSection() {
           </div>
         </div>
       </div>
-    </section>
-  );
+    </section>);
+
 }
