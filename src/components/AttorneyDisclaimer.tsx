@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 
 interface AttorneyDisclaimerProps {
@@ -10,8 +10,13 @@ interface AttorneyDisclaimerProps {
 
 export default function AttorneyDisclaimer({ variant = 'banner', className = '' }: AttorneyDisclaimerProps) {
   const [dismissed, setDismissed] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
-  if (variant === 'banner' && dismissed) return null;
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (variant === 'banner' && mounted && dismissed) return null;
 
   const disclaimerText = (
     <>
@@ -55,6 +60,7 @@ export default function AttorneyDisclaimer({ variant = 'banner', className = '' 
       className={`fixed top-0 left-0 w-full z-40 bg-[#355E3B]/5 border-b border-[#355E3B]/15 ${className}`}
       role="note"
       aria-label="Attorney disclaimer notice"
+      suppressHydrationWarning
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 py-2.5 flex items-center justify-between gap-4">
         <div className="flex items-start sm:items-center gap-2 text-[11px] text-[#355E3B]/80 leading-relaxed">
