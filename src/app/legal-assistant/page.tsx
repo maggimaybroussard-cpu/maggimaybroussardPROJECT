@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useChat } from '@/lib/hooks/useChat';
+import LexiSettlementEstimator from '@/components/LexiSettlementEstimator';
 import toast from 'react-hot-toast';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -26,7 +27,8 @@ interface ResearchResult {
   timestamp: number;
 }
 
-type ActiveTab = 'analyze' | 'research';
+type ActiveTab = 'analyze' | 'research' | 'settlement';
+type ResearchCategory = 'case_law' | 'statutes' | 'precedent' | 'all';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -56,10 +58,25 @@ function buildAnalysisPrompt(fileName: string): string {
 Return ONLY valid JSON. No markdown, no extra text.`;
 }
 
-function buildResearchPrompt(query: string): string {
+const CATEGORY_OPTIONS: Array<{ id: ResearchCategory; label: string; icon: string }> = [
+  { id: 'all', label: 'All Sources', icon: '🔍' },
+  { id: 'case_law', label: 'Case Law', icon: '⚖️' },
+  { id: 'statutes', label: 'Statutes', icon: '📚' },
+  { id: 'precedent', label: 'Precedent', icon: '🏛️' },
+];
+
+function buildResearchPrompt(query: string, category: ResearchCategory): string {
+  const categoryInstructions: Record<ResearchCategory, string> = {
+    case_law: 'Focus on relevant federal and state court decisions. Include case names, citations, courts, years, and key holdings. Prioritize Fifth Circuit and Louisiana courts when applicable.',
+    statutes: 'Focus on relevant federal statutes (U.S.C.), Louisiana Revised Statutes (La. R.S.), Louisiana Code of Civil Procedure (La. C.C.P.), and Louisiana Civil Code (La. C.C.). Include exact code sections.',
+    precedent: 'Identify controlling authority (binding precedent) and persuasive authority. Distinguish between circuit splits, majority/minority positions, and recent trends. Include proper Bluebook citations.',
+    all: 'Provide comprehensive legal research including case law, statutes, regulations, and secondary sources. Organize by source type. Include proper Bluebook citations for all authorities.',
+  };
+
   return `You are Lexi, a legal research assistant at Broussard Legal Services specializing in Louisiana law and Fifth Circuit federal practice.
 
 RESEARCH QUERY: ${query}
+RESEARCH FOCUS: ${categoryInstructions[category]}
 
 Provide structured legal research with:
 
@@ -299,6 +316,7 @@ export default function LegalAssistantPage() {
 
   // Research state
   const [researchQuery, setResearchQuery] = useState('');
+  const [researchCategory, setResearchCategory] = useState<ResearchCategory>('all');
   const [researchResults, setResearchResults] = useState<ResearchResult[]>([]);
   const [activeResearch, setActiveResearch] = useState<ResearchResult | null>(null);
 
@@ -347,7 +365,6 @@ export default function LegalAssistantPage() {
           caseNumber: parsed.caseNumber || '',
         });
       } catch {
-        // If JSON parse fails, show raw response as summary
         setAnalysisResult({
           summary: analysisResponse,
           documentType: 'Legal Document',
@@ -430,7 +447,7 @@ export default function LegalAssistantPage() {
           content:
             'You are a legal research assistant specializing in Louisiana law and Fifth Circuit federal practice. Always cite real, verifiable authorities in proper Bluebook format.',
         },
-        { role: 'user', content: buildResearchPrompt(researchQuery.trim()) },
+        { role: 'user', content: buildResearchPrompt(researchQuery.trim(), researchCategory) },
       ],
       { temperature: 0.2, max_tokens: 1800 }
     );
@@ -467,16 +484,17 @@ export default function LegalAssistantPage() {
             AI-Powered Legal Document Analysis
           </h1>
           <p className="text-muted-foreground text-base max-w-2xl">
-            Upload court documents, case files, pleadings, or legal briefs for instant AI-generated summaries, key point extraction, and automated case law research.
+            Upload court documents, case files, pleadings, or legal briefs for instant AI-generated summaries, key point extraction, automated case law research, and settlement value estimates.
           </p>
         </div>
 
         {/* Tabs */}
         <div className="max-w-5xl mx-auto px-4 md:px-8">
-          <div className="flex gap-1 p-1 bg-secondary rounded-xl w-fit mb-8">
+          <div className="flex gap-1 p-1 bg-secondary rounded-xl w-fit mb-8 flex-wrap">
             {([
               { id: 'analyze', label: 'Document Analysis', icon: '📄' },
               { id: 'research', label: 'Case Law Research', icon: '⚖️' },
+              { id: 'settlement', label: 'Settlement Estimator', icon: '💰' },
             ] as { id: ActiveTab; label: string; icon: string }[]).map((tab) => (
               <button
                 key={tab.id}
@@ -616,6 +634,25 @@ export default function LegalAssistantPage() {
                   <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground mb-4">
                     Legal Research
                   </h2>
+
+                  {/* Category selector */}
+                  <div className="grid grid-cols-2 gap-1.5 mb-4">
+                    {CATEGORY_OPTIONS.map((cat) => (
+                      <button
+                        key={cat.id}
+                        onClick={() => setResearchCategory(cat.id)}
+                        className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
+                          researchCategory === cat.id
+                            ? 'bg-[#355E3B] text-white'
+                            : 'bg-secondary text-muted-foreground hover:text-foreground hover:bg-secondary/80'
+                        }`}
+                      >
+                        <span aria-hidden="true">{cat.icon}</span>
+                        {cat.label}
+                      </button>
+                    ))}
+                  </div>
+
                   <textarea
                     value={researchQuery}
                     onChange={(e) => setResearchQuery(e.target.value)}
@@ -776,6 +813,13 @@ export default function LegalAssistantPage() {
                   </div>
                 )}
               </div>
+            </div>
+          )}
+
+          {/* ── Settlement Estimator Tab ── */}
+          {activeTab === 'settlement' && (
+            <div className="rounded-2xl border border-border bg-card overflow-hidden min-h-[600px]">
+              <LexiSettlementEstimator />
             </div>
           )}
         </div>
