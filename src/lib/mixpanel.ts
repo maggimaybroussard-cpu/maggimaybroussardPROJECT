@@ -1,5 +1,3 @@
-'use client';
-
 const MIXPANEL_TOKEN = process.env.NEXT_PUBLIC_MIXPANEL_TOKEN;
 
 let initialized = false;
@@ -8,25 +6,32 @@ let mixpanelInstance: any = null;
 
 async function getMixpanel() {
   if (typeof window === 'undefined') return null;
-  if (!mixpanelInstance) {
+  if (mixpanelInstance) return mixpanelInstance;
+  try {
     const mod = await import('mixpanel-browser');
-    mixpanelInstance = mod.default;
+    mixpanelInstance = mod.default ?? mod;
+    return mixpanelInstance;
+  } catch {
+    return null;
   }
-  return mixpanelInstance;
 }
 
 export async function initMixpanel() {
   if (initialized || !MIXPANEL_TOKEN || typeof window === 'undefined') return;
-  const mp = await getMixpanel();
-  if (!mp) return;
-  mp.init(MIXPANEL_TOKEN, {
-    debug: process.env.NODE_ENV === 'development',
-    track_pageview: false,
-    persistence: 'localStorage',
-    ignore_dnt: false,
-    batch_requests: true,
-  });
-  initialized = true;
+  try {
+    const mp = await getMixpanel();
+    if (!mp) return;
+    mp.init(MIXPANEL_TOKEN, {
+      debug: process.env.NODE_ENV === 'development',
+      track_pageview: false,
+      persistence: 'localStorage',
+      ignore_dnt: false,
+      batch_requests: true,
+    });
+    initialized = true;
+  } catch {
+    // Silently fail — analytics should never break the app
+  }
 }
 
 export async function mpTrack(eventName: string, properties: Record<string, unknown> = {}) {
