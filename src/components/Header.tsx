@@ -12,6 +12,7 @@ const navLinks = [
   { label: 'Blog', href: '/blog' },
   { label: 'Case Studies', href: '/case-studies' },
   { label: 'Testimonials', href: '/testimonials' },
+  { label: 'Legal Assistant', href: '/legal-assistant' },
   { label: 'Availability', href: '/availability' },
   { label: 'Intake Status', href: '/intake-status' },
   { label: 'New Intake', href: '/portal/intake' },
@@ -39,6 +40,7 @@ const mobileNavGroups = [
       { label: 'Blog', href: '/blog' },
       { label: 'Case Studies', href: '/case-studies' },
       { label: 'Testimonials', href: '/testimonials' },
+      { label: 'Legal Assistant', href: '/legal-assistant' },
     ],
   },
   {
