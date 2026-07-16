@@ -26,6 +26,7 @@ import {
   getCachedResponse,
   setCachedResponse,
 } from '@/lib/lexi/lexiConfig';
+import { getNotionKnowledgeBaseContext } from '@/lib/lexi/notionKnowledgeBase';
 
 const OFF_TOPIC_REPLY =
   "I'm Lexi, Broussard Legal's AI assistant — I'm only able to help with legal questions and information about our services. Is there a legal matter I can help you with today?";
@@ -127,8 +128,13 @@ export async function POST(req: NextRequest) {
 
   // ── Build Final Message Array ─────────────────────────────────────────────
   // System prompt → prior session memory → current conversation
+  const notionKBContext = await getNotionKnowledgeBaseContext().catch(() => '');
+  const systemPromptWithKB = notionKBContext
+    ? `${LEXI_SYSTEM_PROMPT}${notionKBContext}`
+    : LEXI_SYSTEM_PROMPT;
+
   const apiMessages = [
-    { role: 'system', content: LEXI_SYSTEM_PROMPT },
+    { role: 'system', content: systemPromptWithKB },
     ...priorHistory,
     ...messages,
   ];
