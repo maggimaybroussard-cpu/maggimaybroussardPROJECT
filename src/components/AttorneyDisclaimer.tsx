@@ -62,7 +62,7 @@ export default function AttorneyDisclaimer({ variant = 'banner', className = '' 
       aria-label="Attorney disclaimer notice"
       suppressHydrationWarning
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 py-2.5 flex items-center justify-between gap-4">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 py-2.5 flex items-center justify-between gap-4" suppressHydrationWarning>
         <div className="flex items-start sm:items-center gap-2 text-[11px] text-[#355E3B]/80 leading-relaxed">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5 sm:mt-0" aria-hidden="true">
             <circle cx="12" cy="12" r="10" />
