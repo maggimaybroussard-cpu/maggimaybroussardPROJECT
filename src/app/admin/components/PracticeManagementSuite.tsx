@@ -9,6 +9,7 @@ const TimeEntryModule = dynamic(() => import('./TimeEntryModule'), { ssr: false 
 const MatterInvoiceBuilder = dynamic(() => import('./MatterInvoiceBuilder'), { ssr: false });
 const ContractTemplatesDashboard = dynamic(() => import('./ContractTemplatesDashboard'), { ssr: false });
 const DocumentManagementDashboard = dynamic(() => import('./DocumentManagementDashboard'), { ssr: false });
+const GoogleSheetsExportDashboard = dynamic(() => import('./GoogleSheetsExportDashboard'), { ssr: false });
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -325,14 +326,15 @@ function KPIStrip({ kpi }: { kpi: KPIData }) {
 
 // ─── Sub-tab nav ──────────────────────────────────────────────────────────────
 
-type SubTab = 'timer' | 'time_log' | 'invoices' | 'contracts' | 'documents';
+type SubTab = 'timer' | 'time_log' | 'invoices' | 'contracts' | 'documents' | 'sheets_export';
 
 const SUB_TABS: { id: SubTab; label: string; icon: string; desc: string }[] = [
   { id: 'timer', label: 'Live Timer', icon: '⏱', desc: 'Start/stop billing clock' },
   { id: 'time_log', label: 'Time Log', icon: '📋', desc: 'Log & review entries' },
   { id: 'invoices', label: 'Invoice Builder', icon: '🧾', desc: 'Build & send invoices' },
   { id: 'contracts', label: 'Contracts', icon: '📄', desc: 'Templates & generation' },
-  { id: 'documents', label: 'Documents', icon: '🗂', desc: 'Organize & search files' },
+  { id: 'documents', label: 'Documents', icon: '📁', desc: 'Manage case documents' },
+  { id: 'sheets_export', label: 'Sheets Export', icon: '📊', desc: 'Export to Google Sheets' },
 ];
 
 // ─── Main Component ───────────────────────────────────────────────────────────
@@ -501,6 +503,12 @@ export default function PracticeManagementSuite() {
         {activeTab === 'contracts' && <ContractTemplatesDashboard />}
 
         {activeTab === 'documents' && <DocumentManagementDashboard />}
+
+        {activeTab === 'sheets_export' && (
+          <div className="bg-white rounded-2xl border border-slate-200 p-6">
+            <GoogleSheetsExportDashboard />
+          </div>
+        )}
       </div>
     </div>
   );
