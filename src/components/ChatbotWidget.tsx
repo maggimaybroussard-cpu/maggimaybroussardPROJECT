@@ -5,7 +5,6 @@ import { useChat } from '@/lib/hooks/useChat';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
-import ReactMarkdown from 'react-markdown';
 
 const SYSTEM_PROMPT = `You are a knowledgeable paralegal assistant for Broussard Legal Services, a professional legal services firm. Your role is to provide helpful, accurate paralegal guidance to prospects and clients who have case questions.
 
@@ -29,6 +28,65 @@ Important guidelines:
 interface Message {
   role: 'user' | 'assistant';
   content: string;
+}
+
+// Simple markdown renderer — avoids react-markdown webpack issues with React 19
+function SimpleMarkdown({ children }: { children: string }) {
+  const lines = children.split('\n');
+  const elements: React.ReactNode[] = [];
+  let i = 0;
+
+  while (i < lines.length) {
+    const line = lines[i];
+
+    if (line.startsWith('### ')) {
+      elements.push(<h3 key={i} className="font-semibold text-sm mt-2 mb-1">{line.slice(4)}</h3>);
+    } else if (line.startsWith('## ')) {
+      elements.push(<h2 key={i} className="font-semibold text-sm mt-2 mb-1">{line.slice(3)}</h2>);
+    } else if (line.startsWith('# ')) {
+      elements.push(<h1 key={i} className="font-semibold text-sm mt-2 mb-1">{line.slice(2)}</h1>);
+    } else if (line.startsWith('- ') || line.startsWith('* ')) {
+      const items: string[] = [];
+      while (i < lines.length && (lines[i].startsWith('- ') || lines[i].startsWith('* '))) {
+        items.push(lines[i].slice(2));
+        i++;
+      }
+      elements.push(
+        <ul key={`ul-${i}`} className="list-disc list-inside my-1 space-y-0.5">
+          {items.map((item, j) => <li key={j} className="text-sm">{item}</li>)}
+        </ul>
+      );
+      continue;
+    } else if (/^\d+\. /.test(line)) {
+      const items: string[] = [];
+      while (i < lines.length && /^\d+\. /.test(lines[i])) {
+        items.push(lines[i].replace(/^\d+\. /, ''));
+        i++;
+      }
+      elements.push(
+        <ol key={`ol-${i}`} className="list-decimal list-inside my-1 space-y-0.5">
+          {items.map((item, j) => <li key={j} className="text-sm">{item}</li>)}
+        </ol>
+      );
+      continue;
+    } else if (line.trim() === '') {
+      if (elements.length > 0) {
+        elements.push(<br key={i} />);
+      }
+    } else {
+      // Inline formatting: bold and italic
+      const formatted = line
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.+?)\*/g, '<em>$1</em>')
+        .replace(/`(.+?)`/g, '<code class="bg-black/10 px-1 rounded text-xs">$1</code>');
+      elements.push(
+        <p key={i} className="text-sm leading-relaxed my-0.5" dangerouslySetInnerHTML={{ __html: formatted }} />
+      );
+    }
+    i++;
+  }
+
+  return <>{elements}</>;
 }
 
 export default function ChatbotWidget() {
@@ -257,7 +315,7 @@ export default function ChatbotWidget() {
                 >
                   {msg.role === 'assistant' ? (
                     <div className="prose prose-sm max-w-none prose-p:my-1 prose-ul:my-1 prose-li:my-0.5 prose-headings:my-1 prose-a:text-primary prose-a:underline">
-                      <ReactMarkdown>{msg.content}</ReactMarkdown>
+                      <SimpleMarkdown>{msg.content}</SimpleMarkdown>
                     </div>
                   ) : (
                     msg.content
@@ -277,7 +335,7 @@ export default function ChatbotWidget() {
                 </div>
                 <div className="max-w-[78%] px-4 py-2.5 rounded-2xl rounded-tl-sm bg-secondary text-foreground text-sm leading-relaxed">
                   <div className="prose prose-sm max-w-none prose-p:my-1 prose-ul:my-1 prose-li:my-0.5 prose-headings:my-1 prose-a:text-primary prose-a:underline">
-                    <ReactMarkdown>{streamingContent}</ReactMarkdown>
+                    <SimpleMarkdown>{streamingContent}</SimpleMarkdown>
                   </div>
                 </div>
               </div>
