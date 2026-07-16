@@ -1,37 +1,49 @@
-# Node modules
-node_modules/
-package-lock.json
+# See https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
 
-# Next.js build output
-.next/
-out/
+# compiled output
+dist
+tmp
+out-tsc
+*.tsbuildinfo
+.expo
+.expo-shared
 
-# Production build
-build/
+# dependencies
+node_modules
 
-# Logs
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
+# IDEs and editors
+/.idea
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
 
-# OS-specific files
+# IDE - VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# misc
+/.sass-cache
+/connect.lock
+/coverage
+/libpeerconnection.log
+npm-debug.log
+yarn-error.log
+testem.log
+/typings
+
+# System Files
 .DS_Store
 Thumbs.db
 
-# Vercel deployment
-.vercel/
+.cursor/rules/nx-rules.mdc
+.github/instructions/nx.instructions.md
 
-# Optional: if using TypeScript
-*.tsbuildinfo
-
-# Optional: if using testing tools
-coverage/
-jest-test-results.json
-
-# Optional: if using IDEs
-.vscode/
-.idea/
-
-# Optional: if using TurboRepo or monorepo
-turbo/
+# Replit
+.cache/
+.local/
