@@ -1,5 +1,7 @@
 'use client';
 
+import { mpTrack } from '@/lib/mixpanel';
+
 declare global {
   interface Window {
     gtag: (...args: unknown[]) => void;
@@ -8,9 +10,12 @@ declare global {
 }
 
 export function trackEvent(eventName: string, eventParams: Record<string, unknown> = {}) {
+  // Fire GA4
   if (typeof window !== 'undefined' && typeof window.gtag === 'function') {
     window.gtag('event', eventName, eventParams);
   }
+  // Fire Mixpanel (dual-tracking)
+  mpTrack(eventName, eventParams);
 }
 
 // Inquiry / contact form events

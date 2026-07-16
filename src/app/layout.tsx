@@ -4,6 +4,7 @@ import { Playfair_Display, Raleway } from 'next/font/google';
 import { Suspense } from 'react';
 import '../styles/tailwind.css';
 import GoogleAnalytics from '@/components/GoogleAnalytics';
+import MixpanelAnalytics from '@/components/MixpanelAnalytics';
 import LexiFloatingChat from '@/components/LexiFloatingChat';
 import CookieBanner from '@/components/CookieBanner';
 import { AuthProvider } from '@/contexts/AuthContext';
@@ -284,7 +285,7 @@ export default function RootLayout({
 
         <script type="module" async src="https://static.rocket.new/rocket-web.js?_cfg=https%3A%2F%2Fmaggimaybr6854back.builtwithrocket.new&_be=https%3A%2F%2Fappanalytics.rocket.new&_v=0.1.19" />
         <script type="module" defer src="https://static.rocket.new/rocket-shot.js?v=0.0.2" /></head>
-      <body className={raleway.className}>
+      <body className={`${playfairDisplay.className} ${raleway.className}`}>
         {/* Skip to main content — keyboard navigation / accessibility */}
         <a
           href="#main-content"
@@ -294,6 +295,9 @@ export default function RootLayout({
         </a>
         <Suspense fallback={null}>
           <GoogleAnalytics />
+        </Suspense>
+        <Suspense fallback={null}>
+          <MixpanelAnalytics />
         </Suspense>
         <AuthProvider>
           {children}
