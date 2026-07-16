@@ -13,7 +13,6 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { completion } from '@rocketnew/llm-sdk';
 import { createClient } from '@supabase/supabase-js';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 import {
@@ -330,13 +329,25 @@ export async function POST(req: NextRequest) {
 
   try {
     if (stream) {
-      const response = await completion({
-        model: 'gpt-4o-mini',
-        messages: apiMessages,
-        stream: true,
-        api_key: apiKey,
-        max_completion_tokens: 450,
+      const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+      const aiRes = await fetch(`${baseUrl}/api/ai/chat-completion`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          provider: 'OPEN_AI',
+          model: 'gpt-4o-mini',
+          messages: apiMessages,
+          stream: true,
+          parameters: { max_tokens: 450 },
+        }),
       });
+
+      if (!aiRes.ok || !aiRes.body) {
+        return NextResponse.json(
+          { error: 'Lexi is temporarily unavailable. Please try again shortly.' },
+          { status: 500 }
+        );
+      }
 
       const encoder = new TextEncoder();
       const readable = new ReadableStream({
@@ -345,10 +356,30 @@ export async function POST(req: NextRequest) {
             controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'start' })}\n\n`));
             let fullContent = '';
 
-            for await (const chunk of response as unknown as AsyncIterable<unknown>) {
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'chunk', chunk })}\n\n`));
-              if (typeof (chunk as any)?.content === 'string') {
-                fullContent += (chunk as any).content;
+            const reader = aiRes.body!.getReader();
+            const decoder = new TextDecoder();
+
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              const text = decoder.decode(value, { stream: true });
+              const lines = text.split('\n');
+              for (const line of lines) {
+                if (!line.startsWith('data: ')) continue;
+                const raw = line.slice(6).trim();
+                if (!raw || raw === '[DONE]') continue;
+                try {
+                  const parsed = JSON.parse(raw);
+                  const delta = parsed?.choices?.[0]?.delta?.content ?? '';
+                  if (delta) {
+                    fullContent += delta;
+                    controller.enqueue(
+                      encoder.encode(`data: ${JSON.stringify({ type: 'chunk', chunk: { content: delta } })}\n\n`)
+                    );
+                  }
+                } catch {
+                  // skip malformed chunks
+                }
               }
             }
 
@@ -370,7 +401,6 @@ export async function POST(req: NextRequest) {
               ip,
             });
 
-            // Cache if applicable
             if (cacheKey && fullContent) {
               setCachedResponse(cacheKey, fullContent);
             }
@@ -395,17 +425,30 @@ export async function POST(req: NextRequest) {
     }
 
     // Non-streaming
-    const response = await completion({
-      model: 'gpt-4o-mini',
-      messages: apiMessages,
-      stream: false,
-      api_key: apiKey,
-      max_completion_tokens: 450,
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+    const aiRes = await fetch(`${baseUrl}/api/ai/chat-completion`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        provider: 'OPEN_AI',
+        model: 'gpt-4o-mini',
+        messages: apiMessages,
+        stream: false,
+        parameters: { max_tokens: 450 },
+      }),
     });
 
+    if (!aiRes.ok) {
+      return NextResponse.json(
+        { error: 'Lexi is temporarily unavailable. Please try again shortly.' },
+        { status: 500 }
+      );
+    }
+
+    const aiData = await aiRes.json();
     let content: string =
-      (response as any)?.content ??
-      (response as any)?.choices?.[0]?.message?.content ??
+      aiData?.choices?.[0]?.message?.content ??
+      aiData?.content ??
       '';
 
     if (bookingIntent && content && !content.includes('/availability')) {
