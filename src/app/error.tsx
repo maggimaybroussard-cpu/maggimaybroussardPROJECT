@@ -9,10 +9,15 @@ interface ErrorProps {
 
 export default function GlobalError({ error, reset }: ErrorProps) {
   useEffect(() => {
+    const msg = error?.message ?? '';
     const isChunkError =
-      error?.name === 'ChunkLoadError' || error?.message?.includes("reading'call'") ||
-      error?.message?.includes('Loading chunk') ||
-      error?.message?.includes('Failed to fetch dynamically imported module');
+      error?.name === 'ChunkLoadError' || msg.includes("reading'call'") ||
+      msg.includes("reading\"call\"") ||
+      msg.includes("reading 'call'") ||
+      msg.includes('Loading chunk') ||
+      msg.includes('Failed to fetch dynamically imported module') ||
+      msg.includes('Cannot read properties of undefined') ||
+      msg.includes('ChunkLoadError');
 
     if (isChunkError) {
       const alreadyReloaded = sessionStorage.getItem('chunk-reload-attempted');
