@@ -263,24 +263,47 @@ serve(async (req) => {
 
       if (TWILIO_ACCOUNT_SID && TWILIO_AUTH_TOKEN && TWILIO_PHONE_NUMBER) {
         let smsSid: string | null = null;
-        let smsError: string | null = null;
         try {
           const firstName = recipientName?.split(" ")[0] ?? recipientName;
           const consultation = eventName ?? "Paralegal Consultation";
-          const smsBody = is24hr
-            ? `Broussard Legal Services\n\nHi ${firstName}, reminder: your ${consultation} is TOMORROW at ${eventTime} (${eventDate}).\n\nNeed to reschedule? Use your Calendly confirmation link.\n\nReply STOP to opt out.`
-            : `Broussard Legal Services\n\nHi ${firstName}, your ${consultation} starts in 1 HOUR at ${eventTime}. Please make sure you're ready to connect.\n\nReply STOP to opt out.`;
+          const msgBody = is24hr
+            ? `Broussard Legal Services\n\nHi ${firstName}, reminder: your ${consultation} is TOMORROW at ${eventTime} (${eventDate}).\n\nNeed to reschedule? Use your Calendly confirmation link.`
+            : `Broussard Legal Services\n\nHi ${firstName}, your ${consultation} starts in 1 HOUR at ${eventTime}. Please make sure you're ready to connect.`;
 
           const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`;
           const credentials = btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`);
-          const formData = new URLSearchParams({ To: resolvedPhone, From: TWILIO_PHONE_NUMBER, Body: smsBody });
-          const smsRes = await fetch(twilioUrl, {
+
+          // Send via WhatsApp (primary) with SMS fallback
+          const waFormData = new URLSearchParams({
+            To: `whatsapp:${resolvedPhone}`,
+            From: `whatsapp:${TWILIO_PHONE_NUMBER}`,
+            Body: msgBody,
+          });
+          const waRes = await fetch(twilioUrl, {
             method: "POST",
             headers: { Authorization: `Basic ${credentials}`, "Content-Type": "application/x-www-form-urlencoded" },
-            body: formData.toString(),
+            body: waFormData.toString(),
           });
-          const smsData = await smsRes.json();
-          smsSid = smsData?.sid ?? null;
+          const waData = await waRes.json();
+
+          let finalStatus = waRes.ok ? "sent" : "failed";
+          let finalError: string | null = waRes.ok ? null : (waData?.message ?? "WhatsApp send error");
+          smsSid = waData?.sid ?? null;
+
+          // SMS fallback if WhatsApp fails
+          if (!waRes.ok) {
+            const smsFallbackBody = msgBody + "\n\nReply STOP to opt out.";
+            const smsFormData = new URLSearchParams({ To: resolvedPhone, From: TWILIO_PHONE_NUMBER, Body: smsFallbackBody });
+            const smsRes = await fetch(twilioUrl, {
+              method: "POST",
+              headers: { Authorization: `Basic ${credentials}`, "Content-Type": "application/x-www-form-urlencoded" },
+              body: smsFormData.toString(),
+            });
+            const smsData = await smsRes.json();
+            finalStatus = smsRes.ok ? "sent" : "failed";
+            finalError = smsRes.ok ? null : (smsData?.message ?? "SMS fallback error");
+            smsSid = smsData?.sid ?? null;
+          }
 
           // Log to sms_reminder_logs
           await supabase.from("sms_reminder_logs").insert({
@@ -288,21 +311,21 @@ serve(async (req) => {
             recipient_phone: resolvedPhone,
             recipient_type: "client",
             message_type: "appointment_reminder",
-            message_body: smsBody,
-            status: smsRes.ok ? "sent" : "failed",
-            error: smsRes.ok ? null : (smsData?.message ?? "Twilio error"),
+            message_body: msgBody,
+            status: finalStatus,
+            error: finalError,
             trigger_type: "calendly_booking",
           }).catch(() => {});
 
           // Mark SMS as sent on the reminder row
-          if (reminderId && smsRes.ok) {
+          if (reminderId && finalStatus === "sent") {
             await supabase
               .from("appointment_reminders")
               .update({ sms_sent: true, sms_sid: smsSid })
               .eq("id", reminderId);
           }
         } catch (smsErr) {
-          console.error("[send-appointment-reminder] SMS send failed (non-blocking):", smsErr);
+          console.error("[send-appointment-reminder] WhatsApp/SMS send failed (non-blocking):", smsErr);
         }
       }
     }

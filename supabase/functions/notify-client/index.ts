@@ -650,6 +650,72 @@ serve(async (req) => {
 
     const data = await res.json();
 
+    // ── WhatsApp notification via Twilio (non-blocking, best-effort) ─────────
+    const clientPhone: string | undefined = (await req.clone().json().catch(() => ({}))).clientPhone;
+    if (clientPhone) {
+      const TWILIO_ACCOUNT_SID = (globalThis as any)?.Deno?.env?.get("TWILIO_ACCOUNT_SID");
+      const TWILIO_AUTH_TOKEN = (globalThis as any)?.Deno?.env?.get("TWILIO_AUTH_TOKEN");
+      const TWILIO_PHONE_NUMBER = (globalThis as any)?.Deno?.env?.get("TWILIO_PHONE_NUMBER");
+
+      if (TWILIO_ACCOUNT_SID && TWILIO_AUTH_TOKEN && TWILIO_PHONE_NUMBER) {
+        try {
+          const firstName = clientName?.split(" ")[0] ?? clientName;
+          let waBody = "";
+
+          if (eventType === "case_update" || eventType === "case_status_change") {
+            const caseRef = details?.caseId ?? details?.caseNumber ?? "";
+            const summary = details?.summary ?? details?.message ?? "Your case has been updated.";
+            waBody = `Broussard Legal Services\n\nHi ${firstName}, ${caseRef ? `update for case ${caseRef}: ` : ""}${summary}\n\nCheck your portal: https://broussardlegalservices.com/portal/cases`;
+          } else if (eventType === "payment_receipt" || eventType === "paid_receipt") {
+            const amountStr = details?.amountFormatted ?? (details?.amount ? `$${Number(details.amount).toFixed(2)}` : "your payment");
+            waBody = `Broussard Legal Services\n\nHi ${firstName}, your payment of ${amountStr} has been received and confirmed. View your receipt: https://broussardlegalservices.com/portal/invoices`;
+          } else if (eventType === "invoice_issued") {
+            const invoiceNum = details?.invoiceNumber ?? "";
+            const amount = details?.amount ?? "";
+            waBody = `Broussard Legal Services\n\nHi ${firstName}, a new invoice${invoiceNum ? ` #${invoiceNum}` : ""}${amount ? ` for ${amount}` : ""} has been issued. Pay securely: https://broussardlegalservices.com/portal/invoices`;
+          } else if (eventType === "document_ready") {
+            waBody = `Broussard Legal Services\n\nHi ${firstName}, a document is ready for your review in your client portal: https://broussardlegalservices.com/portal/documents`;
+          } else if (eventType === "general") {
+            const msg = details?.message ?? subject;
+            if (msg) waBody = `Broussard Legal Services\n\nHi ${firstName}, ${msg}`;
+          }
+
+          if (waBody) {
+            const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`;
+            const credentials = btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`);
+
+            // Send via WhatsApp (primary)
+            const waFormData = new URLSearchParams({
+              To: `whatsapp:${clientPhone}`,
+              From: `whatsapp:${TWILIO_PHONE_NUMBER}`,
+              Body: waBody,
+            });
+            const waRes = await fetch(twilioUrl, {
+              method: "POST",
+              headers: { Authorization: `Basic ${credentials}`, "Content-Type": "application/x-www-form-urlencoded" },
+              body: waFormData.toString(),
+            });
+
+            // SMS fallback if WhatsApp fails
+            if (!waRes.ok) {
+              const smsFormData = new URLSearchParams({
+                To: clientPhone,
+                From: TWILIO_PHONE_NUMBER,
+                Body: waBody + "\n\nReply STOP to opt out.",
+              });
+              await fetch(twilioUrl, {
+                method: "POST",
+                headers: { Authorization: `Basic ${credentials}`, "Content-Type": "application/x-www-form-urlencoded" },
+                body: smsFormData.toString(),
+              });
+            }
+          }
+        } catch (waErr) {
+          console.error("[notify-client] WhatsApp/SMS send failed (non-blocking):", waErr);
+        }
+      }
+    }
+
     return new Response(JSON.stringify({ success: true, id: data.id }), {
       headers: {
         "Content-Type": "application/json",

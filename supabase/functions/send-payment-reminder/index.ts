@@ -418,28 +418,48 @@ serve(async (req) => {
         try {
           const firstName = recipientName?.split(" ")[0] ?? recipientName;
           const portalUrl = paymentLink ?? "https://broussardlegalservices.com/portal/invoices";
-          let smsBody = "";
+          let msgBody = "";
 
           if (reminderType === "invoice_upcoming") {
-            smsBody = `Maggi May Broussard Legal Services\n\nHi ${firstName}, invoice #${invoiceNumber} for ${amount} is due on ${dueDate}. Pay securely: ${portalUrl}\n\nReply STOP to opt out.`;
+            msgBody = `Maggi May Broussard Legal Services\n\nHi ${firstName}, invoice #${invoiceNumber} for ${amount} is due on ${dueDate}. Pay securely: ${portalUrl}`;
           } else if (reminderType === "invoice_overdue") {
-            smsBody = `Maggi May Broussard Legal Services\n\nHi ${firstName}, invoice #${invoiceNumber} for ${amount} is OVERDUE (was due ${dueDate}). Please pay now: ${portalUrl}\n\nReply STOP to opt out.`;
+            msgBody = `Maggi May Broussard Legal Services\n\nHi ${firstName}, invoice #${invoiceNumber} for ${amount} is OVERDUE (was due ${dueDate}). Please pay now: ${portalUrl}`;
           } else if (reminderType === "retainer_deadline") {
-            smsBody = `Maggi May Broussard Legal Services\n\nHi ${firstName}, your retainer for ${service} requires payment by ${deadlineDate ?? dueDate}. Complete it here: ${portalUrl}\n\nReply STOP to opt out.`;
+            msgBody = `Maggi May Broussard Legal Services\n\nHi ${firstName}, your retainer for ${service} requires payment by ${deadlineDate ?? dueDate}. Complete it here: ${portalUrl}`;
           }
 
-          if (smsBody) {
+          if (msgBody) {
             const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`;
             const credentials = btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`);
-            const formData = new URLSearchParams({ To: recipientPhone, From: TWILIO_PHONE_NUMBER, Body: smsBody });
-            await fetch(twilioUrl, {
+
+            // Send via WhatsApp (primary)
+            const waFormData = new URLSearchParams({
+              To: `whatsapp:${recipientPhone}`,
+              From: `whatsapp:${TWILIO_PHONE_NUMBER}`,
+              Body: msgBody,
+            });
+            const waRes = await fetch(twilioUrl, {
               method: "POST",
               headers: { Authorization: `Basic ${credentials}`, "Content-Type": "application/x-www-form-urlencoded" },
-              body: formData.toString(),
+              body: waFormData.toString(),
             });
+
+            // SMS fallback if WhatsApp fails
+            if (!waRes.ok) {
+              const smsFormData = new URLSearchParams({
+                To: recipientPhone,
+                From: TWILIO_PHONE_NUMBER,
+                Body: msgBody + "\n\nReply STOP to opt out.",
+              });
+              await fetch(twilioUrl, {
+                method: "POST",
+                headers: { Authorization: `Basic ${credentials}`, "Content-Type": "application/x-www-form-urlencoded" },
+                body: smsFormData.toString(),
+              });
+            }
           }
         } catch (smsErr) {
-          console.error("[send-payment-reminder] SMS send failed (non-blocking):", smsErr);
+          console.error("[send-payment-reminder] WhatsApp/SMS send failed (non-blocking):", smsErr);
         }
       }
     }
