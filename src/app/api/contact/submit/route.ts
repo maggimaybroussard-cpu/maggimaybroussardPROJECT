@@ -8,6 +8,25 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://broussardlegalserv
 const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 const GA_API_SECRET = process.env.GA_API_SECRET; // optional server-side secret
 
+// ── Routing: service → reply-to / priority label ─────────────────────────────
+const SERVICE_ROUTING: Record<string, { replyTo: string; priority: 'high' | 'normal'; label: string }> = {
+  'Retainer Agreement': { replyTo: 'maggimaybroussard@gmail.com', priority: 'high', label: '🔴 HIGH PRIORITY' },
+  'Monthly Retainer': { replyTo: 'maggimaybroussard@gmail.com', priority: 'high', label: '🔴 HIGH PRIORITY' },
+  'Document Drafting': { replyTo: 'maggimaybroussard@gmail.com', priority: 'normal', label: '' },
+  'Legal Research': { replyTo: 'maggimaybroussard@gmail.com', priority: 'normal', label: '' },
+  'Case Management': { replyTo: 'maggimaybroussard@gmail.com', priority: 'normal', label: '' },
+  'Contract Review': { replyTo: 'maggimaybroussard@gmail.com', priority: 'normal', label: '' },
+  'Consultation': { replyTo: 'maggimaybroussard@gmail.com', priority: 'normal', label: '' },
+};
+
+function getServiceRouting(service: string, retainerTier?: string) {
+  // Retainer tier always high priority
+  if (retainerTier && retainerTier !== 'project') {
+    return { replyTo: 'maggimaybroussard@gmail.com', priority: 'high' as const, label: '🔴 HIGH PRIORITY — Retainer Interest' };
+  }
+  return SERVICE_ROUTING[service] ?? { replyTo: 'maggimaybroussard@gmail.com', priority: 'normal' as const, label: '' };
+}
+
 // ── GA4 Measurement Protocol helper ─────────────────────────────────────────
 async function sendGA4Event(
   eventName: string,
@@ -69,6 +88,12 @@ const headerHtml = `
 
 function buildInternalEmail(name: string, firm: string, email: string, service: string, message: string, retainerTier: string, inquiryId: string | null) {
   const tierLabel = retainerTier ? ` · ${retainerTier.charAt(0).toUpperCase() + retainerTier.slice(1)} Tier` : '';
+  const routing = getServiceRouting(service, retainerTier);
+  const priorityBanner = routing.priority === 'high'
+    ? `<div style="background-color:#FEF3C7; border:1px solid #F59E0B; border-radius:8px; padding:12px 20px; margin-bottom:20px;">
+        <p style="margin:0; font-size:13px; color:#92400e; font-weight:bold; font-family:Georgia,serif;">&#9888;&nbsp; ${routing.label} — Respond within 2 hours</p>
+      </div>`
+    : '';
   return `
     <!DOCTYPE html>
     <html lang="en">
@@ -86,6 +111,7 @@ function buildInternalEmail(name: string, firm: string, email: string, service: 
             </tr>
             <tr>
               <td style="padding:0 36px 32px;">
+                ${priorityBanner}
                 <div style="background-color:${brand.bgCard}; border:1px solid ${brand.border}; border-radius:10px; overflow:hidden; margin:0 0 20px;">
                   <div style="background-color:${brand.primary}; padding:10px 22px;">
                     <p style="margin:0; font-size:11px; color:${brand.accent}; font-weight:bold; text-transform:uppercase; letter-spacing:0.12em; font-family: Georgia, serif;">Lead Details</p>
@@ -343,6 +369,10 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    // ── Determine routing based on service type ──────────────────────────────
+    const routing = getServiceRouting(service, retainerTier || '');
+    const subjectPrefix = routing.priority === 'high' ? '🔴 HIGH PRIORITY — ' : '';
+
     // Send internal notification to Maggi
     const internalRes = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -354,7 +384,7 @@ export async function POST(req: NextRequest) {
         from: 'onboarding@resend.dev',
         to: ['maggimaybroussard@gmail.com'],
         reply_to: email,
-        subject: `🔔 New Inquiry — ${name} · ${service}`,
+        subject: `${subjectPrefix}🔔 New Inquiry — ${name} · ${service}`,
         html: buildInternalEmail(name, firm, email, service, message, retainerTier || '', inquiryId),
       }),
     });
@@ -362,6 +392,30 @@ export async function POST(req: NextRequest) {
     if (!internalRes.ok) {
       const errBody = await internalRes.json().catch(() => ({}));
       throw new Error((errBody as any)?.message || 'Failed to send notification email');
+    }
+
+    // ── For high-priority (retainer) leads: send a second urgent SMS-style alert ──
+    if (routing.priority === 'high') {
+      fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${RESEND_API_KEY}`,
+        },
+        body: JSON.stringify({
+          from: 'onboarding@resend.dev',
+          to: ['maggimaybroussard@gmail.com'],
+          reply_to: email,
+          subject: `⚡ Retainer Lead Alert — ${name} — Respond Within 2 Hours`,
+          html: `<div style="font-family:Georgia,serif;max-width:600px;margin:0 auto;padding:24px;background:#FEF3C7;border-radius:10px;border:2px solid #F59E0B;">
+            <h2 style="color:#92400e;margin:0 0 12px;">&#9888; High-Value Retainer Lead</h2>
+            <p style="color:#78350f;font-size:15px;margin:0 0 8px;"><strong>${name}</strong> from <strong>${firm || 'N/A'}</strong> has expressed interest in a <strong>${retainerTier ? retainerTier.charAt(0).toUpperCase() + retainerTier.slice(1) + ' Tier' : 'retainer'}</strong> engagement.</p>
+            <p style="color:#78350f;font-size:14px;margin:0 0 16px;">Service: <strong>${service}</strong></p>
+            <a href="mailto:${email}?subject=Re: Your ${service} Inquiry" style="display:inline-block;padding:12px 24px;background:#92400e;color:#fff;text-decoration:none;border-radius:6px;font-family:Georgia,serif;font-weight:bold;">Reply to ${name} Now &rarr;</a>
+            <p style="color:#92400e;font-size:12px;margin:16px 0 0;">Inquiry ID: ${inquiryId ?? 'N/A'}</p>
+          </div>`,
+        }),
+      }).catch(() => {});
     }
 
     // Send confirmation to visitor (non-blocking)
@@ -395,6 +449,7 @@ export async function POST(req: NextRequest) {
           recipientName: name,
           service,
           source: 'contact_form',
+          priority: routing.priority,
         }),
       }).catch(() => {});
     }
