@@ -132,10 +132,9 @@ describe('E-Signature Send-and-Track Workflow', () => {
   // ── 1. Admin inserts a signature request ──────────────────────────────────
   describe('Admin: send signature request', () => {
     it('inserts a new signature_request row with status=pending', async () => {
-      const insertMock = jest.fn().mockResolvedValue({ data: mockPendingRequest, error: null });
       const supabase = {
         from: jest.fn().mockReturnThis(),
-        insert: insertMock,
+        insert: jest.fn().mockReturnThis(),
         select: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({ data: mockPendingRequest, error: null }),
       };

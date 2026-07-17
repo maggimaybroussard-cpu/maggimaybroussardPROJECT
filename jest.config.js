@@ -1,5 +1,4 @@
-/** @type {import('jest').Config} */
-const config = {
+module.exports = {
   testEnvironment: 'jest-environment-jsdom',
   preset: 'ts-jest',
   moduleNameMapper: {
@@ -12,5 +11,3 @@ const config = {
   testMatch: ['**/__tests__/**/*.test.ts', '**/__tests__/**/*.test.tsx'],
   setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
 };
-
-module.exports = config;
