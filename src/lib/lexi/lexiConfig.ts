@@ -486,6 +486,232 @@ WYOMING LAW KNOWLEDGE BASE:
 - Wyoming family law: equitable distribution, child custody, child support guidelines
 When citing Wyoming law, use proper citation format: Wyo. Stat. Ann. § [section] ([year]).
 
+FEDERAL LAW — COMPREHENSIVE KNOWLEDGE BASE:
+
+FEDERAL CIVIL PROCEDURE:
+- Federal Rules of Civil Procedure (FRCP) — all 86 rules: pleading standards (Twombly/Iqbal), discovery (Rules 26–37), summary judgment (Rule 56), class actions (Rule 23), injunctions (Rule 65)
+- Federal Rules of Evidence (FRE) — all 11 articles: relevance, hearsay exceptions, expert testimony (Daubert standard), authentication, privileges
+- Federal Rules of Appellate Procedure (FRAP) — briefing, oral argument, en banc procedures
+- Local Rules: each federal district has local rules; always check the specific district's local rules
+- E-filing: CM/ECF system requirements, electronic service, filing deadlines (Rule 6)
+- Federal court system: U.S. District Courts (94 districts), U.S. Courts of Appeals (13 circuits), U.S. Supreme Court
+- Circuit splits: identify when circuits disagree and which circuit controls the matter
+
+FEDERAL CONSTITUTIONAL LAW:
+- U.S. Constitution: all amendments, Commerce Clause, Due Process (5th and 14th), Equal Protection, First Amendment (speech, religion, press, assembly), Fourth Amendment (search and seizure), Fifth Amendment (self-incrimination, takings), Sixth Amendment (criminal procedure), Eighth Amendment (cruel and unusual punishment)
+- Landmark Supreme Court cases: Marbury v. Madison, McCulloch v. Maryland, Brown v. Board of Education, Roe v. Wade/Dobbs v. Jackson, Obergefell v. Hodges, New York Times v. Sullivan, Miranda v. Arizona, Gideon v. Wainwright, Terry v. Ohio, Katz v. United States, Chevron U.S.A. v. NRDC (overruled by Loper Bright), West Virginia v. EPA
+- Substantive due process, procedural due process, strict scrutiny, intermediate scrutiny, rational basis review
+- Section 1983 claims (42 U.S.C. § 1983): elements, qualified immunity, Monell liability
+
+FEDERAL CRIMINAL LAW:
+- Title 18 U.S.C. — federal criminal code: wire fraud (§ 1343), mail fraud (§ 1341), RICO (§§ 1961–1968), money laundering (§ 1956), drug offenses (21 U.S.C.), firearms (18 U.S.C. § 922), computer fraud (CFAA, 18 U.S.C. § 1030)
+- Federal Rules of Criminal Procedure (FRCrP) — grand jury, indictment, arraignment, plea agreements, sentencing
+- U.S. Sentencing Guidelines (USSG) — offense levels, criminal history categories, departures, variances
+- Federal Sentencing Reform Act, mandatory minimums, safety valve provisions
+- Plea agreements: Rule 11, cooperation agreements, proffer agreements
+
+FEDERAL EMPLOYMENT LAW:
+- Title VII of the Civil Rights Act of 1964 (42 U.S.C. § 2000e et seq.) — race, color, religion, sex, national origin discrimination; hostile work environment; quid pro quo harassment
+- Age Discrimination in Employment Act (ADEA, 29 U.S.C. § 621 et seq.) — workers 40+
+- Americans with Disabilities Act (ADA, 42 U.S.C. § 12101 et seq.) — disability discrimination, reasonable accommodation, interactive process
+- Family and Medical Leave Act (FMLA, 29 U.S.C. § 2601 et seq.) — 12 weeks unpaid leave, serious health condition, interference and retaliation claims
+- Fair Labor Standards Act (FLSA, 29 U.S.C. § 201 et seq.) — minimum wage, overtime (1.5x for 40+ hours), exempt vs. non-exempt classifications, collective actions
+- Equal Pay Act (EPA, 29 U.S.C. § 206(d)) — equal pay for equal work
+- National Labor Relations Act (NLRA, 29 U.S.C. § 151 et seq.) — collective bargaining, unfair labor practices, protected concerted activity
+- WARN Act (29 U.S.C. § 2101 et seq.) — 60-day notice for mass layoffs
+- Pregnancy Discrimination Act (PDA), PUMP Act, PWFA (Pregnant Workers Fairness Act)
+- McDonnell Douglas burden-shifting framework for employment discrimination claims
+- EEOC charge filing requirements, right-to-sue letters, exhaustion of administrative remedies
+
+FEDERAL TORT AND CIVIL RIGHTS LAW:
+- Federal Tort Claims Act (FTCA, 28 U.S.C. §§ 1346, 2671–2680) — suing the federal government, administrative claim requirement, discretionary function exception
+- Bivens claims — constitutional tort claims against federal officers
+- Section 1983 (42 U.S.C. § 1983) — state actor requirement, color of law, qualified immunity, absolute immunity
+- Section 1985 (conspiracy to interfere with civil rights), Section 1986 (neglect to prevent conspiracy)
+- Voting Rights Act (52 U.S.C. § 10301 et seq.)
+
+FEDERAL INTELLECTUAL PROPERTY LAW:
+- Patent law (35 U.S.C.) — utility, design, plant patents; patentability (novelty, non-obviousness, utility); prosecution; infringement (direct, indirect, contributory); USPTO procedures; IPR proceedings; America Invents Act (AIA)
+- Copyright law (17 U.S.C.) — original works of authorship, fixation, exclusive rights, fair use (§ 107), DMCA (§ 512 safe harbor), registration, infringement, statutory damages ($750–$30,000 per work; up to $150,000 for willful)
+- Trademark law (Lanham Act, 15 U.S.C. § 1051 et seq.) — distinctiveness spectrum, likelihood of confusion, dilution, trade dress, USPTO registration, ITU applications, cancellation proceedings
+- Trade secret law (Defend Trade Secrets Act, 18 U.S.C. § 1836; state UTSA adoptions) — misappropriation, reasonable measures, injunctive relief
+- Domain name disputes: UDRP, ACPA (15 U.S.C. § 1125(d))
+
+FEDERAL BANKRUPTCY LAW:
+- Bankruptcy Code (11 U.S.C.) — all chapters:
+  - Chapter 7: liquidation, automatic stay (§ 362), exemptions, discharge (§ 727), non-dischargeable debts (§ 523)
+  - Chapter 11: reorganization, plan of reorganization, cramdown, absolute priority rule, DIP financing, 363 sales
+  - Chapter 12: family farmers and fishermen
+  - Chapter 13: wage earner plan, 3–5 year repayment, lien stripping, cramdown on secured debt
+  - Chapter 15: cross-border insolvency
+- Federal Rules of Bankruptcy Procedure (FRBP)
+- Preference actions (§ 547), fraudulent transfer (§§ 548, 544), avoidance powers
+- Proof of claim, claims bar date, plan confirmation standards
+
+FEDERAL IMMIGRATION LAW:
+- Immigration and Nationality Act (INA, 8 U.S.C.) — all provisions
+- Visa categories: nonimmigrant (B-1/B-2, F-1, H-1B, L-1, O-1, TN, E-3) and immigrant (EB-1, EB-2, EB-3, EB-5, family-based)
+- Green card process: adjustment of status (I-485), consular processing, priority dates, visa bulletin
+- Naturalization requirements (8 U.S.C. § 1427): 5-year continuous residence, good moral character, English/civics test
+- Removal proceedings: grounds of removability (8 U.S.C. § 1227), relief from removal (cancellation, asylum, withholding, CAT, voluntary departure)
+- Asylum law: well-founded fear of persecution, protected grounds (race, religion, nationality, political opinion, particular social group), one-year filing deadline
+- DACA, TPS, U visa, T visa, VAWA self-petition
+- USCIS, ICE, CBP, EOIR (immigration courts), BIA, federal circuit court review
+
+FEDERAL TAX LAW:
+- Internal Revenue Code (IRC, 26 U.S.C.) — all subtitles
+- Individual income tax: gross income (§ 61), exclusions (§§ 101–140), deductions (§§ 161–199A), credits, AMT, capital gains rates
+- Business taxation: C corporations (§ 11), S corporations (§ 1361 et seq.), partnerships (§§ 701–777), LLCs (check-the-box regulations)
+- Estate and gift tax (§§ 2001–2704): unified credit, annual exclusion ($18,000/2024), portability, step-up in basis
+- Tax procedure: IRS audits, appeals, Tax Court, Collection Due Process, offers in compromise, installment agreements, innocent spouse relief
+- Employment taxes: FICA (§§ 3101–3128), FUTA (§§ 3301–3311), trust fund recovery penalty (§ 6672)
+
+FEDERAL SECURITIES LAW:
+- Securities Act of 1933 (15 U.S.C. § 77a et seq.) — registration requirements, exemptions (Reg D, Reg A+, Reg CF), prospectus liability (§ 11, § 12)
+- Securities Exchange Act of 1934 (15 U.S.C. § 78a et seq.) — periodic reporting (10-K, 10-Q, 8-K), insider trading (§ 10(b), Rule 10b-5), short-swing profits (§ 16(b)), proxy rules
+- Investment Advisers Act of 1940, Investment Company Act of 1940
+- Dodd-Frank Act, Sarbanes-Oxley Act (SOX) — corporate governance, whistleblower protections
+- SEC enforcement: civil injunctions, disgorgement, penalties; FINRA arbitration
+
+FEDERAL ENVIRONMENTAL LAW:
+- Clean Air Act (42 U.S.C. § 7401 et seq.) — NAAQS, SIPs, PSD, Title V permits, mobile source standards
+- Clean Water Act (33 U.S.C. § 1251 et seq.) — NPDES permits, Section 404 (wetlands), Section 401 (water quality certification), citizen suits
+- CERCLA/Superfund (42 U.S.C. § 9601 et seq.) — strict liability, joint and several liability, PRPs, NCP, cost recovery, contribution
+- RCRA (42 U.S.C. § 6901 et seq.) — hazardous waste management, corrective action, underground storage tanks
+- NEPA (42 U.S.C. § 4321 et seq.) — environmental impact statements, categorical exclusions, EA vs. EIS
+- Endangered Species Act (16 U.S.C. § 1531 et seq.) — critical habitat, Section 7 consultation, Section 9 take prohibition
+
+FEDERAL ADMINISTRATIVE LAW:
+- Administrative Procedure Act (APA, 5 U.S.C. §§ 551–706) — rulemaking (notice-and-comment, § 553), adjudication, judicial review standards (arbitrary and capricious, § 706)
+- Loper Bright Enterprises v. Raimondo (2024) — overruled Chevron deference; courts now independently interpret ambiguous statutes
+- Major questions doctrine (West Virginia v. EPA) — agencies need clear congressional authorization for major policy questions
+- Freedom of Information Act (FOIA, 5 U.S.C. § 552) — nine exemptions, Vaughn index, fee waivers
+- Privacy Act (5 U.S.C. § 552a) — federal agency records, access and amendment rights
+- Government in the Sunshine Act, Federal Advisory Committee Act (FACA)
+- ALJ proceedings, agency appeals, exhaustion of administrative remedies
+
+FEDERAL REAL ESTATE AND HOUSING LAW:
+- Fair Housing Act (42 U.S.C. § 3601 et seq.) — protected classes (race, color, religion, sex, national origin, disability, familial status), disparate impact, reasonable accommodation
+- Real Estate Settlement Procedures Act (RESPA, 12 U.S.C. § 2601 et seq.) — HUD-1/Closing Disclosure, kickbacks, escrow
+- Truth in Lending Act (TILA, 15 U.S.C. § 1601 et seq.) — APR disclosure, right of rescission, HOEPA
+- Dodd-Frank mortgage reforms: ability-to-repay rule, qualified mortgage (QM), CFPB oversight
+- National Flood Insurance Program (NFIP), FEMA flood maps
+
+FEDERAL CONSUMER PROTECTION LAW:
+- FTC Act (15 U.S.C. § 45) — unfair or deceptive acts or practices (UDAP), Section 5
+- Consumer Financial Protection Act (CFPA) — CFPB jurisdiction, UDAAP standard
+- Fair Debt Collection Practices Act (FDCPA, 15 U.S.C. § 1692 et seq.) — debt collector conduct, validation notice, cease communication
+- Fair Credit Reporting Act (FCRA, 15 U.S.C. § 1681 et seq.) — consumer reports, adverse action, dispute process, accuracy requirements
+- Telephone Consumer Protection Act (TCPA, 47 U.S.C. § 227) — robocalls, autodialer, prior express written consent, $500–$1,500/call damages
+- CAN-SPAM Act (15 U.S.C. § 7701 et seq.) — commercial email requirements
+- Children's Online Privacy Protection Act (COPPA, 15 U.S.C. § 6501 et seq.)
+
+FEDERAL HEALTH LAW:
+- HIPAA (42 U.S.C. § 1320d et seq.) — Privacy Rule, Security Rule, Breach Notification Rule, covered entities, business associates, PHI, minimum necessary standard
+- HITECH Act — enhanced HIPAA penalties, breach notification
+- Affordable Care Act (ACA, 42 U.S.C. § 18001 et seq.) — individual mandate (zeroed out), employer mandate, essential health benefits, marketplace plans, Medicaid expansion
+- EMTALA (42 U.S.C. § 1395dd) — emergency medical treatment, stabilization, transfer requirements
+- Medicare (42 U.S.C. § 1395 et seq.) and Medicaid (42 U.S.C. § 1396 et seq.) — coverage, reimbursement, fraud and abuse (False Claims Act, Anti-Kickback Statute, Stark Law)
+- False Claims Act (31 U.S.C. § 3729 et seq.) — qui tam relator, treble damages, $13,000–$27,000/claim penalty
+
+FEDERAL FAMILY AND DOMESTIC LAW:
+- Parental Kidnapping Prevention Act (PKPA, 28 U.S.C. § 1738A) — interstate custody jurisdiction
+- Uniform Child Custody Jurisdiction and Enforcement Act (UCCJEA) — adopted in all 50 states
+- International Parental Child Abduction: Hague Convention on Civil Aspects of International Child Abduction (ICARA, 22 U.S.C. § 9001 et seq.)
+- Violence Against Women Act (VAWA) — civil rights remedy (struck down), immigration relief, grant programs
+- Child Support Enforcement: Title IV-D, UIFSA (Uniform Interstate Family Support Act), income withholding orders, federal tax refund intercept
+
+SPECIALIZED PRACTICE AREAS — ALL STATES:
+
+LANDLORD-TENANT LAW (ALL STATES):
+Key variations across states:
+- Security deposit limits: 1 month (many states), 2 months (CA, FL, NJ), no limit (TX, LA)
+- Notice to vacate: 3-day (CA, TX), 5-day (IL), 7-day (FL, LA), 10-day, 14-day, 30-day variations
+- Rent control/stabilization: CA (AB 1482), NY (ETPA), NJ, OR, DC, MD — most states preempt local rent control
+- Habitability: implied warranty of habitability (most states); Louisiana: La. C.C. art. 2696 (lessor's warranty)
+- Self-help eviction: prohibited in all states; must use judicial process
+- Eviction (unlawful detainer/summary possession) procedures vary significantly by state
+- COVID-era eviction moratoriums: expired; check state/local extensions
+
+PERSONAL INJURY AND TORT LAW (ALL STATES):
+Fault systems by state:
+- Pure comparative fault: AK, AZ, CA, FL, KY, LA, MI, MO, MS, NM, NY, RI, WA
+- Modified comparative fault (51% bar): AR, CO, CT, DE, GA, HI, ID, IL, IN, IA, KS, ME, MN, MT, NE, NV, NH, NJ, OH, OK, OR, PA, SC, SD, TN, TX, VT, WI, WY
+- Modified comparative fault (50% bar): KS, ME, TN, UT, WY (some overlap)
+- Contributory negligence (plaintiff's any fault bars recovery): AL, DC, MD, NC, VA
+- Statutes of limitations for personal injury: 1 year (KY, LA, TN), 2 years (most states), 3 years (ME, MA, NH, NJ, NY), 4 years (FL), 6 years (ME for some claims)
+- Medical malpractice caps: varies widely; LA: $500,000 (La. R.S. 40:1231.2); TX: $250,000 non-economic cap; CA: $350,000 (MICRA as amended)
+- Dram shop liability: most states have dram shop acts; TX: TABC § 2.02; LA: La. R.S. 9:2800.1 (limited)
+
+BUSINESS AND CORPORATE LAW (ALL STATES):
+- LLC formation: Articles of Organization, Operating Agreement, member vs. manager-managed
+- Corporation formation: Articles of Incorporation, Bylaws, Board of Directors, officers, shareholder agreements
+- Delaware advantage: DGCL, Court of Chancery, business judgment rule, fiduciary duties
+- Piercing the corporate veil: alter ego doctrine, undercapitalization, commingling of funds
+- Non-compete agreements: enforceability varies widely:
+  - Unenforceable: CA (Bus. & Prof. Code § 16600), ND, OK, MN (as of 2023)
+  - Strictly scrutinized: CO, IL, MA, OR, WA, VA
+  - Generally enforceable with reasonable limits: TX, FL, LA, most other states
+- Non-disclosure agreements (NDAs): generally enforceable; state restrictions on NDAs covering sexual harassment (CA, IL, NY, WA)
+- UCC Article 2 (sale of goods): adopted in all states (Louisiana: La. R.S. 10:2-101 et seq.)
+- UCC Article 9 (secured transactions): adopted in all states; perfection by filing, possession, or control
+
+REAL PROPERTY LAW (ALL STATES):
+- Deed types: warranty deed, special warranty deed, quitclaim deed, sheriff's deed - Title insurance: owner's policy, lender's policy, ALTA standards
+- Adverse possession: elements vary by state (open, notorious, hostile, actual, continuous); time periods: 5 years (CA), 10 years (TX, LA), 20 years (many states)
+- Easements: express, implied, prescriptive, easement by necessity
+- Homestead exemptions: unlimited (TX, FL); $75,000 (CA); $35,000 (LA, La. R.S. 20:1); varies widely
+- Mechanic's liens: notice requirements, deadlines, and enforcement vary significantly by state
+- Foreclosure: judicial (FL, IL, NY, NJ) vs. non-judicial/power of sale (CA, TX, GA, AZ); redemption periods
+- Community property states: AZ, CA, ID, LA, NV, NM, TX, WA, WI (opt-in)
+
+FAMILY LAW (ALL STATES):
+- Divorce grounds: no-fault (irreconcilable differences) available in all 50 states; fault grounds still available in many
+- Property division: community property (9 states) vs. equitable distribution (41 states + DC)
+- Child custody: legal custody (decision-making) vs. physical custody (residence); joint vs. sole; best interests of the child standard (all states)
+- Child support: income shares model (most states), percentage of income model (TX, WI, MS), Melson formula (DE, HI, MT)
+- Alimony/spousal support: types (temporary, rehabilitative, permanent, reimbursement); factors vary by state
+- Domestic violence: protective orders available in all states; VAWA federal protections
+- Adoption: agency, private, stepparent, adult adoption; interstate (ICPC); international (Hague Convention)
+- Guardianship and conservatorship: probate court jurisdiction; UGCOPAA (Uniform Guardianship Act)
+
+CRIMINAL LAW (ALL STATES):
+- Felony vs. misdemeanor classifications vary by state
+- Expungement/record sealing: availability and eligibility vary significantly by state
+- Stand Your Ground laws: FL, TX, LA, and ~30 other states; duty to retreat in remaining states
+- Castle doctrine: recognized in most states
+- Marijuana laws: fully legal (CA, CO, IL, NY, WA, and others); medical only (many states); fully illegal (ID, WY, KS, SC)
+- DUI/DWI: BAC limit 0.08% (all states); 0.05% (UT); enhanced penalties for 0.15%+ in many states; implied consent laws
+- Expungement eligibility: varies widely; some states allow first-offense expungement; others very limited
+- Three-strikes laws: CA (reformed), WA, GA, and others
+- Mandatory minimum sentences: federal and state variations
+
+PROBATE AND ESTATE PLANNING (ALL STATES):
+- Wills: execution requirements (witnesses, notarization) vary by state; holographic wills recognized in ~25 states
+- Intestate succession: spouse and children priority; per stirpes vs. per capita distribution
+- Probate process: supervised vs. unsupervised; small estate affidavit thresholds vary ($25,000–$200,000)
+- Trusts: revocable living trust, irrevocable trust, testamentary trust, special needs trust, spendthrift trust
+- Powers of attorney: durable POA, healthcare POA, advance directive/living will
+- Uniform Probate Code (UPC): adopted in ~18 states; others have modified versions
+- Estate tax: federal (estates over $13.61M in 2024); state estate taxes: MA, OR, WA, IL, MN, NY, MD, CT, HI, ME, VT, DC
+- Medicaid planning: look-back period (5 years), asset protection trusts, Medicaid compliant annuities
+
+WORKERS' COMPENSATION (ALL STATES):
+- Exclusive remedy doctrine: workers' comp bars most tort claims against employers
+- Coverage: most employees covered; independent contractors generally excluded
+- Benefits: medical, temporary total disability (TTD), permanent partial disability (PPD), permanent total disability (PTD), death benefits
+- Louisiana: La. R.S. 23:1021 et seq.; Office of Workers' Compensation Administration (OWCA)
+- Texas: unique — employer participation is optional (non-subscriber employers face tort liability)
+- Federal: FECA (federal employees), LHWCA (longshore workers), Black Lung (coal miners), Jones Act (seamen)
+- IME (independent medical examination), vocational rehabilitation, settlement (compromise and release vs. structured settlement)
+
+IMMIGRATION LAW — STATE CONSIDERATIONS:
+- State driver's licenses for undocumented immigrants: CA, CO, CT, DE, HI, IL, MA, MD, MN, NJ, NM, NY, OR, UT, VT, WA
+- State sanctuary policies: vary widely; some states/cities limit cooperation with ICE
+- State public benefits eligibility for immigrants: varies by state
+- State professional licensing for DACA recipients: varies by state
+- E-Verify requirements: mandatory for all employers (AL, AZ, GA, MS, NC, SC, TN, UT); mandatory for state contractors (many states)
+
 MULTI-STATE PRACTICE NOTES:
 When a legal question spans multiple states, proactively note:
 - Which state's law applies based on the facts presented
@@ -568,6 +794,22 @@ const LEGAL_PATTERNS = [
   /\b(louisiana|texas|mississippi|alabama|alaska|arizona|arkansas|california|colorado|connecticut|delaware|florida|georgia|hawaii|idaho|illinois|indiana|iowa|kansas|kentucky|maine|maryland|massachusetts|michigan|minnesota|missouri|montana|nebraska|nevada|new hampshire|new jersey|new mexico|new york|north carolina|north dakota|ohio|oklahoma|oregon|pennsylvania|rhode island|south carolina|south dakota|tennessee|utah|vermont|virginia|washington|west virginia|wisconsin|wyoming)\b/i,
   /\b(la\.|tex\.|miss\.|ala\.|alaska|ariz\.|ark\.|cal\.|colo\.|conn\.|del\.|fla\.|ga\.|haw\.|idaho|ill\.|ind\.|iowa|kan\.|ky\.|me\.|md\.|mass\.|mich\.|minn\.|mo\.|mont\.|neb\.|nev\.|n\.h\.|n\.j\.|n\.m\.|n\.y\.|n\.c\.|n\.d\.|ohio|okla\.|or\.|pa\.|r\.i\.|s\.c\.|s\.d\.|tenn\.|utah|vt\.|va\.|wash\.|w\. va\.|wis\.|wyo\.)\b/i,
   /\b(dtpa|tcpa|trcp|tre|m\.r\.c\.p\.|iolta|community property|equitable distribution|comparative fault|contributory negligence|at-will|bipa|cplr|dgcl|feha|cfra|paga|wdea)\b/i,
+  // Federal law and specialized practice areas
+  /\b(frcp|fre|frap|frcrp|title vii|adea|ada|fmla|flsa|nlra|warn act|ftca|bivens|section 1983|hipaa|hitech|aca|emtala|false claims act|qui tam|cercla|superfund|rcra|nepa|clean air act|clean water act|esa|endangered species)\b/i,
+  /\b(bankruptcy|chapter 7|chapter 11|chapter 13|automatic stay|discharge|trustee|creditor|debtor|proof of claim|plan of reorganization|cramdown|preference|fraudulent transfer)\b/i,
+  /\b(patent|trademark|copyright|trade secret|lanham act|dmca|fair use|infringement|ipr|inter partes review|uspto|intellectual property)\b/i,
+  /\b(immigration|visa|green card|naturalization|deportation|removal|asylum|daca|uscis|ice|cbp|eoir|bia|h-1b|l-1|eb-1|eb-2|eb-3|adjustment of status|consular processing)\b/i,
+  /\b(securities|sec|finra|10-k|10-q|8-k|insider trading|rule 10b-5|sarbanes-oxley|sox|dodd-frank|investment adviser|broker-dealer|ipo|registration statement)\b/i,
+  /\b(tax|irs|internal revenue|income tax|capital gains|estate tax|gift tax|tax court|audit|offer in compromise|installment agreement|trust fund|fica|futa|1099|w-2|schedule [a-z])\b/i,
+  /\b(workers.?comp(ensation)?|work(place)? injur|occupational|osha|lhwca|jones act|longshore|black lung|feca|ttd|ppd|ptd|ime|vocational rehab)\b/i,
+  /\b(landlord|tenant|eviction|unlawful detainer|security deposit|habitability|rent control|lease|sublease|holdover|notice to vacate|writ of possession)\b/i,
+  /\b(probate|intestate|testate|will|trust|executor|administrator|guardian|conservator|power of attorney|advance directive|living will|medicaid planning|look-back period)\b/i,
+  /\b(dui|dwi|owi|drunk driving|implied consent|bac|blood alcohol|field sobriety|breathalyzer|expungement|record seal|criminal record|felony|misdemeanor|plea|arraignment|indictment|grand jury)\b/i,
+  /\b(non-compete|non-disclosure|nda|trade secret|non-solicitation|restrictive covenant|covenant not to compete)\b/i,
+  /\b(fdcpa|fcra|tila|respa|cfpb|cfpa|udap|udaap|fair debt|fair credit|credit report|adverse action|debt collector|debt collection)\b/i,
+  /\b(stand your ground|castle doctrine|self-defense|duty to retreat|justifiable homicide|use of force)\b/i,
+  /\b(ada|disability|reasonable accommodation|interactive process|undue hardship|accessibility|section 504|rehabilitation act)\b/i,
+  /\b(apa|administrative procedure|notice and comment|rulemaking|adjudication|arbitrary and capricious|chevron|loper bright|major questions|foia|freedom of information|privacy act)\b/i,
 ];
 
 export function isOffTopic(message: string): boolean {

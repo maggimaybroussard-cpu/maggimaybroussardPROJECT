@@ -63,16 +63,23 @@ const LEGAL_RESEARCH_PATTERNS = [
   /\b(legal research|research (the |this )?(law|case|statute|regulation|issue)|find (case law|cases|statutes|regulations|precedent)|look up (the law|cases|statutes))\b/i,
   // Case law queries
   /\b(case law|case precedent|landmark case|leading case|controlling authority|persuasive authority|on point cases?|similar cases?|relevant cases?)\b/i,
-  // Statute/regulation research
-  /\b(louisiana (revised statutes?|civil code|code of civil procedure|r\.s\.|ccp)|la\.\s*(r\.s\.|civ\.|c\.c\.|c\.c\.p\.)|louisiana law on|louisiana statute|state law on|federal law on)\b/i,
+  // Statute/regulation research — all 50 states
+  /\b(louisiana|texas|california|florida|new york|illinois|ohio|georgia|michigan|pennsylvania|north carolina|new jersey|virginia|washington|arizona|massachusetts|tennessee|indiana|missouri|maryland|wisconsin|colorado|minnesota|south carolina|alabama|kentucky|oregon|oklahoma|connecticut|utah|iowa|nevada|arkansas|mississippi|kansas|new mexico|nebraska|west virginia|idaho|hawaii|new hampshire|maine|montana|rhode island|delaware|south dakota|north dakota|alaska|vermont|wyoming) (law|statute|code|regulation|rule|court|case)\b/i,
+  /\b(la\.\s*(r\.s\.|civ\.|c\.c\.|c\.c\.p\.)|tex\.\s*(civ\.|bus\.|fam\.|prop\.|lab\.)|fla\.\s*stat\.|o\.c\.g\.a\.|n\.y\.\s*(cplr|penal|labor)|cal\.\s*(civ\.|ccp|lab\.)|ill\.\s*comp\.\s*stat\.|ohio\s*rev\.\s*code|rcw|k\.s\.a\.|krs|ors|n\.j\.s\.a\.|mcl|minn\.\s*stat\.|mo\.\s*rev\.\s*stat\.)\b/i,
   // Legal standards and tests
-  /\b(legal standard|burden of proof|elements of|prima facie|cause of action|statute of limitations|prescriptive period|peremptive period)\b/i,
+  /\b(legal standard|burden of proof|elements of|prima facie|cause of action|statute of limitations|prescriptive period|peremptive period|discovery rule|tolling)\b/i,
   // Research methodology
   /\b(how (do I |to )?(research|find|look up|cite)|westlaw|lexisnexis|fastcase|casetext|google scholar|legal database|secondary source|law review|treatise|restatement)\b/i,
   // Specific legal topics requiring research
   /\b(what (does the law say|is the law|are the rules|are the requirements) (about|on|for|regarding)|is it legal|is that legal|legally (required|permitted|prohibited|allowed))\b/i,
-  // Regulatory research
-  /\b(osha|epa|eeoc|nlrb|ftc|sec regulation|federal regulation|state regulation|administrative (law|code|rule)|agency rule)\b/i,
+  // Regulatory and federal research
+  /\b(osha|epa|eeoc|nlrb|ftc|sec regulation|federal regulation|state regulation|administrative (law|code|rule)|agency rule|cfr|c\.f\.r\.|u\.s\.c\.|usc)\b/i,
+  // Federal law topics
+  /\b(frcp|fre|frap|title vii|adea|ada|fmla|flsa|nlra|warn act|ftca|section 1983|hipaa|false claims act|cercla|clean air act|clean water act|bankruptcy code|immigration and nationality act|lanham act|copyright act|patent act)\b/i,
+  // Specialized practice areas
+  /\b(non-compete|non-disclosure|nda|trade secret|landlord.?tenant|workers.?comp|personal injury|medical malpractice|products liability|wrongful death|dram shop|premises liability|slip and fall|employment discrimination|hostile work environment|wrongful termination|wage (theft|claim)|overtime|class action|mass tort)\b/i,
+  // Multi-state comparison queries
+  /\b(which states?|how (do|does) (states?|[a-z]+ and [a-z]+) (handle|treat|approach|define|calculate)|compare (states?|jurisdictions?)|state (comparison|differences?|variations?)|across (states?|jurisdictions?))\b/i,
 ];
 
 function hasLegalResearchIntent(message: string): boolean {
@@ -124,13 +131,15 @@ async function fetchPerplexityLegalResearch(
 
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
 
-    const legalResearchSystemPrompt = `You are a legal research assistant specializing in Louisiana law and federal law. 
+    const legalResearchSystemPrompt = `You are a legal research assistant with comprehensive knowledge of all 50 U.S. states' laws and federal law. 
 Provide accurate, well-sourced legal research responses. Focus on:
-- Relevant statutes, case law, and regulations
-- Louisiana Revised Statutes, Civil Code, and Code of Civil Procedure
-- Federal statutes, regulations, and case law
-- Cite specific sources (statute numbers, case names, regulatory citations)
-- Note jurisdictional limitations
+- Relevant statutes, case law, and regulations for the jurisdiction(s) mentioned
+- All 50 states' codes, rules of civil procedure, and court systems
+- Federal statutes (U.S.C.), federal regulations (C.F.R.), FRCP, FRE, and federal case law
+- Specialized federal law: Title VII, ADA, FMLA, FLSA, HIPAA, Bankruptcy Code, Immigration law, IP law, Securities law, Environmental law, Tax law, Administrative law
+- Cite specific statute numbers, case names, and regulatory citations
+- Note jurisdictional limitations and key state-to-state variations
+- For multi-state questions, compare approaches across relevant jurisdictions
 - Always append: "⚖️ This is general legal information, not legal advice. For guidance specific to your situation, please consult a licensed attorney."`;
 
     const messages = [
