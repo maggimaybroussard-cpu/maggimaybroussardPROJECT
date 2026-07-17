@@ -11,6 +11,7 @@ import { logAuditEvent, getAdminEmail } from '@/lib/auditLogger';
 import { trackAdminTabVisit, trackAdminAction, trackWorkflowLeadCreated, trackWorkflowCaseCreated, trackWorkflowPaymentInitiated, trackWorkflowPaymentCollected } from '@/lib/analytics';
 import NotificationCenter from '@/components/NotificationCenter';
 import LexiNotificationBell from '@/components/LexiNotificationBell';
+import BillingTimerWidget from '@/components/BillingTimerWidget';
 
 // ── Lazy-loaded admin tab components ─────────────────────────────────────────
 const ClientsTab = dynamic(() => import('./components/ClientsTab'), { ssr: false });
@@ -852,7 +853,7 @@ function SequencesDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const [toast, setToast] = useState<{ msg: string; type: 'success\' | \'error' } | null>(null);
+  const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
 
   const fetchSequences = useCallback(async () => {
     setLoading(true);
@@ -1237,7 +1238,7 @@ function PaymentRemindersDashboard() {
   const [invoiceFilter, setInvoiceFilter] = useState<string>('all');
   const [reminderFilter, setReminderFilter] = useState<string>('all');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const [toast, setToast] = useState<{ msg: string; type: 'success\' | \'error' } | null>(null);
+  const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
   const [rescheduleId, setRescheduleId] = useState<string | null>(null);
   const [rescheduleDate, setRescheduleDate] = useState('');
   const [rescheduleTime, setRescheduleTime] = useState('09:00');
@@ -8014,6 +8015,7 @@ id: 'retainer_renewal_notifications' as const,
                 </svg>
                 <span className="hidden sm:inline">Account</span>
               </a>
+              <BillingTimerWidget />
               <LexiNotificationBell />
             </div>
           </div>
@@ -8762,18 +8764,51 @@ id: 'retainer_renewal_notifications' as const,
                         <h2 className="font-serif text-xl text-foreground">{selectedInquiry.name}</h2>
                         <p className="text-xs text-muted-foreground mt-0.5">{selectedInquiry.firm}</p>
                       </div>
-                      <button onClick={() => setSelectedInquiry(null)} className="text-muted-foreground/50 hover:text-foreground transition-colors p-1" aria-label="Close detail panel"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+                      <button onClick={() => setSelectedInquiry(null)} className="text-muted-foreground/50 hover:text-foreground transition-colors p-1" aria-label="Close detail panel">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                      </button>
                     </div>
-                    <div className="flex flex-col gap-2.5 mb-5"><a href={`mailto:${selectedInquiry.email}`} className="flex items-center gap-2.5 text-sm text-accent hover:underline"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>{selectedInquiry.email}</a><div className="flex items-center gap-2.5 text-sm text-muted-foreground"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/></svg>{selectedInquiry.service}</div><div className="flex items-center gap-2.5 text-xs text-muted-foreground/70"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Submitted {formatDate(selectedInquiry.created_at)}</div></div>
-                    <div className="mb-5"><p className="text-xs uppercase tracking-widest text-muted-foreground font-semibold mb-2">Message</p><p className="text-sm text-foreground/80 leading-relaxed bg-secondary/40 rounded-xl p-4 border border-border">{selectedInquiry.message}</p></div>
-                    <div className="mb-5"><p className="text-xs uppercase tracking-widest text-muted-foreground font-semibold mb-2">Status</p><div className="flex flex-wrap gap-2">{STATUS_OPTIONS.map((s) => (<button key={s} onClick={() => handleStatusChange(selectedInquiry.id, s)} disabled={updatingId === selectedInquiry.id} className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all disabled:opacity-60 ${selectedInquiry.status === s ? STATUS_COLORS[s] : 'bg-transparent border-border text-muted-foreground hover:border-accent/50'}`}>{STATUS_LABELS[s]}</button>))}</div></div>
-                    <div className="mb-5 flex gap-2"><a href="https://calendly.com/maggimaybroussard" target="_blank" rel="noopener noreferrer" className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 rounded-xl border border-border text-xs font-semibold text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-all"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Book</a><a href={`mailto:${selectedInquiry.email}?subject=Re: Your Inquiry — Maggi May Broussard`} className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold uppercase tracking-widest transition-all hover:opacity-90" style={{ background: '#355E3B', color: '#fff' }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Reply</a></div>
-                    <div><p className="text-xs uppercase tracking-widest text-muted-foreground font-semibold mb-2">Internal Notes</p><textarea value={notesValue} onChange={(e) => setNotesValue(e.target.value)} rows={4} placeholder="Add internal notes about this inquiry…" className="w-full px-3 py-2.5 rounded-xl border border-border bg-secondary/30 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent resize-none" /><button onClick={handleSaveNotes} disabled={savingNotes} className="mt-2 w-full py-2 rounded-xl bg-foreground text-background text-xs font-semibold uppercase tracking-widest hover:opacity-90 transition-opacity disabled:opacity-50">{savingNotes ? 'Saving…' : 'Save Notes'}</button></div>
+                    <div className="flex flex-col gap-2.5 mb-5">
+                      <a href={`mailto:${selectedInquiry.email}`} className="flex items-center gap-2.5 text-sm text-accent hover:underline">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                        {selectedInquiry.email}
+                      </a>
+                      <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/></svg>
+                        {selectedInquiry.service}
+                      </div>
+                      <div className="flex items-center gap-2.5 text-xs text-muted-foreground/70">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        Submitted {formatDate(selectedInquiry.created_at)}
+                      </div>
+                    </div>
+                    <div className="mb-5">
+                      <p className="text-xs uppercase tracking-widest text-muted-foreground font-semibold mb-2">Message</p>
+                      <p className="text-sm text-foreground/80 leading-relaxed bg-secondary/40 rounded-xl p-4 border border-border">{selectedInquiry.message}</p>
+                    </div>
+                    <div className="mb-5">
+                      <p className="text-xs uppercase tracking-widest text-muted-foreground font-semibold mb-2">Status</p>
+                      <div className="flex flex-wrap gap-2">
+                        {STATUS_OPTIONS.map((s) => (
+                          <button key={s} onClick={() => handleStatusChange(selectedInquiry.id, s)} disabled={updatingId === selectedInquiry.id} className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all disabled:opacity-60 ${selectedInquiry.status === s ? STATUS_COLORS[s] : 'bg-transparent border-border text-muted-foreground hover:border-accent/50'}`}>{STATUS_LABELS[s]}</button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="mb-5 flex gap-2">
+                      <a href={`mailto:${selectedInquiry.email}`} className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:opacity-90 transition-opacity">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                        Email
+                      </a>
+                      <a href="https://calendly.com/maggimaybroussard" target="_blank" rel="noopener noreferrer" className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border border-border text-xs font-semibold text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-all">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+                        Book Call
+                      </a>
+                    </div>
                   </div>
                 </div>
               )}
             </div>
-          </>
+          </div>
         )}
       </div>
     </div>
