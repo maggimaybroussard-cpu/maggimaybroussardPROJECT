@@ -68,7 +68,7 @@ export default function ServicesProcess() {
                 {step.title}
               </h3>
               <div className="h-px w-full bg-primary-foreground/10 group-hover:bg-accent/40 transition-colors duration-300" />
-              <p className="text-sm text-primary-foreground/60 leading-relaxed font-light">
+              <p className="text-sm text-primary-foreground/75 leading-relaxed font-light">
                 {step.description}
               </p>
             </div>

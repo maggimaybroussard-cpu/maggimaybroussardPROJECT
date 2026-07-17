@@ -32,7 +32,7 @@ export default function ContactCTASection() {
             <br />
             <span className="italic" style={{ opacity: 0.8 }}>together</span>
           </h2>
-          <p className="text-sm sm:text-base md:text-[17px] font-bold leading-[1.8] max-w-md mx-auto mb-8 sm:mb-10 md:mb-12 tracking-wide" style={{ color: '#355E3B' }}>
+          <p className="text-sm sm:text-base md:text-[17px] font-semibold leading-[1.8] max-w-md mx-auto mb-8 sm:mb-10 md:mb-12 tracking-wide text-primary-foreground/85">
             Available for contract engagements with law firms and attorneys nationwide.
             Reach out to discuss how I can support your practice.
           </p>
@@ -90,7 +90,7 @@ export default function ContactCTASection() {
           </div>
 
           {/* Prospect-to-client conversion link */}
-          <p className="mt-6 sm:mt-8 text-xs text-primary-foreground/50">
+          <p className="mt-6 sm:mt-8 text-xs text-primary-foreground/70">
             Already a client?{' '}
             <Link
               href="/portal/login"

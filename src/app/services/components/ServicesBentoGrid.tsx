@@ -479,7 +479,7 @@ function ServiceCard({
             key={tag}
             className={`text-[10px] font-semibold uppercase tracking-widest px-3 py-1 rounded-full ${
               isDark
-                ? 'bg-primary-foreground/10 text-primary-foreground/60'
+                ? 'bg-primary-foreground/10 text-primary-foreground/80'
                 : 'bg-accent/10 text-accent'
             }`}
           >

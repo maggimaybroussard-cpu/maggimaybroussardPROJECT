@@ -85,7 +85,7 @@ export default function HeroSection() {
           </h1>
 
           {/* Subheadline */}
-          <p className="animate-fade-in-delay-2 text-sm sm:text-base md:text-xl font-bold leading-[1.7] max-w-lg mb-8 md:mb-12 tracking-wide" style={{ color: '#355E3B' }}>
+          <p className="animate-fade-in-delay-2 text-sm sm:text-base md:text-xl font-semibold leading-[1.7] max-w-lg mb-8 md:mb-12 tracking-wide text-primary-foreground/90">
             Expert paralegal support for law firms and attorneys
             across all 50 states — remote, reliable, and ready to support your practice.
           </p>

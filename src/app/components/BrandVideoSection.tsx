@@ -94,7 +94,7 @@ export default function BrandVideoSection() {
           </div>
 
           {/* Caption */}
-          <p className="mt-5 text-center text-primary-foreground/40 text-xs tracking-wide">
+          <p className="mt-5 text-center text-primary-foreground/65 text-xs tracking-wide">
             Broussard Legal Services · Contract Paralegal · Louisiana &amp; Nationwide
           </p>
         </div>
