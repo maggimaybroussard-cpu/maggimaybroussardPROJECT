@@ -140,14 +140,16 @@ export default function LexiFloatingChat() {
   // Focus input when opened
   useEffect(() => {
     if (open) {
-      setTimeout(() => inputRef.current?.focus(), 150);
+      const timer = setTimeout(() => inputRef.current?.focus(), 150);
+      return () => clearTimeout(timer);
     }
   }, [open]);
 
   // Focus email input when modal opens
   useEffect(() => {
     if (showEmailModal) {
-      setTimeout(() => emailInputRef.current?.focus(), 100);
+      const timer = setTimeout(() => emailInputRef.current?.focus(), 100);
+      return () => clearTimeout(timer);
     }
   }, [showEmailModal]);
 

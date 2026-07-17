@@ -169,7 +169,8 @@ export default function ChatbotWidget() {
   // Focus textarea when opened
   useEffect(() => {
     if (open && !isLoading) {
-      setTimeout(() => inputRef.current?.focus(), 150);
+      const timer = setTimeout(() => inputRef.current?.focus(), 150);
+      return () => clearTimeout(timer);
     }
   }, [open, isLoading]);
 

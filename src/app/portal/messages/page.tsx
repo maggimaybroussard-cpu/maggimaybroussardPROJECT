@@ -144,6 +144,7 @@ export default function PortalMessagesPage() {
   useEffect(() => {
     if (!user || !inquiryId) return;
     const supabase = createClient();
+    let toastTimer: ReturnType<typeof setTimeout> | null = null;
     const channel = supabase
       .channel('portal-messages-live')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'portal_messages', filter: `inquiry_id=eq.${inquiryId}` }, (payload) => {
@@ -152,7 +153,8 @@ export default function PortalMessagesPage() {
         if (msg?.sender_role === 'admin') {
           const preview = msg?.body ? String(msg.body).slice(0, 60) + (String(msg.body).length > 60 ? '…' : '') : 'New message';
           setNewMessageToast(preview);
-          setTimeout(() => setNewMessageToast(null), 5000);
+          if (toastTimer) clearTimeout(toastTimer);
+          toastTimer = setTimeout(() => setNewMessageToast(null), 5000);
         }
         fetchMessages();
       })
@@ -160,7 +162,10 @@ export default function PortalMessagesPage() {
         fetchMessages();
       })
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      if (toastTimer) clearTimeout(toastTimer);
+      supabase.removeChannel(channel);
+    };
   }, [user, inquiryId, fetchMessages]);
 
   // ── Send message ─────────────────────────────────────────────────────────────

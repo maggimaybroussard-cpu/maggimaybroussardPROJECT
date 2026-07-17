@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 
 // ElevenLabs voices suitable for a professional legal secretary
 export const LEXI_VOICES = [
@@ -43,6 +43,30 @@ export function useLexiVoice(): UseLexiVoiceReturn {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
+
+  // Cleanup on unmount: stop audio, revoke blob URL, stop media stream
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.onended = null;
+        audioRef.current.onerror = null;
+        audioRef.current = null;
+      }
+      if (audioUrlRef.current) {
+        URL.revokeObjectURL(audioUrlRef.current);
+        audioUrlRef.current = null;
+      }
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((t) => t.stop());
+        streamRef.current = null;
+      }
+      if (mediaRecorderRef.current) {
+        try { mediaRecorderRef.current.stop(); } catch { /* already stopped */ }
+        mediaRecorderRef.current = null;
+      }
+    };
+  }, []);
 
   const stopSpeaking = useCallback(() => {
     if (audioRef.current) {
