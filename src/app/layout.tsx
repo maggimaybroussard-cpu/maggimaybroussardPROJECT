@@ -1,6 +1,6 @@
 import React from 'react';
 import type { Metadata, Viewport } from 'next';
-import { Playfair_Display, Raleway } from 'next/font/google';
+import { DM_Sans, Fraunces } from 'next/font/google';
 import { Suspense } from 'react';
 import '../styles/tailwind.css';
 import GoogleAnalytics from '@/components/GoogleAnalytics';
@@ -11,23 +11,19 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import PWAInstallPrompt from '@/components/PWAInstallPrompt';
 import { Toaster } from 'react-hot-toast';
 
-const playfairDisplay = Playfair_Display({
+const dmSans = DM_Sans({
   subsets: ['latin'],
-  weight: ['400', '700', '900'],
-  style: ['normal', 'italic'],
-  variable: '--font-serif',
-  display: 'swap',
-  preload: true,
-  adjustFontFallback: true,
-});
-
-const raleway = Raleway({
-  subsets: ['latin'],
-  weight: ['300', '400', '500', '600', '700'],
   variable: '--font-sans',
   display: 'swap',
-  preload: true,
-  adjustFontFallback: true,
+  weight: ['300', '400', '500', '600', '700'],
+});
+
+const fraunces = Fraunces({
+  subsets: ['latin'],
+  variable: '--font-serif',
+  display: 'swap',
+  weight: ['400', '600', '700', '800', '900'],
+  style: ['normal', 'italic'],
 });
 
 export const viewport: Viewport = {
@@ -139,7 +135,7 @@ export default function RootLayout({
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
 
   return (
-    <html lang="en" suppressHydrationWarning className={`${playfairDisplay.variable} ${raleway.variable}`}>
+    <html lang="en" suppressHydrationWarning className={`${dmSans.variable} ${fraunces.variable}`}>
       <head>
         <meta charSet="utf-8" />
         <meta name="theme-color" content="#1B2A4A" />
@@ -285,7 +281,7 @@ export default function RootLayout({
 
         <script type="module" async src="https://static.rocket.new/rocket-web.js?_cfg=https%3A%2F%2Fmaggimaybr6854back.builtwithrocket.new&_be=https%3A%2F%2Fappanalytics.rocket.new&_v=0.1.19" />
         <script type="module" defer src="https://static.rocket.new/rocket-shot.js?v=0.0.2" /></head>
-      <body className={`${playfairDisplay.className} ${raleway.className}`} suppressHydrationWarning>
+      <body className={`${dmSans.className} ${fraunces.className}`} suppressHydrationWarning>
         {/* Skip to main content — keyboard navigation / accessibility */}
         <a
           href="#main-content"

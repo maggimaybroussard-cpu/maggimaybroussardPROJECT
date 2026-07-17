@@ -215,7 +215,7 @@ export default function Header({ initialClaims }: HeaderProps) {
                 }
                 className={`px-3 py-2 rounded-full text-[11px] font-semibold uppercase tracking-widest transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent whitespace-nowrap ${
                   pathname === link?.href || (link?.href === '/' && (pathname === '/' || pathname === '/homepage'))
-                    ? 'bg-[#8B3A45] text-white' :'text-primary-foreground/80 hover:text-white hover:bg-accent/80'
+                    ? 'bg-accent text-white shadow-sm shadow-accent/30' :'text-primary-foreground/80 hover:text-white hover:bg-primary-foreground/12'
                 }`}
               >
                 {link?.label}
@@ -227,7 +227,7 @@ export default function Header({ initialClaims }: HeaderProps) {
           <div className="hidden lg:flex items-center gap-2 shrink-0">
             <Link
               href="/contact"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-[11px] font-semibold uppercase tracking-widest transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent bg-accent text-accent-foreground hover:opacity-90"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-[11px] font-semibold uppercase tracking-widest transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent bg-accent text-accent-foreground hover:opacity-90 shadow-md shadow-accent/20"
             >
               Hire Me
             </Link>
