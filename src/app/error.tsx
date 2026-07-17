@@ -12,22 +12,29 @@ export default function GlobalError({ error, reset }: ErrorProps) {
     const msg = error?.message ?? '';
     const isChunkError =
       error?.name === 'ChunkLoadError' || msg.includes("reading'call'") ||
-      msg.includes("reading\"call\"") ||
-      msg.includes("reading 'call'") ||
+      msg.includes('reading"call"') ||
+      msg.includes("reading'call'") ||
       msg.includes('Loading chunk') ||
       msg.includes('Failed to fetch dynamically imported module') ||
       msg.includes('Cannot read properties of undefined') ||
       msg.includes('ChunkLoadError');
 
     if (isChunkError) {
-      const alreadyReloaded = sessionStorage.getItem('chunk-reload-attempted');
-      if (!alreadyReloaded) {
-        sessionStorage.setItem('chunk-reload-attempted', '1');
+      const RELOAD_WINDOW_MS = 10_000; // 10 seconds
+      const lastReload = sessionStorage.getItem('chunk-reload-ts');
+      const now = Date.now();
+
+      // Only block reload if we already reloaded within the last 10 seconds
+      if (!lastReload || now - parseInt(lastReload, 10) > RELOAD_WINDOW_MS) {
+        sessionStorage.setItem('chunk-reload-ts', String(now));
+        // Remove old guard key if present
+        sessionStorage.removeItem('chunk-reload-attempted');
         window.location.reload();
         return;
       }
     }
     // Clear the guard on non-chunk errors so future chunk errors can still reload
+    sessionStorage.removeItem('chunk-reload-ts');
     sessionStorage.removeItem('chunk-reload-attempted');
   }, [error]);
 
@@ -43,6 +50,7 @@ export default function GlobalError({ error, reset }: ErrorProps) {
           </p>
           <button
             onClick={() => {
+              sessionStorage.removeItem('chunk-reload-ts');
               sessionStorage.removeItem('chunk-reload-attempted');
               reset();
             }}
