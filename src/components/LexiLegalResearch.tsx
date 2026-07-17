@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 type ResearchCategory = 'case_law' | 'statutes' | 'precedent' | 'federal' | 'all';
+type DataSource = 'perplexity' | 'courtlistener' | 'ecfr' | 'openstates' | 'la_legislature' | 'govinfo' | 'case_law_links';
 
 interface SearchResult {
   query: string;
@@ -14,6 +15,17 @@ interface SearchResult {
   citations: string[];
   searchResults: Array<{ url: string; title: string; snippet?: string }>;
   timestamp: number;
+}
+
+interface LiveDataResult {
+  source: string;
+  query: string;
+  results?: any[];
+  bills?: any[];
+  count?: number;
+  searchLinks?: Array<{ source: string; url: string; description?: string }>;
+  courtListenerResults?: any[];
+  note?: string;
 }
 
 interface LexiLegalResearchProps {
@@ -108,6 +120,59 @@ const CATEGORY_OPTIONS: Array<{ id: ResearchCategory; label: string; icon: strin
   { id: 'all', label: 'All Sources', icon: '🔍', hint: 'Comprehensive research across all sources' },
 ];
 
+// ── Live Data Source Tabs ─────────────────────────────────────────────────────
+const DATA_SOURCE_TABS: Array<{ id: DataSource; label: string; icon: string; description: string; apiPath: string }> = [
+  {
+    id: 'perplexity',
+    label: 'AI Research',
+    icon: '🤖',
+    description: 'Perplexity AI — live web search across all legal databases',
+    apiPath: '',
+  },
+  {
+    id: 'courtlistener',
+    label: 'CourtListener',
+    icon: '⚖️',
+    description: 'Free Law Project — real federal court opinions & PACER dockets',
+    apiPath: '/api/lexi/courtlistener',
+  },
+  {
+    id: 'ecfr',
+    label: 'eCFR',
+    icon: '📋',
+    description: 'Live Code of Federal Regulations — all CFR titles',
+    apiPath: '/api/lexi/ecfr',
+  },
+  {
+    id: 'openstates',
+    label: 'OpenStates',
+    icon: '🗺️',
+    description: 'Real-time state bill tracking — all 50 states',
+    apiPath: '/api/lexi/openstates',
+  },
+  {
+    id: 'la_legislature',
+    label: 'LA Legislature',
+    icon: '🦐',
+    description: 'Louisiana Legislature — live bill tracking & session data',
+    apiPath: '/api/lexi/la-legislature',
+  },
+  {
+    id: 'govinfo',
+    label: 'GovInfo',
+    icon: '🏛️',
+    description: 'U.S. GPO — Federal Register, U.S. Code, Congressional Record',
+    apiPath: '/api/lexi/govinfo',
+  },
+  {
+    id: 'case_law_links',
+    label: 'Case Law',
+    icon: '🔗',
+    description: 'Google Scholar, Justia, Cornell LII — free case law search',
+    apiPath: '/api/lexi/case-law',
+  },
+];
+
 const QUICK_SEARCHES = [
   'Summary judgment standard Louisiana',
   'Motion to dismiss 12(b)(6) Fifth Circuit',
@@ -179,8 +244,11 @@ export default function LexiLegalResearch({ context, onInsertCitation, defaultOp
   const [isOpen, setIsOpen] = useState(defaultOpen);
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState<ResearchCategory>('all');
+  const [activeDataSource, setActiveDataSource] = useState<DataSource>('perplexity');
   const [history, setHistory] = useState<SearchResult[]>([]);
   const [activeResult, setActiveResult] = useState<SearchResult | null>(null);
+  const [liveDataResult, setLiveDataResult] = useState<LiveDataResult | null>(null);
+  const [liveDataLoading, setLiveDataLoading] = useState(false);
   const [selectedState, setSelectedState] = useState<string>('');
   const [selectedPracticeArea, setSelectedPracticeArea] = useState<string>('');
   const [showStateDropdown, setShowStateDropdown] = useState(false);
@@ -235,8 +303,49 @@ export default function LexiLegalResearch({ context, onInsertCitation, defaultOp
       s.code.toLowerCase().includes(stateSearch.toLowerCase())
   );
 
+  // ── Live Data Source Search ───────────────────────────────────────────────
+  const doLiveDataSearch = async (q: string, source: DataSource) => {
+    const tab = DATA_SOURCE_TABS.find(t => t.id === source);
+    if (!tab?.apiPath || !q.trim()) return;
+
+    setLiveDataLoading(true);
+    setLiveDataResult(null);
+
+    try {
+      const body: Record<string, any> = { query: q.trim(), limit: 10 };
+      if (selectedState && (source === 'openstates')) {
+        body.state = selectedState;
+      }
+
+      const res = await fetch(tab.apiPath, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        toast.error(`${tab.label} search failed: ${errData?.error ?? res.status}`);
+        return;
+      }
+
+      const data = await res.json();
+      setLiveDataResult(data);
+    } catch (err) {
+      toast.error(`${tab.label} search failed`);
+    } finally {
+      setLiveDataLoading(false);
+    }
+  };
+
   const doSearch = (q: string, cat: ResearchCategory = category) => {
     if (!q.trim() || isLoading) return;
+
+    if (activeDataSource !== 'perplexity') {
+      doLiveDataSearch(q, activeDataSource);
+      return;
+    }
+
     const stateName = selectedState
       ? ALL_STATES.find(s => s.code === selectedState)?.name
       : undefined;
@@ -295,6 +404,8 @@ export default function LexiLegalResearch({ context, onInsertCitation, defaultOp
   };
 
   const selectedStateObj = ALL_STATES.find(s => s.code === selectedState);
+  const isSearching = isLoading || liveDataLoading;
+  const activeTab = DATA_SOURCE_TABS.find(t => t.id === activeDataSource);
 
   return (
     <div className="border border-border rounded-xl overflow-hidden bg-background">
@@ -307,9 +418,9 @@ export default function LexiLegalResearch({ context, onInsertCitation, defaultOp
           <span className="text-base">🔬</span>
           <div className="text-left">
             <p className="text-xs font-semibold text-foreground">Lexi Legal Research</p>
-            <p className="text-[10px] text-muted-foreground">All 50 states · Federal law · Live search via Perplexity</p>
+            <p className="text-[10px] text-muted-foreground">All 50 states · Federal law · CourtListener · eCFR · OpenStates · GovInfo</p>
           </div>
-          {isLoading && (
+          {isSearching && (
             <span className="ml-2 flex items-center gap-1 text-[10px] text-primary font-medium">
               <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
               Searching…
@@ -321,19 +432,134 @@ export default function LexiLegalResearch({ context, onInsertCitation, defaultOp
 
       {isOpen && (
         <div className="p-4 space-y-4 border-t border-border">
-          {/* Jurisdiction + Practice Area filters */}
-          <div className="grid grid-cols-2 gap-2">
-            {/* State selector */}
+
+          {/* ── Data Source Tabs ─────────────────────────────────────────── */}
+          <div>
+            <p className="text-[10px] text-muted-foreground font-medium mb-2">Data Source:</p>
+            <div className="flex flex-wrap gap-1.5">
+              {DATA_SOURCE_TABS.map(tab => (
+                <button
+                  key={tab.id}
+                  onClick={() => {
+                    setActiveDataSource(tab.id);
+                    setActiveResult(null);
+                    setLiveDataResult(null);
+                  }}
+                  title={tab.description}
+                  className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg border text-[10px] font-semibold transition-all ${
+                    activeDataSource === tab.id
+                      ? 'border-primary bg-primary/10 text-primary' :'border-border text-muted-foreground hover:border-primary/40 hover:text-foreground'
+                  }`}
+                >
+                  <span>{tab.icon}</span>
+                  <span>{tab.label}</span>
+                </button>
+              ))}
+            </div>
+            {activeTab && (
+              <p className="text-[9px] text-muted-foreground mt-1.5 italic">{activeTab.description}</p>
+            )}
+          </div>
+
+          {/* Jurisdiction + Practice Area filters (only for Perplexity AI) */}
+          {activeDataSource === 'perplexity' && (
+            <div className="grid grid-cols-2 gap-2">
+              {/* State selector */}
+              <div className="relative" ref={stateDropdownRef}>
+                <button
+                  onClick={() => { setShowStateDropdown(o => !o); setShowPracticeDropdown(false); }}
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-xl border text-xs transition-all ${
+                    selectedState
+                      ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:border-primary/40 hover:text-foreground'
+                  }`}
+                >
+                  <span className="truncate">
+                    {selectedStateObj ? `${selectedStateObj.code} — ${selectedStateObj.name}` : '🗺️ All States / Federal'}
+                  </span>
+                  <span className="ml-1 shrink-0">▾</span>
+                </button>
+                {showStateDropdown && (
+                  <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-background border border-border rounded-xl shadow-lg overflow-hidden">
+                    <div className="p-2 border-b border-border">
+                      <input
+                        autoFocus
+                        value={stateSearch}
+                        onChange={e => setStateSearch(e.target.value)}
+                        placeholder="Search state…"
+                        className="w-full px-2 py-1 text-xs bg-secondary/30 border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-primary/30"
+                      />
+                    </div>
+                    <div className="max-h-48 overflow-y-auto">
+                      <button
+                        onClick={() => { setSelectedState(''); setShowStateDropdown(false); setStateSearch(''); }}
+                        className={`w-full text-left px-3 py-1.5 text-xs hover:bg-primary/5 transition-colors ${!selectedState ? 'text-primary font-semibold' : 'text-foreground'}`}
+                      >
+                        🇺🇸 All States / Federal
+                      </button>
+                      {filteredStates.map(s => (
+                        <button
+                          key={s.code}
+                          onClick={() => { setSelectedState(s.code); setShowStateDropdown(false); setStateSearch(''); }}
+                          className={`w-full text-left px-3 py-1.5 text-xs hover:bg-primary/5 transition-colors ${selectedState === s.code ? 'text-primary font-semibold bg-primary/5' : 'text-foreground'}`}
+                        >
+                          <span className="font-mono text-[10px] text-muted-foreground mr-2">{s.code}</span>
+                          {s.name}
+                          <span className="ml-1 text-[9px] text-muted-foreground">({s.citation})</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Practice area selector */}
+              <div className="relative">
+                <button
+                  onClick={() => { setShowPracticeDropdown(o => !o); setShowStateDropdown(false); }}
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-xl border text-xs transition-all ${
+                    selectedPracticeArea
+                      ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:border-primary/40 hover:text-foreground'
+                  }`}
+                >
+                  <span className="truncate">{selectedPracticeArea || '⚖️ Practice Area'}</span>
+                  <span className="ml-1 shrink-0">▾</span>
+                </button>
+                {showPracticeDropdown && (
+                  <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-background border border-border rounded-xl shadow-lg overflow-hidden">
+                    <div className="max-h-48 overflow-y-auto">
+                      <button
+                        onClick={() => { setSelectedPracticeArea(''); setShowPracticeDropdown(false); }}
+                        className={`w-full text-left px-3 py-1.5 text-xs hover:bg-primary/5 transition-colors ${!selectedPracticeArea ? 'text-primary font-semibold' : 'text-foreground'}`}
+                      >
+                        All Practice Areas
+                      </button>
+                      {PRACTICE_AREAS.map(pa => (
+                        <button
+                          key={pa}
+                          onClick={() => { setSelectedPracticeArea(pa); setShowPracticeDropdown(false); }}
+                          className={`w-full text-left px-3 py-1.5 text-xs hover:bg-primary/5 transition-colors ${selectedPracticeArea === pa ? 'text-primary font-semibold bg-primary/5' : 'text-foreground'}`}
+                        >
+                          {pa}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* State filter for OpenStates */}
+          {activeDataSource === 'openstates' && (
             <div className="relative" ref={stateDropdownRef}>
               <button
-                onClick={() => { setShowStateDropdown(o => !o); setShowPracticeDropdown(false); }}
+                onClick={() => setShowStateDropdown(o => !o)}
                 className={`w-full flex items-center justify-between px-3 py-2 rounded-xl border text-xs transition-all ${
-                  selectedState
-                    ? 'border-primary bg-primary/10 text-primary' :'border-border text-muted-foreground hover:border-primary/40 hover:text-foreground'
+                  selectedState ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:border-primary/40 hover:text-foreground'
                 }`}
               >
                 <span className="truncate">
-                  {selectedStateObj ? `${selectedStateObj.code} — ${selectedStateObj.name}` : '🗺️ All States / Federal'}
+                  {selectedStateObj ? `${selectedStateObj.code} — ${selectedStateObj.name}` : '🗺️ Filter by State (optional)'}
                 </span>
                 <span className="ml-1 shrink-0">▾</span>
               </button>
@@ -351,9 +577,9 @@ export default function LexiLegalResearch({ context, onInsertCitation, defaultOp
                   <div className="max-h-48 overflow-y-auto">
                     <button
                       onClick={() => { setSelectedState(''); setShowStateDropdown(false); setStateSearch(''); }}
-                      className={`w-full text-left px-3 py-1.5 text-xs hover:bg-primary/5 transition-colors ${!selectedState ? 'text-primary font-semibold' : 'text-foreground'}`}
+                      className="w-full text-left px-3 py-1.5 text-xs hover:bg-primary/5 transition-colors text-foreground"
                     >
-                      🇺🇸 All States / Federal
+                      🇺🇸 All States
                     </button>
                     {filteredStates.map(s => (
                       <button
@@ -363,52 +589,16 @@ export default function LexiLegalResearch({ context, onInsertCitation, defaultOp
                       >
                         <span className="font-mono text-[10px] text-muted-foreground mr-2">{s.code}</span>
                         {s.name}
-                        <span className="ml-1 text-[9px] text-muted-foreground">({s.citation})</span>
                       </button>
                     ))}
                   </div>
                 </div>
               )}
             </div>
-
-            {/* Practice area selector */}
-            <div className="relative">
-              <button
-                onClick={() => { setShowPracticeDropdown(o => !o); setShowStateDropdown(false); }}
-                className={`w-full flex items-center justify-between px-3 py-2 rounded-xl border text-xs transition-all ${
-                  selectedPracticeArea
-                    ? 'border-primary bg-primary/10 text-primary' :'border-border text-muted-foreground hover:border-primary/40 hover:text-foreground'
-                }`}
-              >
-                <span className="truncate">{selectedPracticeArea || '⚖️ Practice Area'}</span>
-                <span className="ml-1 shrink-0">▾</span>
-              </button>
-              {showPracticeDropdown && (
-                <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-background border border-border rounded-xl shadow-lg overflow-hidden">
-                  <div className="max-h-48 overflow-y-auto">
-                    <button
-                      onClick={() => { setSelectedPracticeArea(''); setShowPracticeDropdown(false); }}
-                      className={`w-full text-left px-3 py-1.5 text-xs hover:bg-primary/5 transition-colors ${!selectedPracticeArea ? 'text-primary font-semibold' : 'text-foreground'}`}
-                    >
-                      All Practice Areas
-                    </button>
-                    {PRACTICE_AREAS.map(pa => (
-                      <button
-                        key={pa}
-                        onClick={() => { setSelectedPracticeArea(pa); setShowPracticeDropdown(false); }}
-                        className={`w-full text-left px-3 py-1.5 text-xs hover:bg-primary/5 transition-colors ${selectedPracticeArea === pa ? 'text-primary font-semibold bg-primary/5' : 'text-foreground'}`}
-                      >
-                        {pa}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
+          )}
 
           {/* Active filters display */}
-          {(selectedState || selectedPracticeArea) && (
+          {(selectedState || selectedPracticeArea) && activeDataSource === 'perplexity' && (
             <div className="flex flex-wrap gap-1.5">
               {selectedState && (
                 <span className="flex items-center gap-1 px-2 py-0.5 bg-primary/10 border border-primary/30 rounded-full text-[10px] text-primary font-medium">
@@ -425,23 +615,25 @@ export default function LexiLegalResearch({ context, onInsertCitation, defaultOp
             </div>
           )}
 
-          {/* Category selector */}
-          <div className="grid grid-cols-5 gap-1">
-            {CATEGORY_OPTIONS.map(cat => (
-              <button
-                key={cat.id}
-                onClick={() => setCategory(cat.id)}
-                title={cat.hint}
-                className={`px-1.5 py-1.5 rounded-lg border text-center transition-all ${
-                  category === cat.id
-                    ? 'border-primary bg-primary/10 text-primary' :'border-border text-muted-foreground hover:border-primary/40 hover:text-foreground'
-                }`}
-              >
-                <div className="text-sm">{cat.icon}</div>
-                <div className="text-[8px] font-semibold mt-0.5 leading-tight">{cat.label}</div>
-              </button>
-            ))}
-          </div>
+          {/* Category selector (only for Perplexity AI) */}
+          {activeDataSource === 'perplexity' && (
+            <div className="grid grid-cols-5 gap-1">
+              {CATEGORY_OPTIONS.map(cat => (
+                <button
+                  key={cat.id}
+                  onClick={() => setCategory(cat.id)}
+                  title={cat.hint}
+                  className={`px-1.5 py-1.5 rounded-lg border text-center transition-all ${
+                    category === cat.id
+                      ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:border-primary/40 hover:text-foreground'
+                  }`}
+                >
+                  <div className="text-sm">{cat.icon}</div>
+                  <div className="text-[8px] font-semibold mt-0.5 leading-tight">{cat.label}</div>
+                </button>
+              ))}
+            </div>
+          )}
 
           {/* Search input */}
           <div className="flex gap-2">
@@ -451,24 +643,29 @@ export default function LexiLegalResearch({ context, onInsertCitation, defaultOp
               onChange={e => setQuery(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSearch()}
               placeholder={
-                selectedState
-                  ? `Search ${selectedStateObj?.name} law…`
-                  : 'Search case law, statutes, regulations…'
+                activeDataSource === 'courtlistener' ? 'Search federal court opinions…' :
+                activeDataSource === 'ecfr' ? 'Search CFR regulations (e.g. OSHA 29 CFR 1910)…' :
+                activeDataSource === 'openstates' ? 'Search state bills (e.g. minimum wage Louisiana)…' :
+                activeDataSource === 'la_legislature' ? 'Search Louisiana bills (e.g. HB 123 or keyword)…' :
+                activeDataSource === 'govinfo' ? 'Search Federal Register, U.S. Code, CFR…' :
+                activeDataSource === 'case_law_links' ? 'Search Google Scholar, Justia, Cornell LII…' :
+                selectedState ? `Search ${selectedStateObj?.name} law…` :
+                'Search case law, statutes, regulations…'
               }
-              disabled={isLoading}
+              disabled={isSearching}
               className="flex-1 px-3 py-2 bg-background border border-border rounded-xl text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:opacity-60"
             />
             <button
               onClick={handleSearch}
-              disabled={!query.trim() || isLoading}
+              disabled={!query.trim() || isSearching}
               className="px-4 py-2 bg-primary text-primary-foreground rounded-xl text-xs font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary/90 transition-colors shrink-0"
             >
-              {isLoading ? '…' : 'Search'}
+              {isSearching ? '…' : 'Search'}
             </button>
           </div>
 
-          {/* Quick searches */}
-          {!activeResult && !isLoading && (
+          {/* Quick searches (Perplexity only) */}
+          {activeDataSource === 'perplexity' && !activeResult && !isLoading && (
             <div>
               <p className="text-[10px] text-muted-foreground mb-2 font-medium">Quick searches:</p>
               <div className="flex flex-wrap gap-1.5">
@@ -483,7 +680,6 @@ export default function LexiLegalResearch({ context, onInsertCitation, defaultOp
                 ))}
               </div>
 
-              {/* State-specific quick research */}
               {selectedState && (
                 <div className="mt-3">
                   <p className="text-[10px] text-muted-foreground mb-2 font-medium">
@@ -512,7 +708,6 @@ export default function LexiLegalResearch({ context, onInsertCitation, defaultOp
                 </div>
               )}
 
-              {/* Federal law quick searches */}
               {category === 'federal' && (
                 <div className="mt-3">
                   <p className="text-[10px] text-muted-foreground mb-2 font-medium">Federal law quick searches:</p>
@@ -543,25 +738,369 @@ export default function LexiLegalResearch({ context, onInsertCitation, defaultOp
             </div>
           )}
 
+          {/* Quick searches for live data sources */}
+          {activeDataSource === 'courtlistener' && !liveDataResult && !liveDataLoading && (
+            <div>
+              <p className="text-[10px] text-muted-foreground mb-2 font-medium">Quick case law searches:</p>
+              <div className="flex flex-wrap gap-1.5">
+                {[
+                  'negligence Louisiana Fifth Circuit',
+                  'employment discrimination Title VII',
+                  'summary judgment standard',
+                  'qualified immunity Section 1983',
+                  'breach of contract damages',
+                  'personal injury causation',
+                ].map(q => (
+                  <button key={q} onClick={() => { setQuery(q); doLiveDataSearch(q, 'courtlistener'); }}
+                    className="px-2.5 py-1 bg-secondary/50 border border-border rounded-full text-[10px] text-foreground hover:border-primary/40 hover:bg-primary/5 transition-colors">
+                    {q}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {activeDataSource === 'ecfr' && !liveDataResult && !liveDataLoading && (
+            <div>
+              <p className="text-[10px] text-muted-foreground mb-2 font-medium">Quick CFR searches:</p>
+              <div className="flex flex-wrap gap-1.5">
+                {[
+                  'OSHA workplace safety',
+                  'HIPAA privacy rule',
+                  'FLSA overtime exemptions',
+                  'EPA hazardous waste',
+                  'FTC unfair practices',
+                  'IRS income tax regulations',
+                ].map(q => (
+                  <button key={q} onClick={() => { setQuery(q); doLiveDataSearch(q, 'ecfr'); }}
+                    className="px-2.5 py-1 bg-secondary/50 border border-border rounded-full text-[10px] text-foreground hover:border-primary/40 hover:bg-primary/5 transition-colors">
+                    {q}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {activeDataSource === 'openstates' && !liveDataResult && !liveDataLoading && (
+            <div>
+              <p className="text-[10px] text-muted-foreground mb-2 font-medium">Quick state bill searches:</p>
+              <div className="flex flex-wrap gap-1.5">
+                {[
+                  'minimum wage',
+                  'landlord tenant',
+                  'employment discrimination',
+                  'criminal justice reform',
+                  'healthcare access',
+                  'education funding',
+                ].map(q => (
+                  <button key={q} onClick={() => { setQuery(q); doLiveDataSearch(q, 'openstates'); }}
+                    className="px-2.5 py-1 bg-secondary/50 border border-border rounded-full text-[10px] text-foreground hover:border-primary/40 hover:bg-primary/5 transition-colors">
+                    {q}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {activeDataSource === 'la_legislature' && !liveDataResult && !liveDataLoading && (
+            <div>
+              <p className="text-[10px] text-muted-foreground mb-2 font-medium">Quick Louisiana bill searches:</p>
+              <div className="flex flex-wrap gap-1.5">
+                {[
+                  'civil code amendment',
+                  'workers compensation',
+                  'landlord tenant',
+                  'criminal sentencing',
+                  'family law',
+                  'tax exemption',
+                ].map(q => (
+                  <button key={q} onClick={() => { setQuery(q); doLiveDataSearch(q, 'la_legislature'); }}
+                    className="px-2.5 py-1 bg-secondary/50 border border-border rounded-full text-[10px] text-foreground hover:border-primary/40 hover:bg-primary/5 transition-colors">
+                    {q}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {activeDataSource === 'govinfo' && !liveDataResult && !liveDataLoading && (
+            <div>
+              <p className="text-[10px] text-muted-foreground mb-2 font-medium">Quick GovInfo searches:</p>
+              <div className="flex flex-wrap gap-1.5">
+                {[
+                  'Federal Register employment',
+                  'U.S. Code Title 42 civil rights',
+                  'Congressional Record judiciary',
+                  'Public Law 117',
+                  'Statutes at Large 2024',
+                ].map(q => (
+                  <button key={q} onClick={() => { setQuery(q); doLiveDataSearch(q, 'govinfo'); }}
+                    className="px-2.5 py-1 bg-secondary/50 border border-border rounded-full text-[10px] text-foreground hover:border-primary/40 hover:bg-primary/5 transition-colors">
+                    {q}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {activeDataSource === 'case_law_links' && !liveDataResult && !liveDataLoading && (
+            <div>
+              <p className="text-[10px] text-muted-foreground mb-2 font-medium">Quick case law searches:</p>
+              <div className="flex flex-wrap gap-1.5">
+                {[
+                  'negligence Louisiana',
+                  'breach of contract',
+                  'employment discrimination',
+                  'personal injury damages',
+                  'Fourth Amendment search seizure',
+                ].map(q => (
+                  <button key={q} onClick={() => { setQuery(q); doLiveDataSearch(q, 'case_law_links'); }}
+                    className="px-2.5 py-1 bg-secondary/50 border border-border rounded-full text-[10px] text-foreground hover:border-primary/40 hover:bg-primary/5 transition-colors">
+                    {q}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Loading state */}
-          {isLoading && (
+          {isSearching && (
             <div className="flex items-center gap-3 py-4 px-3 bg-primary/5 rounded-xl">
               <div className="w-5 h-5 rounded-full border-2 border-primary/30 border-t-primary animate-spin shrink-0" />
               <div>
-                <p className="text-xs font-semibold text-foreground">Searching legal databases…</p>
+                <p className="text-xs font-semibold text-foreground">
+                  {activeDataSource === 'perplexity' ? 'Searching legal databases…' :
+                   activeDataSource === 'courtlistener' ? 'Querying CourtListener case law…' :
+                   activeDataSource === 'ecfr' ? 'Searching eCFR regulations…' :
+                   activeDataSource === 'openstates' ? 'Fetching state bill data…' :
+                   activeDataSource === 'la_legislature' ? 'Querying Louisiana Legislature…' :
+                   activeDataSource === 'govinfo' ? 'Searching GovInfo (U.S. GPO)…' :
+                   'Searching case law databases…'}
+                </p>
                 <p className="text-[10px] text-muted-foreground">
-                  {selectedState
-                    ? `Querying ${selectedStateObj?.name} statutes, case law, and court rules`
-                    : 'Querying all 50 states, federal law, and live legal databases'}
+                  {activeDataSource === 'perplexity'
+                    ? selectedState
+                      ? `Querying ${selectedStateObj?.name} statutes, case law, and court rules`
+                      : 'Querying all 50 states, federal law, and live legal databases'
+                    : activeTab?.description}
                 </p>
               </div>
             </div>
           )}
 
-          {/* Results */}
-          {activeResult && !isLoading && (
+          {/* ── Live Data Results (non-Perplexity) ─────────────────────── */}
+          {liveDataResult && !liveDataLoading && (
             <div className="space-y-3">
-              {/* Result header */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-semibold text-foreground">
+                    {liveDataResult.source}: <span className="text-primary">{liveDataResult.query}</span>
+                  </p>
+                  {liveDataResult.count !== undefined && (
+                    <p className="text-[10px] text-muted-foreground">{liveDataResult.count} results found</p>
+                  )}
+                </div>
+                <button
+                  onClick={() => { setLiveDataResult(null); setQuery(''); }}
+                  className="text-[10px] text-muted-foreground hover:text-foreground"
+                >
+                  Clear ✕
+                </button>
+              </div>
+
+              {/* CourtListener results */}
+              {activeDataSource === 'courtlistener' && liveDataResult.results && (
+                <div className="space-y-2">
+                  {liveDataResult.results.length === 0 ? (
+                    <p className="text-xs text-muted-foreground py-2">No cases found. Try different search terms.</p>
+                  ) : liveDataResult.results.map((r: any, i: number) => (
+                    <div key={i} className="p-3 bg-secondary/20 border border-border rounded-xl">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-semibold text-foreground truncate">{r.caseName}</p>
+                          {r.citation && <p className="text-[10px] text-primary font-mono mt-0.5">{r.citation}</p>}
+                          <div className="flex items-center gap-2 mt-0.5">
+                            {r.court && <span className="text-[9px] text-muted-foreground">{r.court}</span>}
+                            {r.dateFiled && <span className="text-[9px] text-muted-foreground">· {r.dateFiled}</span>}
+                            {r.status && <span className="text-[9px] text-muted-foreground">· {r.status}</span>}
+                          </div>
+                          {r.snippet && <p className="text-[10px] text-muted-foreground mt-1.5 line-clamp-2">{r.snippet}</p>}
+                        </div>
+                        {r.absoluteUrl && (
+                          <a href={r.absoluteUrl} target="_blank" rel="noopener noreferrer"
+                            className="shrink-0 px-2 py-1 bg-primary/10 text-primary border border-primary/20 rounded-lg text-[9px] font-semibold hover:bg-primary/20 transition-colors">
+                            View →
+                          </a>
+                        )}
+                      </div>
+                      {r.citation && onInsertCitation && (
+                        <button
+                          onClick={() => { onInsertCitation(r.citation); toast.success('Citation added'); }}
+                          className="mt-2 px-2 py-0.5 bg-primary text-primary-foreground rounded text-[9px] font-semibold hover:bg-primary/90 transition-colors"
+                        >
+                          + Add Citation
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* eCFR results */}
+              {activeDataSource === 'ecfr' && liveDataResult.results && (
+                <div className="space-y-2">
+                  {liveDataResult.results.length === 0 ? (
+                    <p className="text-xs text-muted-foreground py-2">No regulations found. Try different search terms.</p>
+                  ) : liveDataResult.results.map((r: any, i: number) => (
+                    <div key={i} className="p-3 bg-secondary/20 border border-border rounded-xl">
+                      <p className="text-xs font-semibold text-foreground">{r.subject || r.title}</p>
+                      {r.citation && <p className="text-[10px] text-primary font-mono mt-0.5">{r.citation}</p>}
+                      {r.snippet && <p className="text-[10px] text-muted-foreground mt-1 line-clamp-2">{r.snippet}</p>}
+                      <div className="flex items-center gap-2 mt-1.5">
+                        {r.url && (
+                          <a href={r.url} target="_blank" rel="noopener noreferrer"
+                            className="text-[9px] text-primary hover:underline">
+                            View on eCFR →
+                          </a>
+                        )}
+                        {r.citation && onInsertCitation && (
+                          <button
+                            onClick={() => { onInsertCitation(r.citation); toast.success('Citation added'); }}
+                            className="px-2 py-0.5 bg-primary text-primary-foreground rounded text-[9px] font-semibold hover:bg-primary/90 transition-colors"
+                          >
+                            + Add
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* OpenStates / LA Legislature bill results */}
+              {(activeDataSource === 'openstates' || activeDataSource === 'la_legislature') && (
+                <div className="space-y-2">
+                  {(liveDataResult.bills ?? liveDataResult.results ?? []).length === 0 ? (
+                    <p className="text-xs text-muted-foreground py-2">No bills found. Try different search terms.</p>
+                  ) : (liveDataResult.bills ?? liveDataResult.results ?? []).map((b: any, i: number) => (
+                    <div key={i} className="p-3 bg-secondary/20 border border-border rounded-xl">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          {(b.identifier || b.billNumber) && (
+                            <span className="inline-block px-1.5 py-0.5 bg-primary/10 text-primary border border-primary/20 rounded text-[9px] font-mono font-semibold mb-1">
+                              {b.identifier || `${b.billType ?? ''}${b.billNumber}`}
+                            </span>
+                          )}
+                          <p className="text-xs font-semibold text-foreground line-clamp-2">{b.title}</p>
+                          <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                            {(b.state || b.session) && (
+                              <span className="text-[9px] text-muted-foreground">{b.state || b.session}</span>
+                            )}
+                            {b.status && (
+                              <span className="text-[9px] text-muted-foreground">· {b.status.slice(0, 60)}</span>
+                            )}
+                            {b.author && (
+                              <span className="text-[9px] text-muted-foreground">· by {b.author}</span>
+                            )}
+                          </div>
+                        </div>
+                        {b.url && (
+                          <a href={b.url} target="_blank" rel="noopener noreferrer"
+                            className="shrink-0 px-2 py-1 bg-primary/10 text-primary border border-primary/20 rounded-lg text-[9px] font-semibold hover:bg-primary/20 transition-colors">
+                            View →
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* GovInfo results */}
+              {activeDataSource === 'govinfo' && liveDataResult.results && (
+                <div className="space-y-2">
+                  {liveDataResult.results.length === 0 ? (
+                    <p className="text-xs text-muted-foreground py-2">No documents found. Try different search terms.</p>
+                  ) : liveDataResult.results.map((r: any, i: number) => (
+                    <div key={i} className="p-3 bg-secondary/20 border border-border rounded-xl">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-semibold text-foreground line-clamp-2">{r.title}</p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            {r.collection && <span className="text-[9px] px-1.5 py-0.5 bg-secondary/60 rounded text-muted-foreground">{r.collection}</span>}
+                            {r.dateIssued && <span className="text-[9px] text-muted-foreground">{r.dateIssued}</span>}
+                          </div>
+                          {r.citation && <p className="text-[10px] text-primary font-mono mt-0.5">{r.citation}</p>}
+                        </div>
+                        {r.url && (
+                          <a href={r.url} target="_blank" rel="noopener noreferrer"
+                            className="shrink-0 px-2 py-1 bg-primary/10 text-primary border border-primary/20 rounded-lg text-[9px] font-semibold hover:bg-primary/20 transition-colors">
+                            View →
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Case Law Links (Google Scholar / Justia / Cornell LII) */}
+              {activeDataSource === 'case_law_links' && (
+                <div className="space-y-3">
+                  {liveDataResult.note && (
+                    <p className="text-[10px] text-muted-foreground italic">{liveDataResult.note}</p>
+                  )}
+
+                  {/* CourtListener API results */}
+                  {liveDataResult.courtListenerResults && liveDataResult.courtListenerResults.length > 0 && (
+                    <div>
+                      <p className="text-[10px] font-semibold text-foreground mb-1.5">📋 CourtListener Results:</p>
+                      <div className="space-y-1.5">
+                        {liveDataResult.courtListenerResults.slice(0, 3).map((r: any, i: number) => (
+                          <div key={i} className="p-2 bg-secondary/20 border border-border rounded-lg">
+                            <p className="text-[10px] font-semibold text-foreground">{r.caseName}</p>
+                            {r.citation && <p className="text-[9px] text-primary font-mono">{r.citation}</p>}
+                            {r.absoluteUrl && (
+                              <a href={r.absoluteUrl} target="_blank" rel="noopener noreferrer"
+                                className="text-[9px] text-primary hover:underline">View opinion →</a>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Search links */}
+                  {liveDataResult.searchLinks && liveDataResult.searchLinks.length > 0 && (
+                    <div>
+                      <p className="text-[10px] font-semibold text-foreground mb-1.5">🔗 Search Directly:</p>
+                      <div className="space-y-1.5">
+                        {liveDataResult.searchLinks.map((link: any, i: number) => (
+                          <a
+                            key={i}
+                            href={link.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center justify-between p-2.5 bg-background border border-border rounded-xl hover:border-primary/40 transition-colors group"
+                          >
+                            <div>
+                              <p className="text-xs font-semibold text-foreground group-hover:text-primary transition-colors">{link.source}</p>
+                              {link.description && <p className="text-[9px] text-muted-foreground mt-0.5">{link.description}</p>}
+                            </div>
+                            <span className="text-primary text-xs">→</span>
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── Perplexity AI Results ─────────────────────────────────── */}
+          {activeResult && !isLoading && activeDataSource === 'perplexity' && (
+            <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs font-semibold text-foreground">Results for: <span className="text-primary">{activeResult.query}</span></p>
@@ -577,7 +1116,6 @@ export default function LexiLegalResearch({ context, onInsertCitation, defaultOp
                 </button>
               </div>
 
-              {/* Research content */}
               <div className="bg-secondary/20 border border-border rounded-xl p-3 max-h-64 overflow-y-auto">
                 <div
                   className="text-xs text-foreground leading-relaxed prose prose-xs max-w-none"
@@ -585,7 +1123,6 @@ export default function LexiLegalResearch({ context, onInsertCitation, defaultOp
                 />
               </div>
 
-              {/* Extracted citations with insert button */}
               {(() => {
                 const extracted = extractCitationsFromText(activeResult.content);
                 return extracted.length > 0 ? (
@@ -610,7 +1147,6 @@ export default function LexiLegalResearch({ context, onInsertCitation, defaultOp
                 ) : null;
               })()}
 
-              {/* Source links */}
               {activeResult.searchResults.length > 0 && (
                 <div>
                   <p className="text-[10px] font-semibold text-foreground mb-1.5">Sources:</p>
@@ -637,7 +1173,7 @@ export default function LexiLegalResearch({ context, onInsertCitation, defaultOp
           )}
 
           {/* Search history */}
-          {history.length > 1 && (
+          {history.length > 1 && activeDataSource === 'perplexity' && (
             <div>
               <p className="text-[10px] font-semibold text-muted-foreground mb-1.5">Recent searches:</p>
               <div className="flex flex-wrap gap-1.5">

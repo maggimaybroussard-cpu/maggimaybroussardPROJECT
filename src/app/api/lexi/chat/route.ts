@@ -10,6 +10,12 @@
  * - Disclaimer detection + audit logging
  * - Congress.gov real-time data for legislation/bill queries
  * - Perplexity routing for legal research questions
+ * - CourtListener for real federal case opinions
+ * - eCFR for live Code of Federal Regulations
+ * - OpenStates for real-time state bill tracking
+ * - Louisiana Legislature API for live LA bill data
+ * - GovInfo for Federal Register, U.S. Code, CFR
+ * - Google Scholar / Justia / Cornell LII case law links
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -88,6 +94,69 @@ function hasLegalResearchIntent(message: string): boolean {
   return LEGAL_RESEARCH_PATTERNS.some((p) => p.test(message));
 }
 
+// ── CourtListener intent detection ───────────────────────────────────────────
+const COURTLISTENER_PATTERNS = [
+  /\b(court opinion|case opinion|federal (court|case|opinion)|circuit court|district court|supreme court (case|opinion|ruling|decision))\b/i,
+  /\b(pacer|recap|free law|courtlistener|case law search|find (a |the )?case|case citation|cite (a |the )?case)\b/i,
+  /\b(\d+\s+F\.\d+d?\s+\d+|\d+\s+U\.S\.\s+\d+|\d+\s+S\.Ct\.\s+\d+|\d+\s+L\.Ed\.\d+d?\s+\d+)\b/i,
+  /\b(fifth circuit|ninth circuit|second circuit|eleventh circuit|en banc|cert denied|certiorari|affirmed|reversed|remanded)\b/i,
+  /\b(landmark (case|ruling|decision)|leading (case|authority)|controlling (case|precedent)|on point case)\b/i,
+];
+
+function hasCourtListenerIntent(message: string): boolean {
+  if (hasCongressIntent(message)) return false;
+  return COURTLISTENER_PATTERNS.some((p) => p.test(message));
+}
+
+// ── eCFR intent detection ─────────────────────────────────────────────────────
+const ECFR_PATTERNS = [
+  /\b(code of federal regulations|c\.f\.r\.|cfr|federal regulation(s)?|title \d+ cfr|ecfr|e-cfr)\b/i,
+  /\b(\d+\s+c\.f\.r\.\s+§?\s*\d+|title \d+,?\s+part \d+|cfr part \d+|cfr section \d+)\b/i,
+  /\b(federal rule(s)? of|osha regulation|epa regulation|fda regulation|ftc regulation|sec regulation|irs regulation|hhs regulation|dol regulation)\b/i,
+  /\b(administrative (rule|regulation|code)|agency rule|rulemaking|final rule|proposed rule|federal register notice)\b/i,
+];
+
+function hasECFRIntent(message: string): boolean {
+  return ECFR_PATTERNS.some((p) => p.test(message));
+}
+
+// ── OpenStates / State Bills intent detection ─────────────────────────────────
+const OPENSTATES_PATTERNS = [
+  /\b(state (bill|legislation|legislature|law|statute)|state (house|senate) bill|state (assembly|general assembly))\b/i,
+  /\b(pending (state|louisiana|texas|california|florida) (bill|legislation)|new (state|louisiana|texas) law|state legislature)\b/i,
+  /\b(openstates|state bill tracking|legislative session|state session|current (session|legislature))\b/i,
+  /\b((louisiana|texas|california|florida|new york|illinois|ohio|georgia) (legislature|legislative|bill|session|statute|law) (2024|2025|2026|current|pending|new|recent))\b/i,
+];
+
+function hasOpenStatesIntent(message: string): boolean {
+  if (hasCongressIntent(message)) return false;
+  return OPENSTATES_PATTERNS.some((p) => p.test(message));
+}
+
+// ── Louisiana Legislature intent detection ────────────────────────────────────
+const LA_LEGISLATURE_PATTERNS = [
+  /\b(louisiana (bill|legislation|legislature|law|statute|act|session|house|senate))\b/i,
+  /\b(la\.\s*(bill|act|session|legislature|house|senate)|louisiana revised statute|la\.\s*r\.s\.)\b/i,
+  /\b(louisiana (2024|2025|2026) (session|legislature|bill|law)|current louisiana (session|legislature))\b/i,
+  /\b(louisiana (house|senate) bill \d+|hb \d+ louisiana|sb \d+ louisiana)\b/i,
+];
+
+function hasLALegislatureIntent(message: string): boolean {
+  return LA_LEGISLATURE_PATTERNS.some((p) => p.test(message));
+}
+
+// ── GovInfo intent detection ──────────────────────────────────────────────────
+const GOVINFO_PATTERNS = [
+  /\b(federal register|govinfo|gpo|government publishing office|statutes at large|public law \d+)\b/i,
+  /\b(u\.s\.\s*code|united states code|usc title \d+|title \d+ u\.s\.c\.)\b/i,
+  /\b(congressional record|house report|senate report|conference report|committee report)\b/i,
+];
+
+function hasGovInfoIntent(message: string): boolean {
+  if (hasCongressIntent(message)) return false;
+  return GOVINFO_PATTERNS.some((p) => p.test(message));
+}
+
 async function fetchCongressContext(query: string): Promise<string> {
   try {
     const apiKey = process.env.CONGRESS_API_KEY;
@@ -115,6 +184,159 @@ async function fetchCongressContext(query: string): Promise<string> {
       .join('\n');
 
     return `\n\n---\n**Live Congress.gov Data** (retrieved in real time):\n${billSummaries}\n---\n`;
+  } catch {
+    return '';
+  }
+}
+
+// ── CourtListener case law fetch ──────────────────────────────────────────────
+async function fetchCourtListenerContext(query: string): Promise<string> {
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+    const res = await fetch(`${baseUrl}/api/lexi/courtlistener`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, limit: 5 }),
+    });
+
+    if (!res.ok) return '';
+
+    const data = await res.json();
+    if (!data?.results?.length) return '';
+
+    const caseSummaries = data.results
+      .map((c: any) => {
+        const citation = c.citation ? `, ${c.citation}` : '';
+        const court = c.court ? ` (${c.court})` : '';
+        const date = c.dateFiled ? ` [${c.dateFiled}]` : '';
+        const snippet = c.snippet ? `\n  "${c.snippet.slice(0, 200)}…"` : '';
+        return `• ${c.caseName}${citation}${court}${date}${snippet}`;
+      })
+      .join('\n');
+
+    return `\n\n---\n**Live CourtListener Case Law** (${data.count ?? data.results.length} results):\n${caseSummaries}\n---\n`;
+  } catch {
+    return '';
+  }
+}
+
+// ── eCFR federal regulations fetch ───────────────────────────────────────────
+async function fetchECFRContext(query: string): Promise<string> {
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+    const res = await fetch(`${baseUrl}/api/lexi/ecfr`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, limit: 5 }),
+    });
+
+    if (!res.ok) return '';
+
+    const data = await res.json();
+    if (!data?.results?.length) return '';
+
+    const regSummaries = data.results
+      .map((r: any) => {
+        const citation = r.citation ? ` [${r.citation}]` : '';
+        const subject = r.subject ? ` — ${r.subject}` : '';
+        const snippet = r.snippet ? `\n  ${r.snippet.slice(0, 200)}` : '';
+        return `• ${r.title || 'CFR'}${citation}${subject}${snippet}`;
+      })
+      .join('\n');
+
+    return `\n\n---\n**Live eCFR Regulations** (Code of Federal Regulations):\n${regSummaries}\n---\n`;
+  } catch {
+    return '';
+  }
+}
+
+// ── OpenStates state bills fetch ──────────────────────────────────────────────
+async function fetchOpenStatesContext(query: string, state?: string): Promise<string> {
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+    const res = await fetch(`${baseUrl}/api/lexi/openstates`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, state, limit: 5 }),
+    });
+
+    if (!res.ok) return '';
+
+    const data = await res.json();
+    if (!data?.bills?.length) return '';
+
+    const billSummaries = data.bills
+      .map((b: any) => {
+        const id = b.identifier ? `${b.identifier} ` : '';
+        const stateName = b.state ? ` (${b.state})` : '';
+        const status = b.status ? ` | Status: ${b.status}` : '';
+        const date = b.statusDate ? ` [${b.statusDate}]` : '';
+        return `• ${id}${b.title}${stateName}${status}${date}`;
+      })
+      .join('\n');
+
+    return `\n\n---\n**Live OpenStates Bill Data** (${state ? state + ' Legislature' : 'All States'}):\n${billSummaries}\n---\n`;
+  } catch {
+    return '';
+  }
+}
+
+// ── Louisiana Legislature fetch ───────────────────────────────────────────────
+async function fetchLALegislatureContext(query: string): Promise<string> {
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+    const res = await fetch(`${baseUrl}/api/lexi/la-legislature`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, limit: 5 }),
+    });
+
+    if (!res.ok) return '';
+
+    const data = await res.json();
+    const bills = data?.bills ?? [];
+    if (!bills.length) return '';
+
+    const billSummaries = bills
+      .map((b: any) => {
+        const num = b.billNumber ? `${b.billType ?? ''}${b.billNumber} ` : '';
+        const author = b.author ? ` by ${b.author}` : '';
+        const status = b.status ? ` | ${b.status}` : '';
+        return `• ${num}${b.title}${author}${status}`;
+      })
+      .join('\n');
+
+    return `\n\n---\n**Live Louisiana Legislature Data**:\n${billSummaries}\n---\n`;
+  } catch {
+    return '';
+  }
+}
+
+// ── GovInfo fetch ─────────────────────────────────────────────────────────────
+async function fetchGovInfoContext(query: string): Promise<string> {
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+    const res = await fetch(`${baseUrl}/api/lexi/govinfo`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, limit: 5 }),
+    });
+
+    if (!res.ok) return '';
+
+    const data = await res.json();
+    if (!data?.results?.length) return '';
+
+    const docSummaries = data.results
+      .map((r: any) => {
+        const collection = r.collection ? ` [${r.collection}]` : '';
+        const date = r.dateIssued ? ` (${r.dateIssued})` : '';
+        const citation = r.citation ? ` — ${r.citation}` : '';
+        return `• ${r.title}${collection}${date}${citation}`;
+      })
+      .join('\n');
+
+    return `\n\n---\n**Live GovInfo (U.S. GPO) Data**:\n${docSummaries}\n---\n`;
   } catch {
     return '';
   }
@@ -280,6 +502,11 @@ export async function POST(req: NextRequest) {
   // ── Detect routing intent ─────────────────────────────────────────────────
   const isCongressQuery = userText ? hasCongressIntent(userText) : false;
   const isLegalResearchQuery = userText ? hasLegalResearchIntent(userText) : false;
+  const isCourtListenerQuery = userText ? hasCourtListenerIntent(userText) : false;
+  const isECFRQuery = userText ? hasECFRIntent(userText) : false;
+  const isOpenStatesQuery = userText ? hasOpenStatesIntent(userText) : false;
+  const isLALegislatureQuery = userText ? hasLALegislatureIntent(userText) : false;
+  const isGovInfoQuery = userText ? hasGovInfoIntent(userText) : false;
 
   // ── Route: Legal Research → Perplexity ───────────────────────────────────
   if (isLegalResearchQuery) {
@@ -313,11 +540,68 @@ export async function POST(req: NextRequest) {
     ? await fetchCongressContext(userText).catch(() => '')
     : '';
 
+  // ── CourtListener real-time case law enrichment ───────────────────────────
+  const courtListenerContext = isCourtListenerQuery
+    ? await fetchCourtListenerContext(userText).catch(() => '')
+    : '';
+
+  // ── eCFR federal regulations enrichment ──────────────────────────────────
+  const ecfrContext = isECFRQuery
+    ? await fetchECFRContext(userText).catch(() => '')
+    : '';
+
+  // ── OpenStates state bills enrichment ─────────────────────────────────────
+  // Detect state from message for targeted lookup
+  const stateMatch = userText.match(/\b(louisiana|texas|california|florida|new york|illinois|ohio|georgia|michigan|pennsylvania|north carolina|new jersey|virginia|washington|arizona|massachusetts|tennessee|indiana|missouri|maryland|wisconsin|colorado|minnesota|south carolina|alabama|kentucky|oregon|oklahoma|connecticut|utah|iowa|nevada|arkansas|mississippi|kansas|new mexico|nebraska|west virginia|idaho|hawaii|new hampshire|maine|montana|rhode island|delaware|south dakota|north dakota|alaska|vermont|wyoming)\b/i);
+  const stateAbbrevMap: Record<string, string> = {
+    louisiana: 'LA', texas: 'TX', california: 'CA', florida: 'FL', 'new york': 'NY',
+    illinois: 'IL', ohio: 'OH', georgia: 'GA', michigan: 'MI', pennsylvania: 'PA',
+    'north carolina': 'NC', 'new jersey': 'NJ', virginia: 'VA', washington: 'WA',
+    arizona: 'AZ', massachusetts: 'MA', tennessee: 'TN', indiana: 'IN', missouri: 'MO',
+    maryland: 'MD', wisconsin: 'WI', colorado: 'CO', minnesota: 'MN', 'south carolina': 'SC',
+    alabama: 'AL', kentucky: 'KY', oregon: 'OR', oklahoma: 'OK', connecticut: 'CT',
+    utah: 'UT', iowa: 'IA', nevada: 'NV', arkansas: 'AR', mississippi: 'MS',
+    kansas: 'KS', 'new mexico': 'NM', nebraska: 'NE', 'west virginia': 'WV',
+    idaho: 'ID', hawaii: 'HI', 'new hampshire': 'NH', maine: 'ME', montana: 'MT',
+    'rhode island': 'RI', delaware: 'DE', 'south dakota': 'SD', 'north dakota': 'ND',
+    alaska: 'AK', vermont: 'VT', wyoming: 'WY',
+  };
+  const detectedStateAbbrev = stateMatch ? stateAbbrevMap[stateMatch[1].toLowerCase()] : undefined;
+
+  const openStatesContext = isOpenStatesQuery
+    ? await fetchOpenStatesContext(userText, detectedStateAbbrev).catch(() => '')
+    : '';
+
+  // ── Louisiana Legislature enrichment ─────────────────────────────────────
+  const laLegislatureContext = isLALegislatureQuery
+    ? await fetchLALegislatureContext(userText).catch(() => '')
+    : '';
+
+  // ── GovInfo enrichment ────────────────────────────────────────────────────
+  const govInfoContext = isGovInfoQuery
+    ? await fetchGovInfoContext(userText).catch(() => '')
+    : '';
+
   const systemPromptWithKB = [
     LEXI_SYSTEM_PROMPT,
     notionKBContext || '',
     congressContext
       ? `\nREAL-TIME CONGRESS.GOV DATA FOR THIS QUERY:\n${congressContext}\nUse the above live data to inform your response. Cite bill numbers and latest actions accurately.`
+      : '',
+    courtListenerContext
+      ? `\nREAL-TIME COURTLISTENER CASE LAW DATA:\n${courtListenerContext}\nUse these real federal court opinions to support your response. Cite case names and citations accurately.`
+      : '',
+    ecfrContext
+      ? `\nREAL-TIME eCFR FEDERAL REGULATIONS DATA:\n${ecfrContext}\nUse these live CFR regulations to inform your response. Cite CFR titles and sections accurately.`
+      : '',
+    openStatesContext
+      ? `\nREAL-TIME OPENSTATES BILL DATA:\n${openStatesContext}\nUse this live state legislative data to inform your response. Cite bill identifiers and status accurately.`
+      : '',
+    laLegislatureContext
+      ? `\nREAL-TIME LOUISIANA LEGISLATURE DATA:\n${laLegislatureContext}\nUse this live Louisiana legislative data to inform your response. Cite bill numbers and authors accurately.`
+      : '',
+    govInfoContext
+      ? `\nREAL-TIME GOVINFO (U.S. GPO) DATA:\n${govInfoContext}\nUse this official government publication data to inform your response.`
       : '',
   ].filter(Boolean).join('');
 
