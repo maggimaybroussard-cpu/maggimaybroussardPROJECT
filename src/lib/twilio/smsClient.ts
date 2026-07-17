@@ -210,3 +210,88 @@ export async function sendAbandonedBookingSMS(opts: {
   const body = `Broussard Legal Services\n\nHi ${firstName}, you started booking a consultation${serviceNote} but didn't finish. It only takes 2 minutes — grab a time that works for you: https://broussardlegalservices.com/availability\n\nReply STOP to opt out.`;
   return sendSMS(opts.to, body);
 }
+
+// ─── WhatsApp Functions ───────────────────────────────────────────────────────
+
+type TwilioResult = { success: true; sid: string } | { success: false; error: any };
+
+function getWhatsAppAuthHeader(): string {
+  const sid = process.env.TWILIO_ACCOUNT_SID;
+  const token = process.env.TWILIO_AUTH_TOKEN;
+  if (!sid || !token) throw new Error('Missing TWILIO_ACCOUNT_SID or TWILIO_AUTH_TOKEN');
+  return `Basic ${Buffer.from(`${sid}:${token}`).toString('base64')}`;
+}
+
+/**
+ * Send a WhatsApp message via Twilio
+ */
+export async function sendWhatsApp(to: string, body: string): Promise<TwilioResult> {
+  const from = process.env.TWILIO_PHONE_NUMBER;
+  if (!from) return { success: false, error: 'Missing TWILIO_PHONE_NUMBER' };
+
+  const url = `https://api.twilio.com/2010-04-01/Accounts/${process.env.TWILIO_ACCOUNT_SID}/Messages.json`;
+  const params = new URLSearchParams({
+    From: `whatsapp:${from}`,
+    To: `whatsapp:${to}`,
+    Body: body,
+  });
+
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: getWhatsAppAuthHeader(),
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: params.toString(),
+    });
+
+    const json = await res.json();
+    return res.ok ? { success: true, sid: json.sid } : { success: false, error: json };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
+  }
+}
+
+/**
+ * Send a consultation reminder via WhatsApp
+ */
+export function sendConsultationReminderWhatsApp(
+  to: string,
+  { date, time }: { date: string; time: string }
+): Promise<TwilioResult> {
+  const msg = `Reminder: Your consultation is scheduled for ${date} at ${time}. Reply or visit your portal to reschedule.`;
+  return sendWhatsApp(to, msg);
+}
+
+/**
+ * Send a case update notification via WhatsApp
+ */
+export function sendCaseUpdateWhatsApp(
+  to: string,
+  { caseId, summary }: { caseId: string; summary: string }
+): Promise<TwilioResult> {
+  const msg = `Update for case ${caseId}: ${summary}. Check your portal for details.`;
+  return sendWhatsApp(to, msg);
+}
+
+/**
+ * Send a payment reminder via WhatsApp
+ */
+export function sendPaymentReminderWhatsApp(
+  to: string,
+  { amount, dueDate }: { amount: string; dueDate: string }
+): Promise<TwilioResult> {
+  const msg = `Payment reminder: ${amount} due on ${dueDate}. Pay via your client portal or contact us for assistance.`;
+  return sendWhatsApp(to, msg);
+}
+
+/**
+ * Send a generic client notification via WhatsApp
+ */
+export function sendClientNotificationWhatsApp(
+  to: string,
+  message: string
+): Promise<TwilioResult> {
+  return sendWhatsApp(to, message);
+}
