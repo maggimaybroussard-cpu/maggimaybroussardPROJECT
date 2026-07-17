@@ -6,6 +6,7 @@ const nextConfig = {
   compress: true,
   distDir: process.env.DIST_DIR || '.next',
   transpilePackages: ['mixpanel-browser'],
+  generateBuildId: async () => `build-${Date.now()}`,
 
   experimental: {
     optimizePackageImports: ['@heroicons/react', 'recharts'],
