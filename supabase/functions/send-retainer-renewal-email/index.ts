@@ -106,7 +106,7 @@ function alertBox(content: string, bgColor: string, borderColor: string): string
 }
 
 function signature(): string {
-  return `<table cellpadding="0" cellspacing="0" style="margin-top:28px;border-top:1px solid ${brand.border};padding-top:20px;width:100%;"><tr><td><p style="margin:0 0 4px;font-size:15px;color:${brand.foreground};font-family:Georgia,serif;">Warm regards,</p><p style="margin:0 0 2px;font-size:16px;color:${brand.primary};font-weight:bold;font-family:Georgia,serif;">Broussard Legal Services</p><p style="margin:0 0 6px;font-size:12px;color:${brand.muted};font-family:Georgia,serif;letter-spacing:0.04em;">Licensed Paralegal &middot; Louisiana &amp; Nationwide</p><a href="mailto:maggimaybroussard@gmail.com" style="color:${brand.accent};font-size:13px;text-decoration:none;font-family:Georgia,serif;">maggimaybroussard@gmail.com</a></td></tr></table>`;
+  return `<table cellpadding="0" cellspacing="0" style="margin-top:28px;border-top:1px solid ${brand.border};padding-top:20px;width:100%;"><tr><td><p style="margin:0 0 4px;font-size:15px;color:${brand.foreground};font-family:Georgia,serif;">Warm regards,</p><p style="margin:0 0 2px;font-size:16px;color:${brand.primary};font-weight:bold;font-family:Georgia,serif;">Broussard Legal Services</p><p style="margin:0 0 6px;font-size:12px;color:${brand.muted};font-family:Georgia,serif;letter-spacing:0.04em;">Broussard Legal Services</p><a href="mailto:maggimaybroussard@gmail.com" style="color:${brand.accent};font-size:13px;text-decoration:none;font-family:Georgia,serif;">maggimaybroussard@gmail.com</a></td></tr></table>`;
 }
 
 function fmtCurrency(amount: number, currency = 'usd'): string {

@@ -48,11 +48,6 @@ const CertificateIcon = () => (
 
 const TRUST_BADGES: TrustBadge[] = [
   {
-    icon: <ScaleIcon />,
-    label: 'Louisiana State Bar',
-    sublabel: 'Paralegal Affiliated',
-  },
-  {
     icon: <BadgeCheckIcon />,
     label: 'NALA Member',
     sublabel: 'Nat\'l Assoc. of Legal Assistants',
