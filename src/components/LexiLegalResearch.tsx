@@ -10,6 +10,7 @@ type ResearchCategory = 'case_law' | 'statutes' | 'precedent' | 'federal' | 'all
 type DataSource = 'perplexity' | 'courtlistener' | 'ecfr' | 'openstates' | 'la_legislature' | 'govinfo' | 'case_law_links' | 'openai_research';
 
 type OpenAIMode = 'case_law' | 'statute_lookup' | 'brief_generation';
+type PerplexityMode = 'case_law' | 'statute_lookup' | 'brief_generation';
 
 interface OpenAIResearchResult {
   mode: OpenAIMode;
@@ -179,6 +180,150 @@ const OPENAI_QUICK_PROMPTS: Record<OpenAIMode, string[]> = {
     'Retainer agreement scope of services clause',
   ],
 };
+
+// ── Perplexity Research Modes ─────────────────────────────────────────────────
+
+const PERPLEXITY_MODE_OPTIONS: Array<{ id: PerplexityMode; label: string; icon: string; description: string; placeholder: string; model: string }> = [
+  {
+    id: 'case_law',
+    label: 'Case Law',
+    icon: '⚖️',
+    description: 'Real-time case law search — live court opinions, holdings, and circuit precedents via web',
+    placeholder: 'e.g. "Louisiana negligence per se Fifth Circuit 2024" or "summary judgment standard recent cases"',
+    model: 'perplexity/sonar-pro',
+  },
+  {
+    id: 'statute_lookup',
+    label: 'Statute Lookup',
+    icon: '📖',
+    description: 'Live statute & regulation lookup — current text, recent amendments, and regulatory updates',
+    placeholder: 'e.g. "Louisiana R.S. 9:2800 premises liability current text" or "FLSA overtime 29 U.S.C. § 207 2024"',
+    model: 'perplexity/sonar-pro',
+  },
+  {
+    id: 'brief_generation',
+    label: 'Brief Generation',
+    icon: '📝',
+    description: 'Deep research brief — comprehensive argument outlines with live-sourced citations and current law',
+    placeholder: 'e.g. "Draft argument for motion to dismiss personal jurisdiction Louisiana" or "Brief section on FMLA interference claim elements"',
+    model: 'perplexity/sonar-deep-research',
+  },
+];
+
+const PERPLEXITY_QUICK_PROMPTS: Record<PerplexityMode, string[]> = {
+  case_law: [
+    'Louisiana negligence per se 2024',
+    'Fifth Circuit summary judgment recent',
+    'Louisiana comparative fault allocation cases',
+    'Employment discrimination McDonnell Douglas 2024',
+    'Louisiana breach of contract damages recent',
+    'Personal injury causation Louisiana Fifth Circuit',
+  ],
+  statute_lookup: [
+    'Louisiana R.S. 9:2800 premises liability',
+    'La. C.C. Art. 2315 current text',
+    'FLSA overtime exemptions 29 U.S.C. § 207',
+    'Title VII 42 U.S.C. § 2000e current',
+    'Louisiana workers comp La. R.S. 23:1021',
+    'ADA reasonable accommodation 42 U.S.C. § 12112',
+  ],
+  brief_generation: [
+    'Motion to dismiss 12(b)(6) Louisiana',
+    'Summary judgment no genuine dispute',
+    'Opposition to motion to compel discovery',
+    'Demand letter personal injury Louisiana',
+    'FMLA interference claim elements brief',
+    'Title VII hostile work environment argument',
+  ],
+};
+
+function buildPerplexityPrompt(
+  query: string,
+  mode: PerplexityMode,
+  context?: string,
+  selectedState?: string,
+  practiceArea?: string
+): string {
+  const stateCtx = selectedState ? `\nPRIMARY JURISDICTION: ${selectedState}` : '';
+  const practiceCtx = practiceArea ? `\nPRACTICE AREA: ${practiceArea}` : '';
+  const matterCtx = context ? `\nMATTER CONTEXT: ${context}` : '';
+
+  if (mode === 'case_law') {
+    return `You are Lexi, a legal research assistant at Broussard Legal Services. Search for and analyze current case law on the following topic using real-time web sources.
+
+RESEARCH QUERY: ${query}${stateCtx}${practiceCtx}${matterCtx}
+
+Search legal databases, court websites, and legal research platforms to provide:
+
+1. **OVERVIEW** — Current state of the law on this issue (2-3 sentences with sources)
+
+2. **KEY CASES** — Most important recent and landmark cases with:
+   - Full case name and Bluebook citation
+   - Court, year, and docket number if available
+   - Key holding (1-2 sentences)
+   - Direct link or source where available
+
+3. **CONTROLLING AUTHORITY** — Binding precedent in the relevant jurisdiction
+
+4. **RECENT DEVELOPMENTS** — Cases from 2022-2025, including any circuit splits or emerging trends
+
+5. **PRACTICAL APPLICATION** — How to use this case law in practice
+
+Cite only real, verifiable cases. Include source URLs where available. Use proper Bluebook format.`;
+  }
+
+  if (mode === 'statute_lookup') {
+    return `You are Lexi, a legal research assistant at Broussard Legal Services. Look up the current, live text of the following statute or regulation using real-time web sources.
+
+LOOKUP QUERY: ${query}${stateCtx}${practiceCtx}${matterCtx}
+
+Search official government websites (congress.gov, ecfr.gov, legis.la.gov, state legislature sites) to provide:
+
+1. **CURRENT STATUTE TEXT** — The current, in-force text of the statute with full citation
+
+2. **RECENT AMENDMENTS** — Any amendments or updates in the last 3 years with effective dates
+
+3. **PLAIN LANGUAGE SUMMARY** — What the statute means in plain English
+
+4. **KEY ELEMENTS** — Required elements for any cause of action or defense
+
+5. **EXCEPTIONS & DEFENSES** — Statutory exceptions, safe harbors, or affirmative defenses
+
+6. **RELATED REGULATIONS** — Implementing regulations or related code sections
+
+7. **RECENT CASE LAW** — 2-3 recent cases interpreting this statute (with citations and sources)
+
+8. **OFFICIAL SOURCE LINK** — Direct URL to the official statute text
+
+Use proper Bluebook citations. Prioritize official government sources.`;
+  }
+
+  // brief_generation — uses sonar-deep-research
+  return `You are Lexi, a legal research assistant at Broussard Legal Services. Conduct deep research and generate a comprehensive legal brief section on the following topic using real-time web sources.
+
+BRIEF REQUEST: ${query}${stateCtx}${practiceCtx}${matterCtx}
+
+Conduct thorough research across legal databases, court opinions, and official sources to generate:
+
+1. **DOCUMENT TYPE & STRATEGIC PURPOSE** — What this document is and its litigation strategy
+
+2. **APPLICABLE LEGAL STANDARD** — The controlling legal standard with current citations and sources
+
+3. **ARGUMENT SECTION** — Structured legal argument with:
+   - Main thesis statement
+   - Supporting case law (Bluebook citations + source links)
+   - Statutory authority
+   - Application to facts (use [PLACEHOLDER] where case-specific facts needed)
+   - Anticipated counterarguments and responses
+
+4. **SUPPORTING AUTHORITIES** — Table of authorities with full Bluebook citations
+
+5. **CONCLUSION** — Requested relief or summary
+
+6. **RESEARCH SOURCES** — URLs to primary sources used
+
+Format as a professional legal document. Cite only real, verifiable authorities with source links where available.`;
+}
 
 function buildOpenAIPrompt(query: string, mode: OpenAIMode, context?: string, selectedState?: string, practiceArea?: string): string {
   const stateCtx = selectedState ? `\nPRIMARY JURISDICTION: ${selectedState}` : '';
@@ -412,11 +557,22 @@ export default function LexiLegalResearch({ context, onInsertCitation, defaultOp
   const [openAIResult, setOpenAIResult] = useState<OpenAIResearchResult | null>(null);
   const [openAIHistory, setOpenAIHistory] = useState<OpenAIResearchResult[]>([]);
 
+  // Perplexity research mode state
+  const [perplexityMode, setPerplexityMode] = useState<PerplexityMode>('case_law');
+
   const { response, fullResponse, isLoading, error, sendMessage } = useChat(
     'PERPLEXITY',
     'perplexity/sonar-pro',
     false
   );
+
+  const {
+    response: perplexityDeepResponse,
+    fullResponse: perplexityDeepFullResponse,
+    isLoading: perplexityDeepLoading,
+    error: perplexityDeepError,
+    sendMessage: sendPerplexityDeepMessage,
+  } = useChat('PERPLEXITY', 'perplexity/sonar-deep-research', false);
 
   const {
     response: openAIResponse,
@@ -426,26 +582,30 @@ export default function LexiLegalResearch({ context, onInsertCitation, defaultOp
   } = useChat('OPEN_AI', 'gpt-5.4', true);
 
   useEffect(() => {
-    if (openAIError) toast.error('OpenAI research failed — ' + openAIError.message);
-  }, [openAIError]);
+    if (perplexityDeepError) toast.error('Perplexity deep research failed — ' + perplexityDeepError.message);
+  }, [perplexityDeepError]);
 
   useEffect(() => {
-    if (openAIResponse && !openAILoading && activeDataSource === 'openai_research') {
-      const result: OpenAIResearchResult = {
-        mode: openAIMode,
+    if (perplexityDeepResponse && !perplexityDeepLoading && perplexityDeepFullResponse) {
+      const citations: string[] = (perplexityDeepFullResponse as { citations?: string[] }).citations ?? [];
+      const searchResults: Array<{ url: string; title: string; snippet?: string }> =
+        (perplexityDeepFullResponse as { search_results?: Array<{ url: string; title: string; snippet?: string }> }).search_results ?? [];
+      const result: SearchResult = {
         query,
-        content: openAIResponse,
+        content: perplexityDeepResponse,
+        citations,
+        searchResults,
         timestamp: Date.now(),
       };
-      setOpenAIResult(result);
-      setOpenAIHistory(prev => [result, ...prev.slice(0, 9)]);
+      setActiveResult(result);
+      setHistory(prev => [result, ...prev.slice(0, 9)]);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [openAIResponse, openAILoading]);
+  }, [perplexityDeepResponse, perplexityDeepLoading]);
 
   useEffect(() => {
-    if (error) toast.error('Legal research failed — ' + error.message);
-  }, [error]);
+    if (openAIError) toast.error('OpenAI research failed — ' + openAIError.message);
+  }, [openAIError]);
 
   useEffect(() => {
     if (response && !isLoading && fullResponse) {
@@ -548,21 +708,38 @@ export default function LexiLegalResearch({ context, onInsertCitation, defaultOp
     const stateName = selectedState
       ? ALL_STATES.find(s => s.code === selectedState)?.name
       : undefined;
-    const prompt = buildResearchPrompt(q.trim(), cat, context, stateName, selectedPracticeArea || undefined);
+
+    // Use mode-specific prompt and model for Perplexity
+    const perplexityPrompt = buildPerplexityPrompt(q.trim(), perplexityMode, context, stateName, selectedPracticeArea || undefined);
     const systemContent = selectedState
-      ? `You are a legal research assistant with deep expertise in ${stateName} law and federal law. Always cite real, verifiable authorities in proper Bluebook format.`
-      : 'You are a legal research assistant with comprehensive knowledge of all 50 states and federal law. Always cite real, verifiable authorities in proper Bluebook format.';
-    sendMessage(
-      [
-        { role: 'system', content: systemContent },
-        { role: 'user', content: prompt },
-      ],
-      {
-        temperature: 0.2,
-        max_tokens: 1500,
-        web_search_options: { search_context_size: 'medium' },
-      }
-    );
+      ? `You are Lexi, a legal research assistant with deep expertise in ${stateName} law and federal law. Search the web for current, real-time legal information. Always cite real, verifiable authorities in proper Bluebook format with source URLs.`
+      : 'You are Lexi, a legal research assistant with comprehensive knowledge of all 50 states and federal law. Search the web for current, real-time legal information. Always cite real, verifiable authorities in proper Bluebook format with source URLs.';
+
+    if (perplexityMode === 'brief_generation') {
+      // Use deep research model for brief generation
+      sendPerplexityDeepMessage(
+        [
+          { role: 'system', content: systemContent },
+          { role: 'user', content: perplexityPrompt },
+        ],
+        {
+          max_tokens: 3000,
+          web_search_options: { search_context_size: 'high' },
+        }
+      );
+    } else {
+      sendMessage(
+        [
+          { role: 'system', content: systemContent },
+          { role: 'user', content: perplexityPrompt },
+        ],
+        {
+          temperature: 0.2,
+          max_tokens: 2000,
+          web_search_options: { search_context_size: perplexityMode === 'statute_lookup' ? 'high' : 'medium' },
+        }
+      );
+    }
   };
 
   const handleSearch = () => doSearch(query);
@@ -603,9 +780,10 @@ export default function LexiLegalResearch({ context, onInsertCitation, defaultOp
   };
 
   const selectedStateObj = ALL_STATES.find(s => s.code === selectedState);
-  const isSearching = isLoading || liveDataLoading || openAILoading;
+  const isSearching = isLoading || perplexityDeepLoading || liveDataLoading || openAILoading;
   const activeTab = DATA_SOURCE_TABS.find(t => t.id === activeDataSource);
   const activeOpenAIMode = OPENAI_MODE_OPTIONS.find(m => m.id === openAIMode);
+  const activePerplexityMode = PERPLEXITY_MODE_OPTIONS.find(m => m.id === perplexityMode);
 
   return (
     <div className="border border-border rounded-xl overflow-hidden bg-background">
@@ -618,7 +796,7 @@ export default function LexiLegalResearch({ context, onInsertCitation, defaultOp
           <span className="text-base">🔬</span>
           <div className="text-left">
             <p className="text-xs font-semibold text-foreground">Lexi Legal Research</p>
-            <p className="text-[10px] text-muted-foreground">All 50 states · Federal law · OpenAI · CourtListener · eCFR · OpenStates · GovInfo</p>
+            <p className="text-[10px] text-muted-foreground">All 50 states · Federal law · Perplexity Live · OpenAI · CourtListener · eCFR · OpenStates · GovInfo</p>
           </div>
           {isSearching && (
             <span className="ml-2 flex items-center gap-1 text-[10px] text-primary font-medium">
@@ -930,6 +1108,35 @@ export default function LexiLegalResearch({ context, onInsertCitation, defaultOp
             </div>
           )}
 
+          {/* ── Perplexity Research Mode Selector ────────────────────── */}
+          {activeDataSource === 'perplexity' && (
+            <div className="space-y-2">
+              <p className="text-[10px] text-muted-foreground font-medium">Research Mode:</p>
+              <div className="grid grid-cols-3 gap-2">
+                {PERPLEXITY_MODE_OPTIONS.map(mode => (
+                  <button
+                    key={mode.id}
+                    onClick={() => { setPerplexityMode(mode.id); setActiveResult(null); }}
+                    title={mode.description}
+                    className={`flex flex-col items-center gap-1 px-2 py-2.5 rounded-xl border text-center transition-all ${
+                      perplexityMode === mode.id
+                        ? 'border-primary bg-primary/10 text-primary' :'border-border text-muted-foreground hover:border-primary/40 hover:text-foreground'
+                    }`}
+                  >
+                    <span className="text-base">{mode.icon}</span>
+                    <span className="text-[9px] font-semibold leading-tight">{mode.label}</span>
+                    {mode.id === 'brief_generation' && (
+                      <span className="text-[8px] px-1 py-0.5 bg-primary/10 rounded text-primary font-medium">Deep</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+              {activePerplexityMode && (
+                <p className="text-[9px] text-muted-foreground italic">{activePerplexityMode.description}</p>
+              )}
+            </div>
+          )}
+
           {/* Jurisdiction + Practice Area filters (only for Perplexity AI) */}
           {activeDataSource === 'perplexity' && (
             <div className="grid grid-cols-2 gap-2">
@@ -1118,6 +1325,7 @@ export default function LexiLegalResearch({ context, onInsertCitation, defaultOp
                 activeDataSource === 'la_legislature' ? 'Search Louisiana bills (e.g. HB 123 or keyword)…' :
                 activeDataSource === 'govinfo' ? 'Search Federal Register, U.S. Code, CFR…' :
                 activeDataSource === 'case_law_links' ? 'Search Google Scholar, Justia, Cornell LII…' :
+                activeDataSource === 'perplexity' ? (activePerplexityMode?.placeholder ?? 'Search case law, statutes, regulations…') :
                 selectedState ? `Search ${selectedStateObj?.name} law…` :
                 'Search case law, statutes, regulations…'
               }
@@ -1134,11 +1342,11 @@ export default function LexiLegalResearch({ context, onInsertCitation, defaultOp
           </div>
 
           {/* Quick searches (Perplexity only) */}
-          {activeDataSource === 'perplexity' && !activeResult && !isLoading && (
+          {activeDataSource === 'perplexity' && !activeResult && !isLoading && !perplexityDeepLoading && (
             <div>
               <p className="text-[10px] text-muted-foreground mb-2 font-medium">Quick searches:</p>
               <div className="flex flex-wrap gap-1.5">
-                {QUICK_SEARCHES.map(q => (
+                {PERPLEXITY_QUICK_PROMPTS[perplexityMode].map(q => (
                   <button
                     key={q}
                     onClick={() => handleQuickSearch(q)}
@@ -1338,7 +1546,9 @@ export default function LexiLegalResearch({ context, onInsertCitation, defaultOp
               <div className="w-5 h-5 rounded-full border-2 border-primary/30 border-t-primary animate-spin shrink-0" />
               <div>
                 <p className="text-xs font-semibold text-foreground">
-                  {activeDataSource === 'perplexity' ? 'Searching legal databases…' :
+                  {activeDataSource === 'perplexity' && perplexityMode === 'case_law' ? 'Searching live case law databases…' :
+                   activeDataSource === 'perplexity' && perplexityMode === 'statute_lookup' ? 'Looking up current statute text…' :
+                   activeDataSource === 'perplexity' && perplexityMode === 'brief_generation' ? 'Running deep research for brief generation…' :
                    activeDataSource === 'courtlistener' ? 'Querying CourtListener case law…' :
                    activeDataSource === 'ecfr' ? 'Searching eCFR regulations…' :
                    activeDataSource === 'openstates' ? 'Fetching state bill data…' :
@@ -1347,9 +1557,10 @@ export default function LexiLegalResearch({ context, onInsertCitation, defaultOp
                    'Searching case law databases…'}
                 </p>
                 <p className="text-[10px] text-muted-foreground">
-                  {activeDataSource === 'perplexity'
+                  {activeDataSource === 'perplexity' && perplexityMode === 'brief_generation' ?'Using Perplexity deep research — comprehensive web search across legal databases'
+                    : activeDataSource === 'perplexity'
                     ? selectedState
-                      ? `Querying ${selectedStateObj?.name} statutes, case law, and court rules`
+                      ? `Querying ${selectedStateObj?.name} statutes, case law, and court rules via live web`
                       : 'Querying all 50 states, federal law, and live legal databases'
                     : activeTab?.description}
                 </p>
@@ -1568,13 +1779,21 @@ export default function LexiLegalResearch({ context, onInsertCitation, defaultOp
           )}
 
           {/* ── Perplexity AI Results ─────────────────────────────────── */}
-          {activeResult && !isLoading && activeDataSource === 'perplexity' && (
+          {activeResult && !isLoading && !perplexityDeepLoading && activeDataSource === 'perplexity' && (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="px-2 py-0.5 bg-primary/10 border border-primary/30 rounded-full text-[9px] font-semibold text-primary">
+                      {activePerplexityMode?.icon} {activePerplexityMode?.label}
+                    </span>
+                    <span className="text-[9px] text-muted-foreground">
+                      {perplexityMode === 'brief_generation' ? 'Perplexity Deep Research' : 'Perplexity AI · Live Web'}
+                    </span>
+                  </div>
                   <p className="text-xs font-semibold text-foreground">Results for: <span className="text-primary">{activeResult.query}</span></p>
                   {activeResult.searchResults.length > 0 && (
-                    <p className="text-[10px] text-muted-foreground">{activeResult.searchResults.length} sources found</p>
+                    <p className="text-[10px] text-muted-foreground">{activeResult.searchResults.length} live sources found</p>
                   )}
                 </div>
                 <button
