@@ -121,10 +121,6 @@ export const metadata: Metadata = {
     email: true,
     address: true,
   },
-  verification: {
-    // Add Google Search Console verification token here when available
-    // google: 'your-verification-token',
-  },
 };
 
 export default function RootLayout({
@@ -134,11 +130,88 @@ export default function RootLayout({
 }) {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
 
+  // LocalBusiness schema for legal services visibility
+  const localBusinessSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'LocalBusiness',
+    '@id': `${baseUrl}/#organization`,
+    name: 'Broussard Legal Services',
+    description: 'Professional contract paralegal services for law firms nationwide. Remote litigation support, legal research, document drafting, and case management.',
+    url: baseUrl,
+    telephone: '+1-844-493-6819',
+    email: 'contact@broussardlegalservices.com',
+    areaServed: [
+      {
+        '@type': 'State',
+        name: 'Louisiana',
+      },
+      {
+        '@type': 'Country',
+        name: 'United States',
+      },
+    ],
+    address: {
+      '@type': 'PostalAddress',
+      addressLocality: 'New Orleans',
+      addressRegion: 'LA',
+      addressCountry: 'US',
+    },
+    image: `${baseUrl}/assets/images/og-image.png`,
+    logo: {
+      '@type': 'ImageObject',
+      url: `${baseUrl}/assets/images/app_logo.png`,
+      width: 250,
+      height: 60,
+    },
+    sameAs: [],
+    priceRange: '$$',
+    knowsAbout: [
+      'Contract Paralegal Services',
+      'Litigation Support',
+      'Legal Research',
+      'Document Drafting',
+      'Case Management',
+      'Discovery Assistance',
+    ],
+  };
+
+  // Organization schema for structured data
+  const organizationSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    '@id': `${baseUrl}/#organization`,
+    name: 'Broussard Legal Services',
+    url: baseUrl,
+    logo: `${baseUrl}/assets/images/app_logo.png`,
+    description: 'Professional contract paralegal services for law firms nationwide.',
+    sameAs: [],
+    contactPoint: {
+      '@type': 'ContactPoint',
+      contactType: 'Customer Service',
+      telephone: '+1-844-493-6819',
+      email: 'contact@broussardlegalservices.com',
+    },
+  };
+
   return (
     <html lang="en" suppressHydrationWarning className={`${dmSans.variable} ${fraunces.variable}`}>
       <head>
         <meta charSet="utf-8" />
         <meta name="theme-color" content="#1B2A4A" />
+        {/* LocalBusiness Schema */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(localBusinessSchema),
+          }}
+        />
+        {/* Organization Schema */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(organizationSchema),
+          }}
+        />
         {/* Critical above-the-fold CSS inlined to eliminate render-blocking */}
         <style suppressHydrationWarning dangerouslySetInnerHTML={{ __html: `
           *,*::before,*::after{box-sizing:border-box}
@@ -147,161 +220,23 @@ export default function RootLayout({
           h1,h2,h3,h4,h5,h6,p{margin:0}
           :root{--background:#F9F0EC;--foreground:#1B2A4A;--primary:#1B2A4A;--primary-foreground:#F5ECD7;--accent:#B76E79;--font-sans:'Raleway',sans-serif;--font-serif:'Playfair Display',serif}
         ` }} />
-        {/* next/font/google automatically injects preconnect for fonts.googleapis.com and fonts.gstatic.com */}
-        {/* Manual preconnects removed to avoid duplicate render-blocking resource hints */}
-        {/* Preconnect to Stripe — warms TCP/TLS so Stripe.js loads faster when payment step is reached */}
-        <link rel="preconnect" href="https://js.stripe.com" crossOrigin="anonymous" />
-        <link rel="dns-prefetch" href="https://js.stripe.com" />
-        {/* Preconnect to YouTube image CDN — ensures thumbnail cache headers are respected */}
-        <link rel="preconnect" href="https://img.youtube.com" crossOrigin="anonymous" />
-        <link rel="dns-prefetch" href="https://img.youtube.com" />
-        <link rel="icon" href="/favicon.ico" />
-        <link rel="apple-touch-icon" href="/favicon.ico" />
-        <link rel="manifest" href="/manifest.json" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <meta name="apple-mobile-web-app-title" content="Broussard Legal" />
-        <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="msapplication-config" content="/browserconfig.xml" />
-
-        {/* Organization structured data */}
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              '@context': 'https://schema.org',
-              '@type': 'Organization',
-              name: 'Broussard Legal Services',
-              description: 'Professional contract paralegal services nationwide',
-              url: baseUrl,
-              logo: {
-                '@type': 'ImageObject',
-                url: `${baseUrl}/assets/images/app_logo.png`,
-                width: 512,
-                height: 512,
-              },
-              contactPoint: {
-                '@type': 'ContactPoint',
-                contactType: 'Customer Service',
-                availableLanguage: 'en',
-                email: 'broussardlegalservices@gmail.com',
-                telephone: '+1-504-458-2831',
-              },
-            }),
-          }}
-        />
-
-        {/* LocalBusiness structured data — New Orleans local SEO with business hours */}
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              '@context': 'https://schema.org',
-              '@type': 'LocalBusiness',
-              '@id': baseUrl,
-              name: 'Broussard Legal Services — Contract Paralegal Services',
-              description: 'Contract paralegal services for law firms in New Orleans, Louisiana and nationwide. Litigation support, legal research, document drafting, and case management by Maggi May Broussard.',
-              url: baseUrl,
-              image: `${baseUrl}/assets/images/og-image.png`,
-              logo: `${baseUrl}/assets/images/app_logo.png`,
-              priceRange: '$750–$2,800/month',
-              telephone: '+1-504-458-2831',
-              email: 'broussardlegalservices@gmail.com',
-              address: {
-                '@type': 'PostalAddress',
-                streetAddress: '900 Camp Street Suite 3rd Fl. PMB 70111',
-                addressLocality: 'New Orleans',
-                addressRegion: 'LA',
-                postalCode: '70130',
-                addressCountry: 'US',
-              },
-              geo: {
-                '@type': 'GeoCoordinates',
-                latitude: 29.9511,
-                longitude: -90.0715,
-              },
-              areaServed: [
-                { '@type': 'City', name: 'New Orleans', containedInPlace: { '@type': 'State', name: 'Louisiana' } },
-                { '@type': 'State', name: 'Louisiana' },
-                { '@type': 'Country', name: 'United States' },
-              ],
-              serviceArea: {
-                '@type': 'GeoCircle',
-                geoMidpoint: { '@type': 'GeoCoordinates', latitude: 29.9511, longitude: -90.0715 },
-                geoRadius: '50000',
-              },
-              openingHoursSpecification: [
-                {
-                  '@type': 'OpeningHoursSpecification',
-                  dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
-                  opens: '09:00',
-                  closes: '17:00',
-                },
-                {
-                  '@type': 'OpeningHoursSpecification',
-                  dayOfWeek: 'Saturday',
-                  opens: '10:00',
-                  closes: '18:00',
-                },
-                {
-                  '@type': 'OpeningHoursSpecification',
-                  dayOfWeek: 'Sunday',
-                  opens: '00:00',
-                  closes: '00:00',
-                },
-              ],
-              hasOfferCatalog: {
-                '@type': 'OfferCatalog',
-                name: 'Paralegal Services',
-                itemListElement: [
-                  { '@type': 'Offer', itemOffered: { '@type': 'Service', name: 'Litigation Support', areaServed: 'New Orleans, LA' } },
-                  { '@type': 'Offer', itemOffered: { '@type': 'Service', name: 'Legal Research', areaServed: 'New Orleans, LA' } },
-                  { '@type': 'Offer', itemOffered: { '@type': 'Service', name: 'Document Drafting', areaServed: 'New Orleans, LA' } },
-                  { '@type': 'Offer', itemOffered: { '@type': 'Service', name: 'Case Management', areaServed: 'New Orleans, LA' } },
-                  { '@type': 'Offer', itemOffered: { '@type': 'Service', name: 'Discovery Assistance', areaServed: 'New Orleans, LA' } },
-                  { '@type': 'Offer', itemOffered: { '@type': 'Service', name: 'Contract Review', areaServed: 'New Orleans, LA' } },
-                ],
-              },
-              contactPoint: {
-                '@type': 'ContactPoint',
-                contactType: 'Customer Service',
-                availableLanguage: 'en',
-                email: 'broussardlegalservices@gmail.com',
-                telephone: '+1-504-458-2831',
-              },
-              founder: {
-                '@type': 'Person',
-                name: 'Maggi May Broussard',
-                jobTitle: 'Contract Paralegal',
-                worksFor: { '@type': 'Organization', name: 'Broussard Legal Services' },
-              },
-            }),
-          }}
-        />
-
-        <script type="module" async src="https://static.rocket.new/rocket-web.js?_cfg=https%3A%2F%2Fmaggimaybr6854back.builtwithrocket.new&_be=https%3A%2F%2Fappanalytics.rocket.new&_v=0.1.19" />
-        <script type="module" defer src="https://static.rocket.new/rocket-shot.js?v=0.0.2" /></head>
-      <body className={`${dmSans.className} ${fraunces.className}`} suppressHydrationWarning>
-        {/* Skip to main content — keyboard navigation / accessibility */}
-        <a
-          href="#main-content"
-          className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[9999] focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-lg focus:text-sm focus:font-semibold focus:shadow-lg"
-        >
-          Skip to main content
-        </a>
-        <Suspense fallback={null}>
+      
+      <script type="module" async src="https://static.rocket.new/rocket-web.js?_cfg=https%3A%2F%2Fmaggimaybr6854back.builtwithrocket.new&_be=https%3A%2F%2Fappanalytics.rocket.new&_v=0.1.19" />
+      <script type="module" defer src="https://static.rocket.new/rocket-shot.js?v=0.0.2" /></head>
+      <body
+        className={`${dmSans.variable} ${fraunces.variable} font-sans text-gray-900 antialiased`}
+      >
+        <Suspense>
           <GoogleAnalytics />
-        </Suspense>
-        <Suspense fallback={null}>
           <MixpanelAnalytics />
         </Suspense>
         <AuthProvider>
+          <LexiFloatingChat />
+          <CookieBanner />
+          <PWAInstallPrompt />
           {children}
+          <Toaster position="top-right" />
         </AuthProvider>
-        <Toaster position="top-right" toastOptions={{ duration: 4000 }} />
-        <CookieBanner />
-        <LexiFloatingChat />
-        <PWAInstallPrompt />
       </body>
     </html>
   );
