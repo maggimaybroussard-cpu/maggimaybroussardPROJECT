@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { useLexiVoice, LEXI_VOICES } from '@/lib/hooks/useLexiVoice';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -474,24 +473,6 @@ export default function AILegalSecretaryDashboard() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  // Voice state
-  const [voiceEnabled, setVoiceEnabled] = useState(false);
-  const [showVoiceSettings, setShowVoiceSettings] = useState(false);
-  const {
-    isSpeaking,
-    isLoadingTTS,
-    ttError,
-    selectedVoiceId,
-    setSelectedVoiceId,
-    speak,
-    stopSpeaking,
-    isRecording,
-    isTranscribing,
-    sttError,
-    startDictation,
-    stopDictation,
-  } = useLexiVoice();
-
   // Data state
   const [seats, setSeats] = useState<Seat[]>([]);
   const [hoursSuggestions, setHoursSuggestions] = useState<HoursSuggestion[]>([]);
@@ -556,18 +537,6 @@ export default function AILegalSecretaryDashboard() {
     setSelectedProvider(provider);
     setSelectedModel(model);
   }, []);
-
-  // ── Voice dictation handler ────────────────────────────────────────────────
-  const handleVoiceDictation = useCallback(async () => {
-    if (isRecording) {
-      const transcribed = await stopDictation();
-      if (transcribed) {
-        setInputValue(prev => prev ? `${prev} ${transcribed}` : transcribed);
-      }
-    } else {
-      await startDictation();
-    }
-  }, [isRecording, startDictation, stopDictation]);
 
   // ── Send message ───────────────────────────────────────────────────────────
   const handleSend = useCallback(async (text?: string) => {
@@ -652,13 +621,6 @@ export default function AILegalSecretaryDashboard() {
         }
       }
 
-      // Auto-speak the response if voice is enabled
-      if (voiceEnabled && assistantContent) {
-        // Speak first 500 chars to keep it concise
-        const speakText = assistantContent.slice(0, 500);
-        speak(speakText);
-      }
-
       // Log action
       if (currentEmail) {
         await supabase.from('ai_secretary_actions').insert({
@@ -678,7 +640,7 @@ export default function AILegalSecretaryDashboard() {
     } finally {
       setIsStreaming(false);
     }
-  }, [inputValue, isStreaming, messages, activeContext, selectedProvider, selectedModel, currentEmail, supabase, voiceEnabled, speak]);
+  }, [inputValue, isStreaming, messages, activeContext, selectedProvider, selectedModel, currentEmail, supabase]);
 
   // ── Export conversation ────────────────────────────────────────────────────
   const handleExportConversation = useCallback(() => {
@@ -863,68 +825,6 @@ export default function AILegalSecretaryDashboard() {
               onProviderChange={handleProviderChange}
             />
 
-            {/* Voice Settings Panel */}
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center justify-between">
-                <p className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">Voice (ElevenLabs)</p>
-                <button
-                  onClick={() => setVoiceEnabled(v => !v)}
-                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${voiceEnabled ? 'bg-emerald-500' : 'bg-border'}`}
-                  title={voiceEnabled ? 'Disable voice responses' : 'Enable voice responses'}
-                >
-                  <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${voiceEnabled ? 'translate-x-4.5' : 'translate-x-0.5'}`} />
-                </button>
-              </div>
-
-              {voiceEnabled && (
-                <div className="flex flex-col gap-2 p-3 rounded-xl border border-border bg-card">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm">🔊</span>
-                    <span className="text-xs text-emerald-700 font-semibold">Voice Active</span>
-                    {(isSpeaking || isLoadingTTS) && (
-                      <span className="flex items-center gap-1 ml-auto">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                        <span className="text-xs text-muted-foreground">{isLoadingTTS ? 'Loading…' : 'Speaking…'}</span>
-                      </span>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide block mb-1">Voice</label>
-                    <select
-                      value={selectedVoiceId}
-                      onChange={e => setSelectedVoiceId(e.target.value)}
-                      className="w-full px-2.5 py-1.5 rounded-lg border border-border bg-input text-foreground text-xs focus:outline-none focus:ring-1 focus:ring-accent/40"
-                    >
-                      {LEXI_VOICES.map(v => (
-                        <option key={v.id} value={v.id}>{v.name} — {v.description}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {isSpeaking && (
-                    <button
-                      onClick={stopSpeaking}
-                      className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-50 border border-red-200 text-red-700 text-xs font-semibold hover:bg-red-100 transition-colors"
-                    >
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
-                      Stop Speaking
-                    </button>
-                  )}
-
-                  {ttError && (
-                    <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-2 py-1">{ttError}</p>
-                  )}
-                </div>
-              )}
-
-              {!voiceEnabled && (
-                <p className="text-[10px] text-muted-foreground leading-relaxed">
-                  Enable to hear Lexi&apos;s responses spoken aloud via ElevenLabs. Use the mic button to dictate messages.
-                </p>
-              )}
-            </div>
-
             {/* Context Selector */}
             <div className="flex flex-col gap-2">
               <p className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">Context Mode</p>
@@ -977,7 +877,6 @@ export default function AILegalSecretaryDashboard() {
                 <p className="text-sm font-semibold text-foreground">AI Legal Secretary</p>
                 <p className="text-xs text-muted-foreground truncate">
                   {AI_CONTEXTS.find(c => c.id === activeContext)?.icon} {AI_CONTEXTS.find(c => c.id === activeContext)?.label} · {currentProviderConfig.shortLabel}
-                  {voiceEnabled && <span className="ml-1.5 text-emerald-600">· 🔊 Voice On</span>}
                 </p>
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
@@ -1017,9 +916,6 @@ export default function AILegalSecretaryDashboard() {
                     <p className="text-sm text-muted-foreground max-w-xs">
                       I&apos;m your AI Legal Secretary in <strong>{AI_CONTEXTS.find(c => c.id === activeContext)?.label}</strong> mode, powered by <strong>{currentProviderConfig.label}</strong>.
                     </p>
-                    {voiceEnabled && (
-                      <p className="text-xs text-emerald-600 mt-1.5">🔊 Voice enabled — I&apos;ll speak my responses aloud. Use the mic button to dictate.</p>
-                    )}
                   </div>
                   {/* Suggested prompts for new contexts */}
                   {QUICK_ACTIONS.filter(a => a.context === activeContext).length > 0 && (
@@ -1059,24 +955,9 @@ export default function AILegalSecretaryDashboard() {
                       </span>
                     )}
                     {msg.role === 'assistant' && msg.provider && msg.content && (
-                      <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/50">
-                        <p className="text-xs text-muted-foreground">
-                          {AI_PROVIDERS.find(p => p.id === msg.provider)?.shortLabel} · {AI_CONTEXTS.find(c => c.id === msg.context)?.label}
-                        </p>
-                        {voiceEnabled && (
-                          <button
-                            onClick={() => speak(msg.content.slice(0, 500))}
-                            disabled={isLoadingTTS || isSpeaking}
-                            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-emerald-600 transition-colors disabled:opacity-40 ml-2"
-                            title="Read aloud"
-                          >
-                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
-                            </svg>
-                            Read
-                          </button>
-                        )}
-                      </div>
+                      <p className="text-xs text-muted-foreground mt-2 pt-2 border-t border-border/50">
+                        {AI_PROVIDERS.find(p => p.id === msg.provider)?.shortLabel} · {AI_CONTEXTS.find(c => c.id === msg.context)?.label}
+                      </p>
                     )}
                   </div>
                   {msg.role === 'user' && (
@@ -1091,19 +972,7 @@ export default function AILegalSecretaryDashboard() {
 
             {/* Input */}
             <div className="border-t border-border p-4">
-              {/* STT error */}
-              {sttError && (
-                <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-1.5 mb-2">{sttError}</p>
-              )}
-              {isTranscribing && (
-                <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="animate-spin">
-                    <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
-                  </svg>
-                  Transcribing your voice…
-                </div>
-              )}
-              <div className="flex items-end gap-2">
+              <div className="flex items-end gap-3">
                 <textarea
                   ref={inputRef}
                   value={inputValue}
@@ -1116,28 +985,9 @@ export default function AILegalSecretaryDashboard() {
                   }}
                   placeholder={`Ask your AI Legal Secretary… (${AI_CONTEXTS.find(c => c.id === activeContext)?.label} · ${currentProviderConfig.shortLabel})`}
                   rows={2}
-                  disabled={isStreaming || isTranscribing}
+                  disabled={isStreaming}
                   className="flex-1 px-4 py-3 rounded-xl border border-border bg-input text-foreground text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent transition-all resize-none disabled:opacity-60"
                 />
-                {/* Voice dictation button */}
-                <button
-                  onClick={handleVoiceDictation}
-                  disabled={isStreaming || isTranscribing}
-                  title={isRecording ? 'Stop recording & transcribe' : 'Dictate message'}
-                  className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all flex-shrink-0 disabled:opacity-40 ${
-                    isRecording
-                      ? 'bg-red-500 text-white animate-pulse' :'bg-secondary border border-border text-muted-foreground hover:text-foreground hover:border-accent/40'
-                  }`}
-                >
-                  {isRecording ? (
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
-                  ) : (
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/>
-                    </svg>
-                  )}
-                </button>
-                {/* Send button */}
                 <button
                   onClick={() => handleSend()}
                   disabled={!inputValue.trim() || isStreaming}
@@ -1157,7 +1007,6 @@ export default function AILegalSecretaryDashboard() {
               </div>
               <p className="text-xs text-muted-foreground mt-2 text-center">
                 AI Legal Secretary · Admin-only · <strong>{currentProviderConfig.shortLabel}</strong> · Logged in as <strong>{currentEmail}</strong>
-                {voiceEnabled && <span className="ml-1.5 text-emerald-600">· 🔊 ElevenLabs Voice</span>}
               </p>
             </div>
           </div>

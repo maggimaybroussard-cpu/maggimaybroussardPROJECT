@@ -172,12 +172,11 @@ export default function Header({ initialClaims }: HeaderProps) {
         <div className="max-w-7xl mx-auto px-4 md:px-10 flex items-center justify-between gap-4">
           {/* Logo */}
           <div className="flex items-center gap-3 group shrink-0">
-            <div className="relative" suppressHydrationWarning>
+            <div className="relative">
               <Link
                 href="/admin"
                 className="focus:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-full"
                 aria-label="Go to Admin"
-                suppressHydrationWarning
               >
                 <AppLogo
                   size={36}
