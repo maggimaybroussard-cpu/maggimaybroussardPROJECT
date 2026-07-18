@@ -110,8 +110,6 @@ const AI_CONTEXTS = [
   { id: 'intake', label: 'Client Intake', icon: '📋', color: 'bg-teal-50 text-teal-700 border-teal-200', description: 'Intake screening, conflict checks, matter setup' },
   { id: 'settlement', label: 'Settlement Analysis', icon: '🤝', color: 'bg-rose-50 text-rose-700 border-rose-200', description: 'Settlement valuation, negotiation strategy, risk analysis' },
   { id: 'court_prep', label: 'Court Prep', icon: '🏛️', color: 'bg-indigo-50 text-indigo-700 border-indigo-200', description: 'Hearing prep, argument outlines, exhibit lists' },
-  { id: 'westlaw_research', label: 'Westlaw Research', icon: '🔬', color: 'bg-sky-50 text-sky-700 border-sky-200', description: 'Westlaw-style legal research: statutes, case law, citations' },
-  { id: 'mycase_management', label: 'MyCase Management', icon: '🗂️', color: 'bg-lime-50 text-lime-700 border-lime-200', description: 'Matter setup, deadline calendars, client communication' },
   { id: 'general', label: 'General Secretary', icon: '🤖', color: 'bg-gray-100 text-gray-700 border-gray-200', description: 'General legal secretary tasks and questions' },
 ];
 
@@ -130,15 +128,6 @@ const QUICK_ACTIONS = [
   { label: 'Negotiation Strategy', prompt: 'Outline a negotiation strategy for a settlement discussion in a Louisiana employment dispute matter.', context: 'settlement' },
   { label: 'Hearing Outline', prompt: 'Create a hearing preparation outline for a Louisiana civil court motion hearing, including argument structure and key points.', context: 'court_prep' },
   { label: 'Exhibit List', prompt: 'Help me create a structured exhibit list template for a Louisiana civil trial, including proper labeling and organization.', context: 'court_prep' },
-  { label: 'Westlaw Research Strategy', prompt: 'Guide me through a Westlaw research strategy for a Louisiana business contract dispute. What search terms, databases, and filters should I use to find relevant case law and statutes?', context: 'westlaw_research' },
-  { label: 'Louisiana Statute Lookup', prompt: 'What are the key Louisiana statutes and Civil Code articles I need to know for a business contract dispute? Include La. Civil Code provisions on obligations and contracts.', context: 'westlaw_research' },
-  { label: 'Federal Law Research', prompt: 'How do I research federal employment law for a Title VII discrimination claim in Louisiana? What databases, key cases, and regulatory sources should I consult?', context: 'westlaw_research' },
-  { label: 'KeyCite Guidance', prompt: 'Explain how to use KeyCite to verify a Louisiana Supreme Court case is still good law and find the most important cases that have cited it.', context: 'westlaw_research' },
-  { label: 'MyCase Matter Setup', prompt: 'Walk me through setting up a new client matter in a case management system. What fields, categories, deadlines, and documents should I configure from day one?', context: 'mycase_management' },
-  { label: 'Court Deadline Calendar', prompt: 'Create a comprehensive deadline calendar for a new Louisiana civil litigation matter from filing through trial, including all La. C.C.P. deadlines and discovery cutoffs.', context: 'mycase_management' },
-  { label: 'Client Communication Template', prompt: 'Draft a professional client status update email template for a business litigation matter, covering case progress, next steps, and billing summary.', context: 'mycase_management' },
-  { label: 'Matter Close Checklist', prompt: 'Create a comprehensive matter close checklist for a completed Louisiana civil litigation case, including file retention, trust accounting, and client notification steps.', context: 'mycase_management' },
-  { label: 'Conflict Check', prompt: 'Walk me through a thorough conflict of interest check for a new potential client in a business dispute matter. What parties, entities, and relationships should I search?', context: 'intake' },
 ];
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -276,30 +265,6 @@ IMPORTANT: You are an internal tool for the law firm staff only — not client-f
 - Prepare trial notebooks and hearing binders
 - Draft proposed orders and judgments
 - Flag procedural requirements under La. C.C.P.`,
-
-    westlaw_research: `\n\nCURRENT CONTEXT: Westlaw-Style Legal Research Assistant
-- Guide comprehensive legal research strategies for Louisiana and federal law
-- Explain how to search Westlaw: Boolean operators (AND, OR, NOT, /p, /s, /n), natural language queries, and field searches
-- Help identify the right Westlaw databases: Louisiana Cases, Louisiana Statutes, Federal Cases, Secondary Sources
-- Provide KeyCite guidance: checking case validity, finding citing references, and negative treatment flags
-- Assist with finding: Louisiana Civil Code articles, La. R.S. statutes, La. C.C.P. procedural rules, Louisiana Supreme Court and appellate decisions
-- Guide federal law research: FRCP, FRE, U.S.C. statutes, federal circuit and district court opinions
-- Provide Bluebook citation format for all sources
-- Identify relevant secondary sources: Louisiana Law Review, treatises, practice guides, ALR annotations
-- Suggest research strategies by practice area: contracts, torts, employment, real estate, estate planning
-- Always recommend attorney verification of research findings before reliance`,
-
-    mycase_management: `\n\nCURRENT CONTEXT: MyCase-Style Matter Management Assistant
-- Guide complete matter setup: client intake, conflict checks, matter numbering, and file organization
-- Create comprehensive deadline calendars using Louisiana court rules (La. C.C.P.) and local rules
-- Draft client communication templates: engagement letters, status updates, billing explanations
-- Assist with billing and time entry: task codes, billing descriptions, UTBMS codes, trust accounting
-- Guide document management: naming conventions, version control, filing systems, retention policies
-- Help with court calendar management: hearing dates, discovery deadlines, filing deadlines
-- Assist with staff task assignment and workflow management
-- Provide IOLTA trust accounting guidance: three-way reconciliation, client ledgers, disbursement procedures
-- Draft client portal communication and secure document sharing procedures
-- Create matter close checklists and file retention procedures`,
 
     general: `\n\nCURRENT CONTEXT: General Legal Secretary
 - Handle general administrative and legal secretary tasks

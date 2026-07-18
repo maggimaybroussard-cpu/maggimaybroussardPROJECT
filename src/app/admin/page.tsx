@@ -135,10 +135,6 @@ const DocumentManagementDashboard = dynamic(() => import('./components/DocumentM
 const PracticeManagementSuite = dynamic(() => import('./components/PracticeManagementSuite'), { ssr: false });
 const AILegalSecretaryDashboard = dynamic(() => import('./components/AILegalSecretaryDashboard'), { ssr: false });
 const LinearProjectsDashboard = dynamic(() => import('./components/LinearProjectsDashboard'), { ssr: false });
-const ClioSyncDashboard = dynamic(() => import('./components/ClioSyncDashboard'), { ssr: false });
-const ConsultationOutcomesDashboard = dynamic(() => import('./components/ConsultationOutcomesDashboard'), { ssr: false });
-const ConsultationPipelineReport = dynamic(() => import('./components/ConsultationPipelineReport'), { ssr: false });
-const ConsultationAutomationDashboard = dynamic(() => import('./components/ConsultationAutomationDashboard'), { ssr: false });
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -5139,7 +5135,7 @@ function IntegrationsDashboard() {
 // ─── Main Admin Page ──────────────────────────────────────────────────────────
 
 export default function AdminInquiriesPage() {
-  const [activeTab, setActiveTab] = useState<'overview' | 'inquiries' | 'bookings' | 'payments' | 'analytics' | 'sequences' | 'documents' | 'reminders' | 'cases' | 'emails' | 'consultations' | 'testimonials' | 'clients' | 'client_profiles' | 'integrations' | 'operations' | 'intake_nurture' | 'analytics_dashboard' | 'prospect_scoring' | 'billing_history' | 'retainer_subscriptions' | 'retainer_balance' | 'email_templates' | 'billing_test' | 'billable_hours' | 'invoice_generator' | 'invoice_reminders' | 'invoice_tracking' | 'invoices' | 'reporting' | 'practice_insights' | 'kanban' | 'tasks' | 'notification_emails' | 'messages' | 'security' | 'doc_templates' | 'client_doc_templates' | 'contracts_repository' | 'intake_analytics' | 'intake_routing' | 'audit_trail' | 'routing_admin' | 'scheduling' | 'availability' | 'growth_analytics' | 'strategic_analytics' | 'notifications' | 'roster' | 'retainer_invoice_scheduler' | 'stripe_reconciliation' | 'billing_ops_hub' | 'client_invoices_overview' | 'consultation_funnel' | 'booking_analytics' | 'financial_dashboard' | 'deliverables' | 'case_actions' | 'post_case_close' | 'lifecycle_emails' | 'realtime_feed' | 'ga4_conversion' | 'iolta_ledger' | 'lexi_admin_tools' | 'lexi_document_drafts' | 'monthly_reports' | 'referral_claims' | 'contact_leads' | 'hours_reporting' | 'paralegal_hours' | 'event_notifications' | 'practice_analytics' | 'billing' | 'matter_profitability' | 'matter_time_logger' | 'court_deadlines' | 'staff_time' | 'webhooks' | 'nps_surveys' | 'retainer_alerts' | 'secure_sharing' | 'intake_templates' | 'reporting_exports' | 'billable_allocation' | 'practice_kpi' | 'email_reminders' | 'doc_extractor' | 'matter_invoice_builder' | 'cash_position' | 'portal_adoption' | 'scheduled_consultations' | 'consultation_availability' | 'submissions_inbox' | 'assistant_conversations' | 'lexi_assistant' | 'sms_reminders' | 'client_task_portal' | 'consultation_admin' | 'case_studies_manager' | 'lead_nurture' | 'calendly_pipeline' | 'conversion_funnel' | 'client_dashboard_view' | 'retainer_doc_analyzer' | 'client_intake_forms' | 'engagement_letters' | 'gemini_case_analyzer' | 'email_sms_templates' | 'active_cases' | 'realtime_case_notifications' | 'doc_esignature_manager' | 'retainer_invoice_automation' | 'caseflow_manager' | 'retainer_renewal_notifications' | 'client_communication_hub' | 'notion_integration' | 'time_entry' | 'case_file_repository' | 'case_pipeline' | 'admin_kpi' | 'transactional_emails' | 'email_nurture_templates' | 'case_calendar' | 'automated_intake' | 'client_journey_automation' | 'document_management' | 'practice_management_suite' | 'ai_legal_secretary' | 'linear_projects' | 'clio_sync' | 'consultation_outcomes' | 'consultation_pipeline_report' | 'consultation_automation'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'inquiries' | 'bookings' | 'payments' | 'analytics' | 'sequences' | 'documents' | 'reminders' | 'cases' | 'emails' | 'consultations' | 'testimonials' | 'clients' | 'client_profiles' | 'integrations' | 'operations' | 'intake_nurture' | 'analytics_dashboard' | 'prospect_scoring' | 'billing_history' | 'retainer_subscriptions' | 'retainer_balance' | 'email_templates' | 'billing_test' | 'billable_hours' | 'invoice_generator' | 'invoice_reminders' | 'invoice_tracking' | 'invoices' | 'reporting' | 'practice_insights' | 'kanban' | 'tasks' | 'notification_emails' | 'messages' | 'security' | 'doc_templates' | 'client_doc_templates' | 'contracts_repository' | 'intake_analytics' | 'intake_routing' | 'audit_trail' | 'routing_admin' | 'scheduling' | 'availability' | 'growth_analytics' | 'strategic_analytics' | 'notifications' | 'roster' | 'retainer_invoice_scheduler' | 'stripe_reconciliation' | 'billing_ops_hub' | 'client_invoices_overview' | 'consultation_funnel' | 'booking_analytics' | 'financial_dashboard' | 'deliverables' | 'case_actions' | 'post_case_close' | 'lifecycle_emails' | 'realtime_feed' | 'ga4_conversion' | 'iolta_ledger' | 'lexi_admin_tools' | 'lexi_document_drafts' | 'monthly_reports' | 'referral_claims' | 'contact_leads' | 'hours_reporting' | 'paralegal_hours' | 'event_notifications' | 'practice_analytics' | 'billing' | 'matter_profitability' | 'matter_time_logger' | 'court_deadlines' | 'staff_time' | 'webhooks' | 'nps_surveys' | 'retainer_alerts' | 'secure_sharing' | 'intake_templates' | 'reporting_exports' | 'billable_allocation' | 'practice_kpi' | 'email_reminders' | 'doc_extractor' | 'matter_invoice_builder' | 'cash_position' | 'portal_adoption' | 'scheduled_consultations' | 'consultation_availability' | 'submissions_inbox' | 'assistant_conversations' | 'lexi_assistant' | 'sms_reminders' | 'client_task_portal' | 'consultation_admin' | 'case_studies_manager' | 'lead_nurture' | 'calendly_pipeline' | 'conversion_funnel' | 'client_dashboard_view' | 'retainer_doc_analyzer' | 'client_intake_forms' | 'engagement_letters' | 'gemini_case_analyzer' | 'email_sms_templates' | 'active_cases' | 'realtime_case_notifications' | 'doc_esignature_manager' | 'retainer_invoice_automation' | 'caseflow_manager' | 'retainer_renewal_notifications' | 'client_communication_hub' | 'notion_integration' | 'time_entry' | 'case_file_repository' | 'case_pipeline' | 'admin_kpi' | 'transactional_emails' | 'email_nurture_templates' | 'case_calendar' | 'automated_intake' | 'client_journey_automation' | 'document_management' | 'practice_management_suite' | 'ai_legal_secretary' | 'linear_projects'>('overview');
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -7512,18 +7508,6 @@ export default function AdminInquiriesPage() {
       ),
     },
     {
-      id: 'consultation_automation' as const,
-      label: 'Consultation Automation',
-      description: 'Auto-trigger SMS & email reminders 24hr before consultations and follow-up prompts 48hr after for feedback and next steps',
-      badge: 'Auto',
-      badgeColor: 'bg-emerald-100 text-emerald-700',
-      icon: (
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-        </svg>
-      ),
-    },
-    {
       id: 'client_task_portal' as const,
       label: 'Client Tasks',
       description: 'Assign and track tasks for active clients — manage pending, in-progress, and completed deliverables with Resend email alerts',
@@ -7893,46 +7877,6 @@ id: 'retainer_renewal_notifications' as const,
       icon: (
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
-        </svg>
-      ),
-    },
-    {
-      id: 'clio_sync' as const,
-      label: 'Clio Sync',
-      description: 'View and search synced Clio matters, contacts, and time entries — with manual sync triggers',
-      badge: null,
-      badgeColor: '',
-      icon: (
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
-        </svg>
-      ),
-    },
-    {
-      id: 'consultation_outcomes' as const,
-      label: 'Consultation Outcomes',
-      description: 'Capture post-consultation notes, outcomes, next steps, deliverables, and link results to Clio matters',
-      badge: 'New',
-      badgeColor: 'bg-emerald-100 text-emerald-700',
-      icon: (
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-          <polyline points="14 2 14 8 20 8"/>
-          <line x1="16" y1="13" x2="8" y2="13"/>
-          <line x1="16" y1="17" x2="8" y2="17"/>
-          <polyline points="10 9 9 9 8 9"/>
-        </svg>
-      ),
-    },
-    {
-      id: 'consultation_pipeline_report' as const,
-      label: 'Pipeline Report',
-      description: 'Full consultation pipeline funnel — inquiries → bookings → outcomes → Clio linked, with monthly trends and follow-up alerts',
-      badge: 'New',
-      badgeColor: 'bg-blue-100 text-blue-700',
-      icon: (
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
         </svg>
       ),
     },
@@ -8366,9 +8310,6 @@ id: 'retainer_renewal_notifications' as const,
         {/* ── SMS Reminders Tab ── */}
         {activeTab === 'sms_reminders' && <SMSRemindersDashboard />}
 
-        {/* ── Consultation Automation Tab ── */}
-        {activeTab === 'consultation_automation' && <ConsultationAutomationDashboard />}
-
         {/* ── Submissions Inbox Tab ── */}
         {activeTab === 'submissions_inbox' && <SubmissionsInboxDashboard />}
 
@@ -8506,15 +8447,6 @@ id: 'retainer_renewal_notifications' as const,
 
         {/* ── Linear Projects Tab ── */}
         {activeTab === 'linear_projects' && <LinearProjectsDashboard />}
-
-        {/* ── Clio Sync Tab ── */}
-        {activeTab === 'clio_sync' && <ClioSyncDashboard />}
-
-        {/* ── Consultation Outcomes Tab ── */}
-        {activeTab === 'consultation_outcomes' && <ConsultationOutcomesDashboard />}
-
-        {/* ── Consultation Pipeline Report Tab ── */}
-        {activeTab === 'consultation_pipeline_report' && <ConsultationPipelineReport />}
 
         {/* ── Email Reminders Tab ── */}
         {activeTab === 'email_reminders' && <EmailRemindersDashboard />}
@@ -8753,13 +8685,161 @@ id: 'retainer_renewal_notifications' as const,
                         <h2 className="font-serif text-xl text-foreground">{selectedInquiry.name}</h2>
                         <p className="text-xs text-muted-foreground mt-0.5">{selectedInquiry.firm}</p>
                       </div>
-                      <button onClick={() => setSelectedInquiry(null)} className="text-muted-foreground/50 hover:text-foreground transition-colors p-1" aria-label="Close detail panel"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+                      <button
+                        onClick={() => setSelectedInquiry(null)}
+                        className="text-muted-foreground/50 hover:text-foreground transition-colors p-1"
+                        aria-label="Close detail panel"
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                      </button>
                     </div>
-                    <div className="flex flex-col gap-2.5 mb-5"><a href={`mailto:${selectedInquiry.email}`} className="flex items-center gap-2.5 text-sm text-accent hover:underline"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>{selectedInquiry.email}</a><div className="flex items-center gap-2.5 text-sm text-muted-foreground"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/></svg>{selectedInquiry.service}</div><div className="flex items-center gap-2.5 text-xs text-muted-foreground/70"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Submitted {formatDate(selectedInquiry.created_at)}</div></div>
-                    <div className="mb-5"><p className="text-xs uppercase tracking-widest text-muted-foreground font-semibold mb-2">Message</p><p className="text-sm text-foreground/80 leading-relaxed bg-secondary/40 rounded-xl p-4 border border-border">{selectedInquiry.message}</p></div>
-                    <div className="mb-5"><p className="text-xs uppercase tracking-widest text-muted-foreground font-semibold mb-2">Status</p><div className="flex flex-wrap gap-2">{STATUS_OPTIONS.map((s) => (<button key={s} onClick={() => handleStatusChange(selectedInquiry.id, s)} disabled={updatingId === selectedInquiry.id} className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all disabled:opacity-60 ${selectedInquiry.status === s ? STATUS_COLORS[s] : 'bg-transparent border-border text-muted-foreground hover:border-accent/50'}`}>{STATUS_LABELS[s]}</button>))}</div></div>
-                    <div className="mb-5 flex gap-2"><a href="https://calendly.com/maggimaybroussard" target="_blank" rel="noopener noreferrer" className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 rounded-xl border border-border text-xs font-semibold text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-all"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Book</a><a href={`mailto:${selectedInquiry.email}?subject=Re: Your Inquiry — Maggi May Broussard`} className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold uppercase tracking-widest transition-all hover:opacity-90" style={{ background: '#355E3B', color: '#fff' }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Reply</a></div>
-                    <div><p className="text-xs uppercase tracking-widest text-muted-foreground font-semibold mb-2">Internal Notes</p><textarea value={notesValue} onChange={(e) => setNotesValue(e.target.value)} rows={4} placeholder="Add internal notes about this inquiry…" className="w-full px-3 py-2.5 rounded-xl border border-border bg-secondary/30 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent resize-none" /><button onClick={handleSaveNotes} disabled={savingNotes} className="mt-2 w-full py-2 rounded-xl bg-foreground text-background text-xs font-semibold uppercase tracking-widest hover:opacity-90 transition-opacity disabled:opacity-50">{savingNotes ? 'Saving…' : 'Save Notes'}</button></div>
+
+                    {/* Contact Info */}
+                    <div className="flex flex-col gap-2.5">
+                      <a
+                        href={`mailto:${selectedInquiry.email}`}
+                        className="flex items-center gap-2.5 text-sm text-accent hover:underline"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                          <rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+                        </svg>
+                        {selectedInquiry.email}
+                      </a>
+                      <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                          <rect width="20" height="16" x="2" y="4" rx="2"/>
+                        </svg>
+                        {selectedInquiry.service}
+                      </div>
+                      <div className="flex items-center gap-2.5 text-xs text-muted-foreground/70">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                        </svg>
+                        Submitted {formatDate(selectedInquiry.created_at)}
+                      </div>
+                    </div>
+
+                    {/* Message */}
+                    <div className="mb-5">
+                      <p className="text-xs uppercase tracking-widest text-muted-foreground font-semibold mb-2">Message</p>
+                      <p className="text-sm text-foreground/80 leading-relaxed bg-secondary/40 rounded-xl p-4 border border-border">
+                        {selectedInquiry.message}
+                      </p>
+                    </div>
+
+                    {/* Status */}
+                    <div className="mb-5">
+                      <p className="text-xs uppercase tracking-widest text-muted-foreground font-semibold mb-2">Status</p>
+                      <div className="flex flex-wrap gap-2">
+                        {STATUS_OPTIONS.map((s) => (
+                          <button
+                            key={s}
+                            onClick={() => handleStatusChange(selectedInquiry.id, s)}
+                            disabled={updatingId === selectedInquiry.id}
+                            className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all disabled:opacity-60 ${
+                              selectedInquiry.status === s
+                                ? STATUS_COLORS[s]
+                                : 'bg-transparent border-border text-muted-foreground hover:border-accent/50'
+                            }`}
+                          >
+                            {STATUS_LABELS[s]}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Quick Actions */}
+                    <div className="mb-5 flex gap-2">
+                      <a
+                        href="https://calendly.com/maggimaybroussard"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 rounded-xl border border-border text-xs font-semibold text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-all"
+                      >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                        </svg>
+                        Book
+                      </a>
+                      <a
+                        href={`mailto:${selectedInquiry.email}?subject=Re: Your Inquiry — Maggi May Broussard`}
+                        className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold uppercase tracking-widest transition-all hover:opacity-90"
+                        style={{ background: '#355E3B', color: '#fff' }}
+                      >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                        </svg>
+                        Reply
+                      </a>
+                    </div>
+
+                    {/* Notes */}
+                    <div>
+                      <p className="text-xs uppercase tracking-widest text-muted-foreground font-semibold mb-2">Internal Notes</p>
+                      <textarea
+                        rows={3}
+                        value={notesValue}
+                        onChange={(e) => setNotesValue(e.target.value)}
+                        placeholder="Add internal notes…"
+                        className="w-full px-3 py-2.5 rounded-xl border border-border bg-input text-foreground text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent transition-all resize-none"
+                      />
+                      <button
+                        onClick={handleSaveNotes}
+                        disabled={savingNotes}
+                        className="mt-2 w-full py-2 bg-primary text-primary-foreground rounded-full text-xs font-semibold uppercase tracking-widest hover:opacity-90 transition-all disabled:opacity-60 flex items-center justify-center gap-2"
+                      >
+                        {savingNotes ? (
+                          <>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="animate-spin">
+                              <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                            </svg>
+                            Saving…
+                          </>
+                        ) : 'Save Notes & Notify Client'}
+                      </button>
+                    </div>
+
+                    {/* Upload Document */}
+                    <div className="mt-5 pt-5 border-t border-border">
+                      <p className="text-xs uppercase tracking-widest text-muted-foreground font-semibold mb-2">Upload Document</p>
+                      <input
+                        ref={docFileInputRef}
+                        type="file"
+                        accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif,.txt"
+                        className="hidden"
+                        onChange={(e) => { const f = e.target.files?.[0]; if (f) handleDocUpload(f); }}
+                      />
+                      <button
+                        onClick={() => docFileInputRef.current?.click()}
+                        disabled={uploadingDoc}
+                        className="w-full py-2.5 border border-dashed border-border rounded-xl text-xs text-muted-foreground hover:border-accent/50 hover:text-foreground transition-all disabled:opacity-60 flex items-center justify-center gap-2"
+                      >
+                        {uploadingDoc ? (
+                          <>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="animate-spin">
+                              <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                            </svg>
+                            Uploading…
+                          </>
+                        ) : (
+                          <>
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                            </svg>
+                            Choose file to upload
+                          </>
+                        )}
+                      </button>
+                      {uploadDocError && (
+                        <p className="mt-2 text-xs text-red-600">{uploadDocError}</p>
+                      )}
+                      {uploadDocSuccess && (
+                        <p className="mt-2 text-xs text-green-600">{uploadDocSuccess}</p>
+                      )}
+                      <p className="mt-1.5 text-xs text-muted-foreground/60">PDF, DOC, DOCX, XLS, XLSX, JPG, PNG, GIF, TXT · Max 10 MB</p>
+                    </div>
                   </div>
                 </div>
               )}

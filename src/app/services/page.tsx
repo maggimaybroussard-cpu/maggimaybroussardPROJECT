@@ -13,9 +13,8 @@ import EmailOptInSection from '../components/EmailOptInSection';
 import CaseStudiesSocialProof from '../components/CaseStudiesSocialProof';
 import TestimonialsCompact from '../components/TestimonialsCompact';
 import Link from 'next/link';
+
 import ServicesFAQ from './components/ServicesFAQ';
-import TrustSignalsBar from '@/components/TrustSignalsBar';
-import AttorneyDisclaimer from '@/components/AttorneyDisclaimer';
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
@@ -51,58 +50,6 @@ export default function ServicesPage() {
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            '@context': 'https://schema.org',
-            '@type': 'BreadcrumbList',
-            itemListElement: [
-              {
-                '@type': 'ListItem',
-                position: 1,
-                name: 'Home',
-                item: baseUrl,
-              },
-              {
-                '@type': 'ListItem',
-                position: 2,
-                name: 'Services',
-                item: `${baseUrl}/services`,
-              },
-            ],
-          }),
-        }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            '@context': 'https://schema.org',
-            '@type': 'WebPage',
-            name: 'Legal Services',
-            description: 'Comprehensive legal services including litigation support, legal research, document drafting, case management, discovery assistance, contract review, court filing, and more.',
-            url: `${baseUrl}/services`,
-            image: `${baseUrl}/assets/images/og-image.png`,
-            datePublished: '2024-01-01',
-            dateModified: new Date().toISOString().split('T')[0],
-            inLanguage: 'en-US',
-            isPartOf: {
-              '@type': 'WebSite',
-              name: 'Broussard Legal Services',
-              url: baseUrl,
-            },
-            publisher: {
-              '@type': 'Organization',
-              name: 'Broussard Legal Services',
-              logo: {
-                '@type': 'ImageObject',
-                url: `${baseUrl}/assets/images/app_logo.png`,
-              },
-            },
-          }),
-        }}
-      />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -212,11 +159,9 @@ export default function ServicesPage() {
         }}
       />
       <Header />
-      <AttorneyDisclaimer variant="banner" />
       <main>
         <ServicesPageTracker />
         <ServicesHero />
-        <TrustSignalsBar />
         <section id="services-overview" aria-label="Overview of paralegal services offered">
           <ServicesBentoGrid />
         </section>

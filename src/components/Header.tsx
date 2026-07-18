@@ -74,19 +74,16 @@ interface HeaderProps {
 export default function Header({ initialClaims }: HeaderProps) {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  // Always start as false on server; update on client to avoid SSR/CSR mismatch
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  // SSR-consistent auth state seeded from server-fetched claims
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(
+    initialClaims != null
+  );
   const navRef = useRef<HTMLElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const hamburgerRef = useRef<HTMLButtonElement>(null);
   const pathname = usePathname();
 
   const isHeroPage = pathname === '/' || pathname === '/homepage';
-
-  // Sync auth state on client only
-  useEffect(() => {
-    setIsAuthenticated(initialClaims != null);
-  }, [initialClaims]);
 
   // Apply dynamic nav classes imperatively after mount to avoid SSR/CSR mismatch
   useEffect(() => {
@@ -172,9 +169,9 @@ export default function Header({ initialClaims }: HeaderProps) {
         className="fixed top-0 left-0 w-full z-50 transition-all duration-500 py-4 md:py-8"
         suppressHydrationWarning
       >
-        <div className="max-w-7xl mx-auto px-4 md:px-10 flex items-center justify-between gap-4" suppressHydrationWarning>
+        <div className="max-w-7xl mx-auto px-4 md:px-10 flex items-center justify-between gap-4">
           {/* Logo */}
-          <div className="flex items-center gap-3 group shrink-0" suppressHydrationWarning>
+          <div className="flex items-center gap-3 group shrink-0">
             <div className="relative">
               <Link
                 href="/admin"
@@ -312,6 +309,7 @@ export default function Header({ initialClaims }: HeaderProps) {
             ref={hamburgerRef}
             onClick={() => setMenuOpen(!menuOpen)}
             aria-label="Open navigation menu"
+            aria-expanded={menuOpen}
             aria-controls="mobile-nav-menu"
             className="md:hidden p-2.5 rounded-full transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent bg-primary-foreground/10 text-accent"
             suppressHydrationWarning

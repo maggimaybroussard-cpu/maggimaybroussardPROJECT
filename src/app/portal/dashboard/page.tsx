@@ -1105,54 +1105,6 @@ export default function ClientHomePage() {
           </div>
         </div>
 
-        {/* ── AI Legal Secretary Quick Access ── */}
-        <div className="mt-6 bg-card border border-border rounded-2xl overflow-hidden">
-          <div className="px-5 py-4 flex items-center gap-2.5 border-b border-border/60" style={{ background: 'rgba(74,55,40,0.04)' }}>
-            <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'rgba(74,55,40,0.12)' }}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#4A3728" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/>
-              </svg>
-            </div>
-            <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: '#4A3728' }}>Lexi — AI Legal Secretary</p>
-            <span className="ml-auto inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest" style={{ background: 'rgba(53,94,59,0.15)', color: '#355E3B' }}>
-              AI Powered
-            </span>
-          </div>
-          <div className="p-5">
-            <p className="text-sm text-muted-foreground font-light leading-relaxed mb-4">
-              Ask Lexi anything about your case, documents, invoices, or legal process. Available 24/7 to help you navigate your legal matter.
-            </p>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
-              {[
-                { label: 'Case Questions', icon: '⚖️', desc: 'Ask about your case status and next steps' },
-                { label: 'Document Help', icon: '📄', desc: 'Understand legal documents and agreements' },
-                { label: 'Invoice Help', icon: '💰', desc: 'Billing questions and payment options' },
-                { label: 'Schedule', icon: '📅', desc: 'Book or reschedule consultations' },
-              ].map((item) => (
-                <Link
-                  key={item.label}
-                  href="/portal/hub"
-                  className="flex flex-col items-center gap-1.5 p-3 bg-secondary hover:bg-secondary/80 rounded-xl transition-colors text-center"
-                >
-                  <span className="text-xl">{item.icon}</span>
-                  <p className="text-xs font-semibold text-foreground">{item.label}</p>
-                  <p className="text-[10px] text-muted-foreground leading-snug hidden sm:block">{item.desc}</p>
-                </Link>
-              ))}
-            </div>
-            <Link
-              href="/portal/hub"
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white transition-all duration-200 hover:opacity-90"
-              style={{ background: '#4A3728' }}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-              </svg>
-              Chat with Lexi
-            </Link>
-          </div>
-        </div>
-
         {/* ── Invoice & Billing Dashboard ── */}
         <div className="mt-6 bg-card border border-border rounded-2xl overflow-hidden">
           <div className="px-5 py-4 flex items-center justify-between border-b border-border/60">

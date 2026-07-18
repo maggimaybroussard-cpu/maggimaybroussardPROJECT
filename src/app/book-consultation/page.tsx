@@ -56,7 +56,6 @@ export default function BookConsultationPage() {
   const [selectedService, setSelectedService] = useState('');
   const [attribution, setAttribution] = useState<ReturnType<typeof getTrafficAttribution> | null>(null);
   const [schedulerBooked, setSchedulerBooked] = useState(false);
-  const [smsConsent, setSmsConsent] = useState(false);
 
   useEffect(() => {
     trackBookingPageView();
@@ -247,24 +246,6 @@ export default function BookConsultationPage() {
                   Book Directly — Instant Confirmation
                 </span>
               </div>
-
-              {/* SMS Consent */}
-              <div className="flex items-start gap-3 rounded-xl border border-border bg-secondary/40 px-4 py-3.5">
-                <input
-                  id="smsConsentBooking"
-                  type="checkbox"
-                  checked={smsConsent}
-                  onChange={(e) => setSmsConsent(e.target.checked)}
-                  className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded border-border accent-accent"
-                />
-                <label htmlFor="smsConsentBooking" className="text-xs text-muted-foreground leading-relaxed cursor-pointer">
-                  By checking this box, I agree to receive SMS/text messages from Broussard Legal Services regarding my consultation booking, appointment reminders, case updates, and legal service information. Message frequency varies. Message &amp; data rates may apply. Reply STOP to unsubscribe at any time. Reply HELP for assistance. This consent is separate from our{' '}
-                  <a href="/privacy-policy" className="text-accent underline hover:opacity-80">Privacy Policy</a>{' '}
-                  and{' '}
-                  <a href="/terms-of-service" className="text-accent underline hover:opacity-80">Terms of Service</a>.
-                </label>
-              </div>
-
               <ConsultationScheduler
                 onBookingComplete={(booking) => {
                   setSchedulerBooked(true);

@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import ClioIntegrationDashboard from './ClioIntegrationDashboard';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -860,11 +859,6 @@ export default function IntegrationSettingsHub() {
           </div>
         </div>
       ))}
-
-      {/* Clio Integration */}
-      <div className="bg-card border border-border rounded-2xl p-5">
-        <ClioIntegrationDashboard />
-      </div>
 
       {/* Environment variables guide */}
       <div className="bg-card border border-border rounded-2xl p-5">

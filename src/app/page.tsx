@@ -15,8 +15,6 @@ import EmailOptInModal from './components/EmailOptInModal';
 import HomepageTracker from './components/HomepageTracker';
 import MobileAppSection from './components/MobileAppSection';
 import BrandVideoSection from './components/BrandVideoSection';
-import TrustSignalsBar from '@/components/TrustSignalsBar';
-import AttorneyDisclaimer from '@/components/AttorneyDisclaimer';
 
 export const metadata: Metadata = {
   title: 'Contract Paralegal Services New Orleans — Broussard Legal Services',
@@ -56,36 +54,11 @@ export default function HomePage() {
         dangerouslySetInnerHTML={{
           __html: JSON.stringify({
             '@context': 'https://schema.org',
-            '@type': 'BreadcrumbList',
-            itemListElement: [
-              {
-                '@type': 'ListItem',
-                position: 1,
-                name: 'Home',
-                item: baseUrl,
-              },
-            ],
-          }),
-        }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            '@context': 'https://schema.org',
             '@type': 'WebPage',
             name: 'Contract Paralegal Services',
             description: 'Professional contract paralegal for law firms nationwide. Remote litigation support, legal research, document drafting, and case management assistance.',
             url: baseUrl,
             image: `${baseUrl}/assets/images/og-image.png`,
-            datePublished: '2024-01-01',
-            dateModified: new Date().toISOString().split('T')[0],
-            inLanguage: 'en-US',
-            isPartOf: {
-              '@type': 'WebSite',
-              name: 'Broussard Legal Services',
-              url: baseUrl,
-            },
             publisher: {
               '@type': 'Organization',
               name: 'Broussard Legal Services',
@@ -93,11 +66,6 @@ export default function HomePage() {
                 '@type': 'ImageObject',
                 url: `${baseUrl}/assets/images/app_logo.png`,
               },
-            },
-            mainEntity: {
-              '@type': 'Organization',
-              name: 'Broussard Legal Services',
-              url: baseUrl,
             },
           }),
         }}
@@ -119,11 +87,9 @@ export default function HomePage() {
         }}
       />
       <Header />
-      <AttorneyDisclaimer variant="banner" />
       <main id="main-content" suppressHydrationWarning>
         <HomepageTracker />
         <HeroSection />
-        <TrustSignalsBar />
         <BrandVideoSection />
         <AboutSection />
         <ServicesPreviewSection />

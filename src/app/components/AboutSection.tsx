@@ -5,11 +5,11 @@ import Link from 'next/link';
 import AppImage from '@/components/ui/AppImage';
 
 const stats = [
-  { number: '3+', label: 'Years Experience' },
-  { number: 'Remote', label: 'Nationwide Service' },
-  { number: '100%', label: 'Remote & Flexible' },
-  { number: 'Flat-Rate', label: 'Transparent Pricing' },
-];
+{ number: '3+', label: 'Years Experience' },
+{ number: 'Remote', label: 'Nationwide Service' },
+{ number: '100%', label: 'Remote & Flexible' },
+{ number: 'Flat-Rate', label: 'Transparent Pricing' }];
+
 
 export default function AboutSection() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -32,13 +32,13 @@ export default function AboutSection() {
   }, []);
 
   return (
-    <section ref={sectionRef} suppressHydrationWarning className="py-16 sm:py-24 md:py-36 bg-background overflow-hidden" id="about" aria-label="About Broussard Legal Services">
-      <div suppressHydrationWarning className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10">
-        <div suppressHydrationWarning className="grid lg:grid-cols-2 gap-10 sm:gap-14 lg:gap-28 items-center">
+    <section ref={sectionRef} suppressHydrationWarning className="py-20 md:py-36 bg-background overflow-hidden" id="about" aria-label="About Broussard Legal Services">
+      <div suppressHydrationWarning className="max-w-7xl mx-auto px-5 md:px-10">
+        <div suppressHydrationWarning className="grid lg:grid-cols-2 gap-12 lg:gap-28 items-center">
 
           {/* Left — Photo */}
           <div suppressHydrationWarning className="scroll-reveal-hidden relative">
-            <div suppressHydrationWarning className="relative card-rounded overflow-hidden aspect-[4/5] max-w-xs sm:max-w-sm mx-auto lg:mx-0 shadow-2xl shadow-primary/10">
+            <div suppressHydrationWarning className="relative card-rounded overflow-hidden aspect-[4/5] max-w-sm mx-auto lg:mx-0 shadow-2xl shadow-primary/10">
               <AppImage
                 src="https://img.rocket.new/generatedImages/rocket_gen_img_114ba7068-1776777309074.png"
                 alt="Professional woman in business attire seated at a bright, well-organized desk with legal documents"
@@ -62,12 +62,12 @@ export default function AboutSection() {
           </div>
 
           {/* Right — Bio + Stats */}
-          <div suppressHydrationWarning className="flex flex-col gap-7 sm:gap-8 md:gap-10">
+          <div suppressHydrationWarning className="flex flex-col gap-8 md:gap-10">
 
             {/* Section label + heading */}
             <div suppressHydrationWarning className="scroll-reveal-hidden">
-              <p suppressHydrationWarning className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.35em] sm:tracking-[0.4em] text-accent mb-3 sm:mb-4 md:mb-5 flex items-center gap-2 sm:gap-3">
-                <span suppressHydrationWarning className="w-6 sm:w-8 h-px bg-accent/70" />
+              <p suppressHydrationWarning className="text-[11px] font-semibold uppercase tracking-[0.4em] text-accent mb-4 md:mb-5 flex items-center gap-3">
+                <span suppressHydrationWarning className="w-8 h-px bg-accent/70" />
                 About Maggi May
               </p>
               <h2 suppressHydrationWarning className="text-section-heading text-foreground leading-[0.95]">
@@ -80,14 +80,14 @@ export default function AboutSection() {
             {/* Bio paragraphs */}
             <div suppressHydrationWarning className="flex flex-col gap-4 md:gap-5">
               <div suppressHydrationWarning className="scroll-reveal-hidden" style={{ transitionDelay: '0.1s' }}>
-                <p suppressHydrationWarning className="text-sm sm:text-base md:text-[17px] text-muted-foreground leading-[1.8] font-light">
+                <p suppressHydrationWarning className="text-base md:text-[17px] text-muted-foreground leading-[1.8] font-light">
                   With a background supporting attorneys and law firms across multiple practice areas,
                   I bring meticulous attention to detail, solid legal knowledge, and unwavering
                   professionalism to every engagement.
                 </p>
               </div>
               <div suppressHydrationWarning className="scroll-reveal-hidden" style={{ transitionDelay: '0.18s' }}>
-                <p suppressHydrationWarning className="text-sm sm:text-base text-muted-foreground leading-[1.8] font-light">
+                <p suppressHydrationWarning className="text-base text-muted-foreground leading-[1.8] font-light">
                   As a contracted, remote legal services provider, I offer flexible support tailored to your
                   firm&apos;s needs — from litigation assistance to document management —
                   without the overhead of a full-time hire. Based in Louisiana, available remotely.
@@ -98,20 +98,20 @@ export default function AboutSection() {
             {/* Stats Grid */}
             <div
               suppressHydrationWarning
-              className="scroll-reveal-hidden grid grid-cols-2 gap-x-4 sm:gap-x-6 gap-y-4 sm:gap-y-5 pt-5 sm:pt-6 md:pt-8 border-t border-border/60"
+              className="scroll-reveal-hidden grid grid-cols-2 gap-x-6 gap-y-5 pt-6 md:pt-8 border-t border-border/60"
               style={{ transitionDelay: '0.25s' }}>
               {stats.map((stat) =>
-                <div suppressHydrationWarning key={stat.label} className="space-y-1.5">
+              <div suppressHydrationWarning key={stat.label} className="space-y-1.5">
                   <p suppressHydrationWarning className="stat-number">{stat.number}</p>
-                  <p suppressHydrationWarning className="text-[10px] sm:text-[11px] uppercase tracking-[0.2em] text-muted-foreground font-medium">{stat.label}</p>
+                  <p suppressHydrationWarning className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground font-medium">{stat.label}</p>
                 </div>
               )}
             </div>
 
             {/* Quote */}
-            <div suppressHydrationWarning className="scroll-reveal-hidden flex items-start gap-3 sm:gap-4 pt-2" style={{ transitionDelay: '0.35s' }}>
-              <div suppressHydrationWarning className="w-0.5 h-10 sm:h-12 bg-accent/50 shrink-0 mt-1 rounded-full" />
-              <p suppressHydrationWarning className="font-serif text-[1.1rem] sm:text-[1.2rem] md:text-[1.4rem] italic text-accent leading-snug">
+            <div suppressHydrationWarning className="scroll-reveal-hidden flex items-start gap-4 pt-2" style={{ transitionDelay: '0.35s' }}>
+              <div suppressHydrationWarning className="w-0.5 h-12 bg-accent/50 shrink-0 mt-1 rounded-full" />
+              <p suppressHydrationWarning className="font-serif text-[1.2rem] md:text-[1.4rem] italic text-accent leading-snug">
                 &ldquo;Every deadline met. Every detail covered.&rdquo;
               </p>
             </div>
@@ -120,7 +120,7 @@ export default function AboutSection() {
             <div suppressHydrationWarning className="scroll-reveal-hidden" style={{ transitionDelay: '0.42s' }}>
               <Link
                 href="/contact"
-                className="inline-flex items-center gap-2.5 text-xs font-semibold uppercase tracking-[0.2em] text-accent hover:gap-4 transition-all duration-300 group min-h-[44px]">
+                className="inline-flex items-center gap-2.5 text-xs font-semibold uppercase tracking-[0.2em] text-accent hover:gap-4 transition-all duration-300 group">
                 Work With Me
                 <svg suppressHydrationWarning width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <path d="M5 12h14M12 5l7 7-7 7" />
@@ -130,6 +130,6 @@ export default function AboutSection() {
           </div>
         </div>
       </div>
-    </section>
-  );
+    </section>);
+
 }

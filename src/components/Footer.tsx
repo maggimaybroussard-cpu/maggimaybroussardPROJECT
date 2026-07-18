@@ -6,7 +6,6 @@ import AppLogo from '@/components/ui/AppLogo';
 import CCPALink from '@/components/CCPALink';
 import ConsentPreferenceCenter from '@/components/ConsentPreferenceCenter';
 import { detectRegion } from '@/lib/consent';
-import AttorneyDisclaimer from '@/components/AttorneyDisclaimer';
 
 export default function Footer() {
   const [showPreferences, setShowPreferences] = useState(false);
@@ -103,9 +102,6 @@ export default function Footer() {
               Cookie Preferences
             </button>
           </div>
-
-          {/* Attorney Disclaimer */}
-          <AttorneyDisclaimer variant="footer" className="pt-2" />
         </div>
       </footer>
 

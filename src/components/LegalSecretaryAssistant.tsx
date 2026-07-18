@@ -149,10 +149,6 @@ const QUICK_PROMPTS = [
   { label: 'Invoice Question', text: 'Can you explain how legal billing and retainer hours work?' },
   { label: 'Next Steps', text: 'What should I do to prepare for my upcoming consultation?' },
   { label: 'Legal Terms', text: 'Can you explain common legal terms I might see in my documents?' },
-  { label: 'LA Statute Lookup', text: 'How do I find the relevant Louisiana statute for a business contract dispute? What are the key provisions I should know?' },
-  { label: 'Case Law Research', text: 'How do I research case law for a Louisiana employment discrimination matter? What sources should I use?' },
-  { label: 'Matter Organization', text: 'What is the best way to organize a new client matter file? Give me a checklist for case management setup.' },
-  { label: 'Deadline Tracking', text: 'What are the key deadlines I need to track for a Louisiana civil litigation matter from filing through trial?' },
 ];
 
 // ── Lexi Alert Detection ──────────────────────────────────────────────────────

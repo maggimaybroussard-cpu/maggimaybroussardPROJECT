@@ -2,217 +2,237 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ── CSS Custom Properties ─────────────────────────────────────────────────── */
 :root {
   --background: #F9F0EC;
   --foreground: #1B2A4A;
   --primary: #1B2A4A;
   --primary-foreground: #F5ECD7;
-  --secondary: #F0E8DF;
+  --secondary: #F9F0EC;
   --secondary-foreground: #1B2A4A;
   --accent: #B76E79;
-  --accent-foreground: #fff;
-  --muted: #E8DDD5;
-  --muted-foreground: #6B7280;
-  --card: #FFFAF6;
+  --accent-foreground: #F5ECD7;
+  --muted: #F9F0EC;
+  --muted-foreground: #4A6B58;
+  --card: #FFFFFF;
   --card-foreground: #1B2A4A;
-  --border: #E2D9D0;
-  --input: #FAF5F0;
+  --border: #E8D5C4;
+  --input: #F9F0EC;
   --ring: #B76E79;
   --radius: 1rem;
   --font-sans: 'Raleway', sans-serif;
   --font-serif: 'Playfair Display', serif;
 }
 
-/* ── Base ───────────────────────────────────────────────────────────────────── */
-html {
-  scroll-behavior: smooth;
-  -webkit-text-size-adjust: 100%;
-  text-size-adjust: 100%;
-}
+@layer base {
+  * {
+    box-sizing: border-box;
+    border-color: var(--border);
+  }
 
-body {
-  background-color: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-sans), sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  /* Prevent horizontal overflow on mobile */
-  overflow-x: hidden;
-}
+  /* Ensure keyboard focus is always visible (WCAG 2.4.7) */
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
 
-/* ── Mobile-first Typography Scale ─────────────────────────────────────────── */
-/* Fluid type scale: clamp(min, preferred, max) */
-.text-hero-display {
-  font-family: var(--font-serif), serif;
-  font-size: clamp(2.5rem, 8vw, 5.5rem);
-  line-height: 0.95;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-}
+  /* Remove default outline only when using mouse (not keyboard) */
+  :focus:not(:focus-visible) {
+    outline: none;
+  }
 
-.text-section-heading {
-  font-family: var(--font-serif), serif;
-  font-size: clamp(2rem, 5vw, 3.75rem);
-  line-height: 1;
-  font-weight: 700;
-  letter-spacing: -0.015em;
-}
+  html {
+    scroll-behavior: smooth;
+  }
 
-.text-card-heading {
-  font-family: var(--font-serif), serif;
-  font-size: clamp(1.25rem, 3vw, 1.875rem);
-  line-height: 1.15;
-  font-weight: 700;
-}
-
-.stat-number {
-  font-family: var(--font-serif), serif;
-  font-size: clamp(1.75rem, 4vw, 2.5rem);
-  font-weight: 700;
-  color: var(--accent);
-  line-height: 1;
-}
-
-/* ── Touch-Optimized Form Elements ─────────────────────────────────────────── */
-/* Minimum 44px tap targets for all interactive elements */
-input[type="text"],
-input[type="email"],
-input[type="tel"],
-input[type="password"],
-select,
-textarea {
-  min-height: 44px;
-  font-size: 16px; /* Prevents iOS zoom on focus */
-  -webkit-appearance: none;
-  appearance: none;
-  border-radius: var(--radius);
-  touch-action: manipulation;
-}
-
-/* Larger checkbox/radio tap area on mobile */
-input[type="checkbox"],
-input[type="radio"] {
-  min-width: 20px;
-  min-height: 20px;
-  cursor: pointer;
-  touch-action: manipulation;
-}
-
-/* Touch-friendly buttons */
-button,
-[role="button"],
-a {
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
-}
-
-/* ── Card Utilities ─────────────────────────────────────────────────────────── */
-.card-rounded {
-  border-radius: calc(var(--radius) * 2);
-}
-
-.card-rounded-sm {
-  border-radius: var(--radius);
-}
-
-/* ── Scroll Reveal Animations ───────────────────────────────────────────────── */
-.scroll-reveal-hidden {
-  opacity: 0;
-  transform: translateY(24px);
-  transition: opacity 0.6s ease, transform 0.6s ease;
-}
-
-.scroll-reveal-hidden.revealed {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-/* ── Hero Animations ────────────────────────────────────────────────────────── */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(16px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-.animate-fade-in {
-  animation: fadeIn 0.7s ease forwards;
-}
-
-.animate-fade-in-delay-1 {
-  opacity: 0;
-  animation: fadeIn 0.7s ease 0.15s forwards;
-}
-
-.animate-fade-in-delay-2 {
-  opacity: 0;
-  animation: fadeIn 0.7s ease 0.3s forwards;
-}
-
-.animate-fade-in-delay-3 {
-  opacity: 0;
-  animation: fadeIn 0.7s ease 0.45s forwards;
-}
-
-/* ── Scroll Dot ─────────────────────────────────────────────────────────────── */
-@keyframes scrollDot {
-  0%   { transform: translateY(-100%); }
-  100% { transform: translateY(200%); }
-}
-
-.scroll-dot {
-  animation: scrollDot 1.8s ease-in-out infinite;
-}
-
-/* ── PWA App Shell ──────────────────────────────────────────────────────────── */
-/* Safe area insets for notched devices */
-.safe-top    { padding-top: env(safe-area-inset-top); }
-.safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
-.safe-left   { padding-left: env(safe-area-inset-left); }
-.safe-right  { padding-right: env(safe-area-inset-right); }
-
-/* PWA standalone mode — hide browser chrome artifacts */
-@media (display-mode: standalone) {
   body {
-    /* Prevent overscroll bounce on iOS */
-    overscroll-behavior: none;
-  }
-  /* Add safe area padding to header */
-  header {
-    padding-top: max(env(safe-area-inset-top), 0px);
-  }
-}
-
-/* ── Mobile-first Responsive Utilities ─────────────────────────────────────── */
-/* Ensure full-width tap targets on small screens */
-@media (max-width: 640px) {
-  .mobile-full-btn {
-    width: 100%;
-    justify-content: center;
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
-  /* Increase line-height for readability on small screens */
-  p, li {
-    line-height: 1.75;
-  }
-
-  /* Prevent text overflow */
-  h1, h2, h3, h4 {
-    overflow-wrap: break-word;
-    word-break: break-word;
+  h1, h2, h3, h4, h5, h6, p {
+    margin: 0;
   }
 }
 
-/* ── Focus Styles (Accessibility) ───────────────────────────────────────────── */
-:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-  border-radius: 4px;
-}
+@layer utilities {
+  .font-serif {
+    font-family: var(--font-serif);
+  }
 
-/* ── Smooth Image Loading ───────────────────────────────────────────────────── */
-img {
-  max-width: 100%;
-  height: auto;
+  .text-hero-display {
+    font-size: clamp(3rem, 7vw, 7.5rem);
+    line-height: 0.92;
+    letter-spacing: -0.03em;
+    font-family: var(--font-serif);
+    color: var(--primary-foreground);
+  }
+
+  .text-section-heading {
+    font-size: clamp(2.5rem, 5vw, 4.5rem);
+    line-height: 0.95;
+    letter-spacing: -0.025em;
+    font-family: var(--font-serif);
+  }
+
+  .text-card-heading {
+    font-size: clamp(1.5rem, 2.5vw, 2rem);
+    font-family: var(--font-serif);
+    line-height: 1.1;
+  }
+
+  .card-rounded {
+    border-radius: 2rem;
+  }
+
+  .card-rounded-sm {
+    border-radius: 1.25rem;
+  }
+
+  .glass-warm {
+    background: rgba(250, 247, 242, 0.88);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+
+  .nav-scrolled {
+    background: rgba(74, 55, 40, 0.92) !important;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(200, 150, 90, 0.2);
+  }
+
+  .nav-scrolled a,
+  .nav-scrolled span {
+    color: var(--primary-foreground) !important;
+  }
+
+  .nav-scrolled .nav-logo-text {
+    color: var(--primary-foreground) !important;
+  }
+
+  .service-card-hover {
+    transition: transform 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                box-shadow 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  .service-card-hover:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 24px 60px rgba(74, 55, 40, 0.12);
+  }
+
+  .img-grayscale-hover img {
+    filter: grayscale(100%);
+    transition: filter 0.7s cubic-bezier(0.4, 0, 0.2, 1),
+                transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .img-grayscale-hover:hover img {
+    filter: grayscale(0%);
+    transform: scale(1.04);
+  }
+
+  .stat-number {
+    font-family: var(--font-serif);
+    font-size: clamp(2.5rem, 4vw, 3.5rem);
+    line-height: 1;
+    color: var(--accent);
+    letter-spacing: -0.02em;
+  }
+
+  .divider-ornament {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    color: var(--accent);
+  }
+
+  .divider-ornament::before,
+  .divider-ornament::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--accent), transparent);
+  }
+
+  .animate-fade-in {
+    animation: fadeInUp 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  }
+
+  .animate-fade-in-delay-1 {
+    animation: fadeInUp 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.15s forwards;
+    opacity: 0;
+  }
+
+  .animate-fade-in-delay-2 {
+    animation: fadeInUp 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.3s forwards;
+    opacity: 0;
+  }
+
+  .animate-fade-in-delay-3 {
+    animation: fadeInUp 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.45s forwards;
+    opacity: 0;
+  }
+
+  .scroll-reveal {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .scroll-reveal-hidden {
+    opacity: 0;
+    transform: translateY(32px);
+    transition: opacity 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                transform 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  .scroll-reveal-hidden.revealed {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* CLS prevention: ensure images in fixed-size containers don't cause layout shifts */
+  .testimonial-portrait {
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* INP optimization: use content-visibility for below-fold sections */
+  .section-below-fold {
+    content-visibility: auto;
+    contain-intrinsic-size: 0 600px;
+  }
+
+  /* Performance: reduce paint complexity for fixed overlays */
+  .grain-overlay {
+    will-change: auto;
+    transform: translateZ(0);
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Performance: critical CSS variables for above-fold paint */
+  .critical-above-fold {
+    contain: layout style;
+  }
 }
 
 /* Notion blog article content styles */
@@ -360,4 +380,8 @@ img {
 @keyframes scrollIndicator {
   0% { transform: translateY(0); opacity: 1; }
   100% { transform: translateY(8px); opacity: 0; }
+}
+
+.scroll-dot {
+  animation: scrollIndicator 1.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
