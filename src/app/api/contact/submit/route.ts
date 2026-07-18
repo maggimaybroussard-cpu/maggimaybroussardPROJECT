@@ -8,6 +8,119 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://broussardlegalserv
 const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 const GA_API_SECRET = process.env.GA_API_SECRET; // optional server-side secret
 
+// ── Airtable CRM config ───────────────────────────────────────────────────────
+const AIRTABLE_API_KEY = process.env.NEXT_PUBLIC_AIRTABLE_API_KEY;
+const AIRTABLE_BASE_ID = 'app6Tk6mUPY4K4ydc';
+const AIRTABLE_CONTACTS_TABLE = 'tbl2TPsG5UHWYPL3n';
+const AIRTABLE_FOLLOWUPS_TABLE = 'tblPrEKXS87nM9WhP';
+
+async function syncToAirtableCRM(params: {
+  name: string;
+  email: string;
+  phone?: string;
+  service: string;
+  message: string;
+  firm?: string;
+  retainerTier?: string;
+  inquiryId: string | null;
+}) {
+  if (!AIRTABLE_API_KEY) return;
+
+  const { name, email, phone, service, message, firm, retainerTier, inquiryId } = params;
+
+  // Map service type to practice area
+  const practiceAreaMap: Record<string, string> = {
+    'Retainer Agreement': 'Business Law',
+    'Monthly Retainer': 'Business Law',
+    'Document Drafting': 'Other',
+    'Legal Research': 'Other',
+    'Case Management': 'Other',
+    'Contract Review': 'Business Law',
+    'Consultation': 'Other',
+  };
+  const practiceArea = practiceAreaMap[service] ?? 'Other';
+
+  const isHighPriority = !!(retainerTier && retainerTier !== 'project');
+  const notesLines = [
+    `Service: ${service}`,
+    firm ? `Firm: ${firm}` : null,
+    retainerTier ? `Retainer Tier: ${retainerTier}` : null,
+    `Message: ${message}`,
+    inquiryId ? `Supabase Inquiry ID: ${inquiryId}` : null,
+  ].filter(Boolean).join('\n');
+
+  const airtableHeaders = {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${AIRTABLE_API_KEY}`,
+  };
+
+  // 1. Create Contact record
+  let contactName = name;
+  try {
+    const contactRes = await fetch(
+      `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_CONTACTS_TABLE}`,
+      {
+        method: 'POST',
+        headers: airtableHeaders,
+        body: JSON.stringify({
+          records: [
+            {
+              fields: {
+                fldroaKJba4FoSwgF: name,           // Full Name
+                fldUus9IUOej0l1NA: email,           // Email
+                ...(phone ? { fldZQ0jwfR10t2EfE: phone } : {}), // Phone
+                fldpenj6Oq3GfUWNa: 'Prospect',      // Status
+                fld23SHVFSUBwgwHl: practiceArea,    // Practice Area
+                fldquXgYbnK77yICx: 'Website',       // Source
+                fldpFxxCWpgjxcsJI: notesLines,      // Notes
+              },
+            },
+          ],
+        }),
+      }
+    );
+    if (contactRes.ok) {
+      const contactData = await contactRes.json();
+      contactName = contactData?.records?.[0]?.fields?.['Full Name'] ?? name;
+    }
+  } catch {
+    // non-blocking
+  }
+
+  // 2. Create Follow-up task
+  try {
+    const dueDate = new Date();
+    dueDate.setDate(dueDate.getDate() + 1); // Due tomorrow
+    const dueDateStr = dueDate.toISOString().split('T')[0];
+
+    await fetch(
+      `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_FOLLOWUPS_TABLE}`,
+      {
+        method: 'POST',
+        headers: airtableHeaders,
+        body: JSON.stringify({
+          records: [
+            {
+              fields: {
+                fld3qF8O5rG6nhy8H: `Follow up with ${contactName} — ${service}`, // Follow-up Title
+                fldhpb7v2rFJMJbRN: contactName,                                   // Contact Name
+                fld1b2UD3GD4bw7ZM: dueDateStr,                                    // Due Date
+                fldDFTiIQCnUlcAUG: isHighPriority ? 'High' : 'Medium',           // Priority
+                fldGdVmi12lWQN4iE: 'Pending',                                     // Status
+                fld9sjl7WvuuL0qNe: 'Email',                                       // Type
+                fldTpVb8Ghg9szRbE: `Contact submitted a website inquiry.\n\nEmail: ${email}\n${notesLines}`, // Notes
+              },
+            },
+          ],
+        }),
+      }
+    );
+  } catch {
+    // non-blocking
+  }
+}
+// ── End Airtable CRM sync ─────────────────────────────────────────────────────
+
 // ── Routing: service → reply-to / priority label ─────────────────────────────
 const SERVICE_ROUTING: Record<string, { replyTo: string; priority: 'high' | 'normal'; label: string }> = {
   'Retainer Agreement': { replyTo: 'maggimaybroussard@gmail.com', priority: 'high', label: '🔴 HIGH PRIORITY' },
@@ -358,6 +471,19 @@ export async function POST(req: NextRequest) {
     } catch {
       // Non-blocking — continue even if DB insert fails
     }
+
+    // ── Sync to Airtable CRM (fire-and-forget) ────────────────────────────
+    syncToAirtableCRM({
+      name,
+      email,
+      phone: phone || undefined,
+      service,
+      message,
+      firm: firm || undefined,
+      retainerTier: retainerTier || undefined,
+      inquiryId,
+    }).catch(() => {});
+    // ─────────────────────────────────────────────────────────────────────
 
     // 2. Send emails via Resend
     if (!RESEND_API_KEY || RESEND_API_KEY === 'your-resend-api-key-here') {
