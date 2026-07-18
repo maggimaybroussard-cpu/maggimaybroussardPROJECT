@@ -189,7 +189,7 @@ function buildPortalCredentialsEmail(
     </div>
 
     ${p(`Questions? Reply to this email or reach out directly — I typically respond within one business day.`)}
-    ${p(`Warm regards,<br/><strong>Maggi May Broussard</strong><br/><span style="font-size:12px; color:${brand.muted};">Broussard Legal Services</span>`)}
+    ${p(`Warm regards,<br/><strong>Maggi May Broussard</strong><br/><span style="font-size:12px; color:${brand.muted};">Licensed Paralegal · Louisiana &amp; Nationwide</span>`)}
   `;
 
   return `

@@ -6,14 +6,15 @@ import { createClient } from '@/lib/supabase/client';
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface Task {
-  id: number;
+  id: string;
   title: string;
   description: string | null;
-  case_id: number | null;
-  status: 'pending' | 'in_progress' | 'completed' | 'overdue';
+  case_id: string | null;
+  case_name: string | null;
+  assigned_to: string | null;
   priority: 'low' | 'medium' | 'high' | 'urgent';
+  status: 'todo' | 'in_progress' | 'review' | 'done';
   due_date: string | null;
-  assignee: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -25,7 +26,7 @@ interface CaseOption {
   service: string;
 }
 
-type TaskStatus = 'pending' | 'in_progress' | 'completed' | 'overdue';
+type TaskStatus = 'todo' | 'in_progress' | 'review' | 'done';
 type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
 type FilterStatus = 'all' | TaskStatus;
 
@@ -37,8 +38,8 @@ const PRIORITY_CONFIG: Record<TaskPriority, { label: string; color: string; dot:
 };
 
 const STATUS_CONFIG: Record<TaskStatus, { label: string; color: string; icon: React.ReactNode }> = {
-  pending: {
-    label: 'Pending',
+  todo: {
+    label: 'To Do',
     color: 'bg-slate-100 text-slate-600 border-slate-200',
     icon: (
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -55,21 +56,21 @@ const STATUS_CONFIG: Record<TaskStatus, { label: string; color: string; icon: Re
       </svg>
     ),
   },
-  completed: {
-    label: 'Completed',
+  review: {
+    label: 'In Review',
+    color: 'bg-purple-100 text-purple-700 border-purple-200',
+    icon: (
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+      </svg>
+    ),
+  },
+  done: {
+    label: 'Done',
     color: 'bg-emerald-100 text-emerald-700 border-emerald-200',
     icon: (
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
         <polyline points="20 6 9 17 4 12"/>
-      </svg>
-    ),
-  },
-  overdue: {
-    label: 'Overdue',
-    color: 'bg-red-100 text-red-700 border-red-200',
-    icon: (
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
       </svg>
     ),
   },
@@ -82,7 +83,7 @@ function formatDate(dateStr: string) {
 
 function isOverdue(dueDate: string | null): boolean {
   if (!dueDate) return false;
-  return new Date(dueDate) < new Date();
+  return new Date(dueDate) < new Date() && true;
 }
 
 function isDueSoon(dueDate: string | null): boolean {
@@ -106,20 +107,22 @@ interface TaskFormProps {
 function TaskFormModal({ task, cases, onSave, onClose, saving }: TaskFormProps) {
   const [title, setTitle] = useState(task?.title ?? '');
   const [description, setDescription] = useState(task?.description ?? '');
-  const [caseId, setCaseId] = useState(task?.case_id ? String(task.case_id) : '');
-  const [assignee, setAssignee] = useState(task?.assignee ?? '');
+  const [caseId, setCaseId] = useState(task?.case_id ?? '');
+  const [assignedTo, setAssignedTo] = useState(task?.assigned_to ?? '');
   const [priority, setPriority] = useState<TaskPriority>(task?.priority ?? 'medium');
-  const [status, setStatus] = useState<TaskStatus>(task?.status ?? 'pending');
+  const [status, setStatus] = useState<TaskStatus>(task?.status ?? 'todo');
   const [dueDate, setDueDate] = useState(task?.due_date ? task.due_date.split('T')[0] : '');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
+    const selectedCase = cases.find((c) => c.id === caseId);
     await onSave({
       title: title.trim(),
       description: description.trim() || null,
-      case_id: caseId ? parseInt(caseId, 10) : null,
-      assignee: assignee.trim() || null,
+      case_id: caseId || null,
+      case_name: selectedCase ? `${selectedCase.name} — ${selectedCase.service}` : null,
+      assigned_to: assignedTo.trim() || null,
       priority,
       status,
       due_date: dueDate ? new Date(dueDate + 'T23:59:59').toISOString() : null,
@@ -176,11 +179,11 @@ function TaskFormModal({ task, cases, onSave, onClose, saving }: TaskFormProps) 
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-1.5">Assignee</label>
+              <label className="block text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-1.5">Assigned To</label>
               <input
                 type="text"
-                value={assignee}
-                onChange={(e) => setAssignee(e.target.value)}
+                value={assignedTo}
+                onChange={(e) => setAssignedTo(e.target.value)}
                 placeholder="Name or email"
                 className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all"
               />
@@ -208,10 +211,10 @@ function TaskFormModal({ task, cases, onSave, onClose, saving }: TaskFormProps) 
                 onChange={(e) => setStatus(e.target.value as TaskStatus)}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all"
               >
-                <option value="pending">Pending</option>
+                <option value="todo">To Do</option>
                 <option value="in_progress">In Progress</option>
-                <option value="completed">Completed</option>
-                <option value="overdue">Overdue</option>
+                <option value="review">In Review</option>
+                <option value="done">Done</option>
               </select>
             </div>
             <div>
@@ -249,14 +252,14 @@ function TaskFormModal({ task, cases, onSave, onClose, saving }: TaskFormProps) 
 interface TaskCardProps {
   task: Task;
   onEdit: (task: Task) => void;
-  onDelete: (id: number) => void;
-  onStatusChange: (id: number, status: TaskStatus) => void;
+  onDelete: (id: string) => void;
+  onStatusChange: (id: string, status: TaskStatus) => void;
 }
 
 function TaskCard({ task, onEdit, onDelete, onStatusChange }: TaskCardProps) {
   const [menuOpen, setMenuOpen] = useState(false);
-  const overdue = task.status !== 'completed' && isOverdue(task.due_date);
-  const dueSoon = task.status !== 'completed' && isDueSoon(task.due_date);
+  const overdue = task.status !== 'done' && isOverdue(task.due_date);
+  const dueSoon = task.status !== 'done' && isDueSoon(task.due_date);
   const priorityCfg = PRIORITY_CONFIG[task.priority];
   const statusCfg = STATUS_CONFIG[task.status];
 
@@ -266,18 +269,18 @@ function TaskCard({ task, onEdit, onDelete, onStatusChange }: TaskCardProps) {
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-start gap-2.5 min-w-0">
           <button
-            onClick={() => onStatusChange(task.id, task.status === 'completed' ? 'pending' : 'completed')}
+            onClick={() => onStatusChange(task.id, task.status === 'done' ? 'todo' : 'done')}
             className={`mt-0.5 w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
-              task.status === 'completed' ? 'border-emerald-500 bg-emerald-500 text-white' : 'border-border hover:border-primary/50'
+              task.status === 'done' ? 'border-emerald-500 bg-emerald-500 text-white' : 'border-border hover:border-primary/50'
             }`}
           >
-            {task.status === 'completed' && (
+            {task.status === 'done' && (
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="20 6 9 17 4 12"/>
               </svg>
             )}
           </button>
-          <p className={`text-sm font-medium leading-snug ${task.status === 'completed' ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
+          <p className={`text-sm font-medium leading-snug ${task.status === 'done' ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
             {task.title}
           </p>
         </div>
@@ -322,7 +325,7 @@ function TaskCard({ task, onEdit, onDelete, onStatusChange }: TaskCardProps) {
         </span>
         {task.due_date && (
           <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold border ${
-            overdue ? 'bg-red-100 text-red-700 border-red-200' : dueSoon ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-secondary/60 text-muted-foreground border-border'
+            overdue ? 'bg-red-100 text-red-700 border-red-200' : dueSoon ?'bg-amber-100 text-amber-700 border-amber-200': 'bg-secondary/60 text-muted-foreground border-border'
           }`}>
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
@@ -334,30 +337,30 @@ function TaskCard({ task, onEdit, onDelete, onStatusChange }: TaskCardProps) {
 
       {/* Footer */}
       <div className="flex items-center justify-between gap-2 pl-7 pt-1 border-t border-border/50">
-        {task.case_id ? (
+        {task.case_name ? (
           <span className="text-[11px] text-muted-foreground truncate flex items-center gap-1">
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
             </svg>
-            Case #{task.case_id}
+            {task.case_name}
           </span>
         ) : (
           <span className="text-[11px] text-muted-foreground/50">No case linked</span>
         )}
-        {task.assignee && (
+        {task.assigned_to && (
           <span className="text-[11px] text-muted-foreground flex items-center gap-1 flex-shrink-0">
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
             </svg>
-            {task.assignee}
+            {task.assigned_to}
           </span>
         )}
       </div>
 
       {/* Quick status change */}
-      {task.status !== 'completed' && (
+      {task.status !== 'done' && (
         <div className="flex items-center gap-1 pl-7">
-          {(['pending', 'in_progress', 'completed', 'overdue'] as TaskStatus[]).filter((s) => s !== task.status).map((s) => (
+          {(['todo', 'in_progress', 'review', 'done'] as TaskStatus[]).filter((s) => s !== task.status).map((s) => (
             <button
               key={s}
               onClick={() => onStatusChange(task.id, s)}
@@ -382,6 +385,7 @@ export default function TasksDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all');
   const [filterPriority, setFilterPriority] = useState<'all' | TaskPriority>('all');
+  const [filterCase, setFilterCase] = useState<string>('all');
   const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
@@ -392,7 +396,7 @@ export default function TasksDashboard() {
     setError(null);
     try {
       const { data, error: err } = await supabase
-        .from('tasks')
+        .from('admin_tasks')
         .select('*')
         .order('created_at', { ascending: false });
       if (err) throw err;
@@ -426,21 +430,22 @@ export default function TasksDashboard() {
     try {
       if (editingTask) {
         const { error: err } = await supabase
-          .from('tasks')
+          .from('admin_tasks')
           .update({ ...data, updated_at: new Date().toISOString() })
           .eq('id', editingTask.id);
         if (err) throw err;
       } else {
         const { error: err } = await supabase
-          .from('tasks')
-          .insert([{ ...data }]);
+          .from('admin_tasks')
+          .insert([{ ...data, created_at: new Date().toISOString(), updated_at: new Date().toISOString() }]);
         if (err) throw err;
 
-        // Fire task-assigned notification if assignee looks like an email
-        if (data.assignee && data.assignee.includes('@')) {
+        // Fire task-assigned notification if assigned_to looks like an email
+        if (data.assigned_to && data.assigned_to.includes('@')) {
           const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://broussardlegalservices.com';
-          const assigneeName = data.assignee.split('@')[0];
+          const assigneeName = data.assigned_to.split('@')[0];
           const firstName = assigneeName.charAt(0).toUpperCase() + assigneeName.slice(1);
+          const caseName = data.case_name ?? 'your matter';
           const dueDate = data.due_date
             ? new Date(data.due_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
             : 'No due date set';
@@ -451,16 +456,25 @@ export default function TasksDashboard() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              toEmail: data.assignee,
+              toEmail: data.assigned_to,
               toName: firstName,
-              subject: `Action required — ${data.title}`,
+              subject: `Action required on your case — ${data.title}`,
               badge: 'Action Required',
               heading: `You Have a New Action Item, ${firstName}`,
-              body: `Hi ${firstName},\n\nThere is a new action item that requires your attention.\n\nTask: ${data.title}\nDue: ${dueDate}\nPriority: ${priorityLabel}\n\n${data.description ?? ''}\n\nPlease complete this as soon as possible.`,
+              body: `Hi ${firstName},\n\nThere is a new action item that requires your attention on your ${caseName} matter.\n\nTask: ${data.title}\nDue: ${dueDate}\nPriority: ${priorityLabel}\n\n${data.description ?? ''}\n\nPlease complete this as soon as possible. Log in to your client portal to view the full details and mark it complete when done.`,
               ctaLabel: 'View Task in Portal',
               ctaUrl: `${siteUrl}/portal/dashboard`,
               eventType: 'task',
               templateId: 'task_assigned',
+              variables: {
+                '{{firstName}}': firstName,
+                '{{caseName}}': caseName,
+                '{{taskTitle}}': data.title ?? '',
+                '{{taskDueDate}}': dueDate,
+                '{{taskPriority}}': priorityLabel,
+                '{{taskDescription}}': data.description ?? '',
+                '{{siteUrl}}': siteUrl,
+              },
             }),
           }).catch((e) => console.warn('[task-assigned notification]', e));
         }
@@ -475,10 +489,10 @@ export default function TasksDashboard() {
     }
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     if (!confirm('Delete this task?')) return;
     try {
-      const { error: err } = await supabase.from('tasks').delete().eq('id', id);
+      const { error: err } = await supabase.from('admin_tasks').delete().eq('id', id);
       if (err) throw err;
       setTasks((prev) => prev.filter((t) => t.id !== id));
     } catch (e) {
@@ -486,11 +500,11 @@ export default function TasksDashboard() {
     }
   };
 
-  const handleStatusChange = async (id: number, status: TaskStatus) => {
+  const handleStatusChange = async (id: string, status: TaskStatus) => {
     setTasks((prev) => prev.map((t) => t.id === id ? { ...t, status } : t));
     try {
       const { error: err } = await supabase
-        .from('tasks')
+        .from('admin_tasks')
         .update({ status, updated_at: new Date().toISOString() })
         .eq('id', id);
       if (err) throw err;
@@ -502,18 +516,19 @@ export default function TasksDashboard() {
   const filtered = tasks.filter((t) => {
     if (filterStatus !== 'all' && t.status !== filterStatus) return false;
     if (filterPriority !== 'all' && t.priority !== filterPriority) return false;
+    if (filterCase !== 'all' && t.case_id !== filterCase) return false;
     if (search) {
       const q = search.toLowerCase();
-      if (!t.title.toLowerCase().includes(q) && !(t.description ?? '').toLowerCase().includes(q) && !(t.assignee ?? '').toLowerCase().includes(q)) return false;
+      if (!t.title.toLowerCase().includes(q) && !(t.description ?? '').toLowerCase().includes(q) && !(t.assigned_to ?? '').toLowerCase().includes(q)) return false;
     }
     return true;
   });
 
   // Stats
   const total = tasks.length;
-  const done = tasks.filter((t) => t.status === 'completed').length;
+  const done = tasks.filter((t) => t.status === 'done').length;
   const inProgress = tasks.filter((t) => t.status === 'in_progress').length;
-  const overdueTasks = tasks.filter((t) => t.status === 'overdue' || (t.status !== 'completed' && isOverdue(t.due_date))).length;
+  const overdueTasks = tasks.filter((t) => t.status !== 'done' && isOverdue(t.due_date)).length;
   const completionRate = total > 0 ? Math.round((done / total) * 100) : 0;
 
   return (
@@ -556,10 +571,10 @@ export default function TasksDashboard() {
             className="px-3 py-2 rounded-xl border border-border bg-card text-xs font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
           >
             <option value="all">All Status</option>
-            <option value="pending">Pending</option>
+            <option value="todo">To Do</option>
             <option value="in_progress">In Progress</option>
-            <option value="completed">Completed</option>
-            <option value="overdue">Overdue</option>
+            <option value="review">In Review</option>
+            <option value="done">Done</option>
           </select>
 
           <select
@@ -572,6 +587,17 @@ export default function TasksDashboard() {
             <option value="high">High</option>
             <option value="medium">Medium</option>
             <option value="low">Low</option>
+          </select>
+
+          <select
+            value={filterCase}
+            onChange={(e) => setFilterCase(e.target.value)}
+            className="px-3 py-2 rounded-xl border border-border bg-card text-xs font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+          >
+            <option value="all">All Cases</option>
+            {cases.map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
           </select>
         </div>
 

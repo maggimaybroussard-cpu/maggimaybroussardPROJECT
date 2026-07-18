@@ -207,15 +207,11 @@ export default function AdminLoginPage() {
       if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
         throw new Error('Authentication service is not configured. Please contact the administrator.');
       }
-      const response = await fetch('/api/admin/send-password-reset', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://broussardlegalservices.com';
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${siteUrl}/auth/callback?next=/admin/reset-password`,
       });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to send reset email. Please try again.');
-      }
+      if (error) throw error;
       setSuccessMessage(`✉️ Password reset link sent to ${email}. Check your inbox (and spam folder) — the link expires in 1 hour.`);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : (typeof err === 'object' && err !== null && 'message' in err ? String((err as any).message) : 'Failed to send reset email. Please try again.');

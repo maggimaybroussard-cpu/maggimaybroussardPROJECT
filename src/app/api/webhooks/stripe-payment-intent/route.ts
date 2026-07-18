@@ -313,26 +313,6 @@ export async function POST(req: NextRequest) {
       } catch { /* non-blocking */ }
     }
 
-    // ── 9. Auto-generate and email branded invoice ────────────────────────────
-    if (isPaidInFull && clientEmail) {
-      try {
-        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://maggimaybr6854.builtwithrocket.new';
-        await fetch(`${siteUrl}/api/invoices/auto-generate`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            paymentIntentId: pi.id,
-            clientEmail,
-            clientName,
-            amount: amountPaid,
-            currency,
-            description: pi.description ?? `Invoice ${invoice.invoice_number}`,
-            invoiceId: invoice.id,
-          }),
-        });
-      } catch { /* non-blocking */ }
-    }
-
     console.log(
       `[stripe-payment-intent-webhook] Invoice ${invoice.id} marked ${isPaidInFull ? 'paid' : 'partial'} — ${amountFormatted} — PI: ${pi.id}`
     );

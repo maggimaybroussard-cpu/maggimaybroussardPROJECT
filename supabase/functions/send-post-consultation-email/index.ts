@@ -142,7 +142,7 @@ function buildThankYouEmail(firstName: string, service: string): { subject: stri
             <td>
               <p style="margin:0 0 4px;font-size:15px;color:${brand.foreground};font-family:Georgia,serif;">Warm regards,</p>
               <p style="margin:0 0 2px;font-size:16px;color:${brand.primary};font-weight:bold;font-family:Georgia,serif;">Broussard Legal Services</p>
-              <p style="margin:0 0 6px;font-size:12px;color:${brand.muted};font-family:Georgia,serif;letter-spacing:0.04em;">Broussard Legal Services</p>
+              <p style="margin:0 0 6px;font-size:12px;color:${brand.muted};font-family:Georgia,serif;letter-spacing:0.04em;">Licensed Paralegal &middot; Louisiana &amp; Nationwide</p>
               <a href="mailto:maggimaybroussard@gmail.com" style="color:${brand.accent};font-size:13px;text-decoration:none;font-family:Georgia,serif;">maggimaybroussard@gmail.com</a>
               &nbsp;<span style="color:${brand.border};">|</span>&nbsp;
               <a href="${SITE_URL}" style="color:${brand.accent};font-size:13px;text-decoration:none;font-family:Georgia,serif;">${SITE_URL.replace("https://", "")}</a>
@@ -221,6 +221,7 @@ function buildNextStepsEmail(firstName: string, service: string): { subject: str
             <td>
               <p style="margin:0 0 4px;font-size:15px;color:${brand.foreground};font-family:Georgia,serif;">With dedication,</p>
               <p style="margin:0 0 2px;font-size:16px;color:${brand.primary};font-weight:bold;font-family:Georgia,serif;">Broussard Legal Services</p>
+              <p style="margin:0 0 6px;font-size:12px;color:${brand.muted};font-family:Georgia,serif;letter-spacing:0.04em;">Licensed Paralegal &middot; Louisiana &amp; Nationwide</p>
               <a href="mailto:maggimaybroussard@gmail.com" style="color:${brand.accent};font-size:13px;text-decoration:none;font-family:Georgia,serif;">maggimaybroussard@gmail.com</a>
             </td>
           </tr>
@@ -287,6 +288,7 @@ function buildFeedbackEmail(firstName: string, service: string, feedbackUrl: str
             <td>
               <p style="margin:0 0 4px;font-size:15px;color:${brand.foreground};font-family:Georgia,serif;">With gratitude,</p>
               <p style="margin:0 0 2px;font-size:16px;color:${brand.primary};font-weight:bold;font-family:Georgia,serif;">Broussard Legal Services</p>
+              <p style="margin:0 0 6px;font-size:12px;color:${brand.muted};font-family:Georgia,serif;letter-spacing:0.04em;">Licensed Paralegal &middot; Louisiana &amp; Nationwide</p>
               <a href="mailto:maggimaybroussard@gmail.com" style="color:${brand.accent};font-size:13px;text-decoration:none;font-family:Georgia,serif;">maggimaybroussard@gmail.com</a>
               &nbsp;<span style="color:${brand.border};">|</span>&nbsp;
               <a href="${SITE_URL}" style="color:${brand.accent};font-size:13px;text-decoration:none;font-family:Georgia,serif;">${SITE_URL.replace("https://", "")}</a>

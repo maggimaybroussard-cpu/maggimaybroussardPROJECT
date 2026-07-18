@@ -7,11 +7,6 @@ import {
   sendAppointmentConfirmationSMS,
   sendLeadResponseSMS,
   sendAbandonedBookingSMS,
-  sendWhatsApp,
-  sendConsultationReminderWhatsApp,
-  sendCaseUpdateWhatsApp,
-  sendPaymentReminderWhatsApp,
-  sendClientNotificationWhatsApp,
 } from '@/lib/twilio/smsClient';
 
 export async function POST(req: NextRequest) {
@@ -136,42 +131,6 @@ export async function POST(req: NextRequest) {
         const { message } = params;
         if (!message) return NextResponse.json({ error: 'Missing message for custom SMS' }, { status: 400 });
         result = await sendSMS(to, message);
-        break;
-      }
-
-      // ── WhatsApp types ────────────────────────────────────────────────────
-      case 'whatsapp_consultation_reminder': {
-        const { date, time } = params;
-        if (!date || !time) return NextResponse.json({ error: 'Missing date/time for WhatsApp consultation reminder' }, { status: 400 });
-        result = await sendConsultationReminderWhatsApp(to, { date, time });
-        break;
-      }
-
-      case 'whatsapp_case_update': {
-        const { caseId, summary } = params;
-        if (!caseId || !summary) return NextResponse.json({ error: 'Missing caseId/summary for WhatsApp case update' }, { status: 400 });
-        result = await sendCaseUpdateWhatsApp(to, { caseId, summary });
-        break;
-      }
-
-      case 'whatsapp_payment_reminder': {
-        const { amount, dueDate } = params;
-        if (!amount || !dueDate) return NextResponse.json({ error: 'Missing amount/dueDate for WhatsApp payment reminder' }, { status: 400 });
-        result = await sendPaymentReminderWhatsApp(to, { amount, dueDate });
-        break;
-      }
-
-      case 'whatsapp_notification': {
-        const { message } = params;
-        if (!message) return NextResponse.json({ error: 'Missing message for WhatsApp notification' }, { status: 400 });
-        result = await sendClientNotificationWhatsApp(to, message);
-        break;
-      }
-
-      case 'whatsapp_custom': {
-        const { message } = params;
-        if (!message) return NextResponse.json({ error: 'Missing message for WhatsApp custom' }, { status: 400 });
-        result = await sendWhatsApp(to, message);
         break;
       }
 

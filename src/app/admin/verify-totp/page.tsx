@@ -41,8 +41,7 @@ export default function AdminVerifyTotpPage() {
 
       setFactorId(verified.id);
       setLoading(false);
-      const focusTimer = setTimeout(() => inputRef.current?.focus(), 100);
-      return () => clearTimeout(focusTimer);
+      setTimeout(() => inputRef.current?.focus(), 100);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to load 2FA. Please sign in again.');
       setLoading(false);
@@ -70,8 +69,7 @@ export default function AdminVerifyTotpPage() {
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Invalid code. Please try again.');
       setCode('');
-      const retryFocusTimer = setTimeout(() => inputRef.current?.focus(), 50);
-      return () => clearTimeout(retryFocusTimer);
+      setTimeout(() => inputRef.current?.focus(), 50);
     } finally {
       setSubmitting(false);
     }

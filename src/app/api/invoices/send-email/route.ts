@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { sendGmailEmail } from '@/lib/gmail/gmailClient';
+
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
 
 export async function POST(req: NextRequest) {
   try {
@@ -26,11 +30,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields: clientEmail, clientName, invoiceNumber' }, { status: 400 });
     }
 
-    const RESEND_API_KEY = process.env.RESEND_API_KEY;
-    if (!RESEND_API_KEY) {
-      return NextResponse.json({ error: 'RESEND_API_KEY not configured' }, { status: 503 });
-    }
-
+    // Build invoice HTML inline (same template as before, rendered server-side)
     const fmtCurrency = (n: number) =>
       new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n);
     const fmtDate = (d: string) => {
@@ -141,26 +141,16 @@ export async function POST(req: NextRequest) {
 </body>
 </html>`;
 
-    const resendRes = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${RESEND_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from: 'onboarding@resend.dev',
-        to: [clientEmail],
-        subject: `Invoice ${invoiceNumber} from ${firmName} — Due ${fmtDate(dueDate)}`,
-        html: htmlBody,
-      }),
+    const result = await sendGmailEmail({
+      to: clientEmail,
+      subject: `Invoice ${invoiceNumber} from ${firmName} — Due ${fmtDate(dueDate)}`,
+      html: htmlBody,
+      fromName: firmName || 'Broussard Legal Services',
     });
 
-    if (!resendRes.ok) {
-      const errBody = await resendRes.json().catch(() => ({}));
-      throw new Error((errBody as { message?: string })?.message ?? `Resend returned ${resendRes.status}`);
+    if (!result.success) {
+      throw new Error(result.error ?? 'Failed to send invoice email');
     }
-
-    const resendData = await resendRes.json() as { id?: string };
 
     // Log the send event to Supabase
     try {
@@ -169,7 +159,7 @@ export async function POST(req: NextRequest) {
         invoice_number: invoiceNumber,
         client_email: clientEmail,
         client_name: clientName,
-        email_id: resendData.id ?? null,
+        email_id: result.messageId ?? null,
         sent_at: new Date().toISOString(),
         status: 'sent',
       });
@@ -177,7 +167,7 @@ export async function POST(req: NextRequest) {
       // Non-fatal
     }
 
-    return NextResponse.json({ success: true, emailId: resendData.id });
+    return NextResponse.json({ success: true, emailId: result.messageId });
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Failed to send invoice email' },

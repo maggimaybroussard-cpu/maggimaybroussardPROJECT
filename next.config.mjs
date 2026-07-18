@@ -5,7 +5,6 @@ const nextConfig = {
   productionBrowserSourceMaps: false,
   compress: true,
   distDir: process.env.DIST_DIR || '.next',
-  transpilePackages: ['mixpanel-browser'],
 
   experimental: {
     optimizePackageImports: ['@heroicons/react', 'recharts'],
@@ -34,7 +33,7 @@ const nextConfig = {
         headers: [
           {
             key: 'Cache-Control',
-            value: 'public, max-age=31536000, must-revalidate',
+            value: 'public, max-age=31536000, immutable',
           },
         ],
       },

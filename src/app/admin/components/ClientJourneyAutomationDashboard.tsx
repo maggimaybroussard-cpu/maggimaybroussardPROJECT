@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -213,7 +213,6 @@ export default function ClientJourneyAutomationDashboard() {
   const [togglingRule, setTogglingRule] = useState<string | null>(null);
   const [testingRule, setTestingRule] = useState<string | null>(null);
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
-  const toastTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Builder state
   const [builderName, setBuilderName] = useState('');
@@ -229,19 +228,8 @@ export default function ClientJourneyAutomationDashboard() {
 
   const showToast = (msg: string, type: 'success' | 'error') => {
     setToast({ msg, type });
-    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-    toastTimerRef.current = setTimeout(() => setToast(null), 4000);
+    setTimeout(() => setToast(null), 4000);
   };
-
-  // Cleanup toast timer on unmount
-  useEffect(() => {
-    return () => {
-      if (toastTimerRef.current) {
-        clearTimeout(toastTimerRef.current);
-        toastTimerRef.current = null;
-      }
-    };
-  }, []);
 
   const fetchStats = useCallback(async () => {
     setLoading(true);

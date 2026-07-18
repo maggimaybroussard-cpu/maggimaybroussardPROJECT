@@ -604,17 +604,6 @@ export default function ContactSplit() {
         retainerTier: formState.retainerTier || undefined,
         inquiryId: result.inquiryId || null,
       });
-      // Twilio admin notification for new form submission (non-blocking)
-      fetch('/api/sms/conversion-notify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          event: 'form_submission',
-          clientName: formState.name,
-          email: formState.email,
-          serviceType: formState.service,
-        }),
-      }).catch(() => {/* non-blocking */});
       showToast('success', 'Your message has been received. I\'ll respond within one business day.');
       setSubmitted(true);
     } catch (err: unknown) {

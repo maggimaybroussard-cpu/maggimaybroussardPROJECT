@@ -63,7 +63,7 @@ export default function ServicesPracticeAreas() {
               Whether you're a solo practitioner or a multi-attorney firm, Broussard Legal Services
               has the expertise to support your specific practice area.
             </p>
-            <p className="mt-3 text-primary-foreground/65 text-xs font-light">
+            <p className="mt-3 text-primary-foreground/40 text-xs font-light">
               Tap any practice area to book a consultation with that service pre-selected.
             </p>
           </div>

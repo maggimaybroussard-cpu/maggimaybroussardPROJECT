@@ -89,42 +89,6 @@ function getFollowUpConfig(value: string | null) {
   return FOLLOW_UP_STATUS_OPTIONS.find((f) => f.value === value) ?? FOLLOW_UP_STATUS_OPTIONS[0];
 }
 
-// ─── CSV Export Helper ────────────────────────────────────────────────────────
-
-function exportToCSV(rows: ContactInquiry[]) {
-  const headers = [
-    'Name', 'Firm', 'Email', 'Service', 'Status', 'Qualified',
-    'Service Interest Tag', 'Retainer Tier', 'Follow-Up Status',
-    'Follow-Up Date', 'Notes', 'Submitted At',
-  ];
-  const escape = (v: string | null | undefined) => {
-    const s = v ?? '';
-    return `"${s.replace(/"/g, '""')}"`;
-  };
-  const csvRows = rows.map((r) => [
-    escape(r.name),
-    escape(r.firm),
-    escape(r.email),
-    escape(r.service),
-    escape(INQUIRY_STATUS_LABELS[r.status] ?? r.status),
-    r.is_qualified === true ? '"Qualified"' : r.is_qualified === false ? '"Unqualified"' : '"Not Reviewed"',
-    escape(r.service_interest_tag),
-    escape(r.retainer_tier_tag),
-    escape(r.follow_up_status),
-    escape(r.follow_up_date ? formatDate(r.follow_up_date) : null),
-    escape(r.notes),
-    escape(r.created_at ? formatDate(r.created_at) : null),
-  ].join(','));
-  const csv = [headers.join(','), ...csvRows].join('\n');
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `contact-submissions-${new Date().toISOString().slice(0, 10)}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function ContactInquiriesAdminDashboard() {
@@ -143,15 +107,6 @@ export default function ContactInquiriesAdminDashboard() {
   const [filterTier, setFilterTier] = useState('all');
   const [filterQualified, setFilterQualified] = useState<'all' | 'qualified' | 'unqualified' | 'unset'>('all');
   const [filterFollowUp, setFilterFollowUp] = useState('all');
-  // Date range filter
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
-
-  // Bulk selection
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [bulkStatus, setBulkStatus] = useState('');
-  const [bulkSaving, setBulkSaving] = useState(false);
-  const [bulkSuccess, setBulkSuccess] = useState(false);
 
   // Edit state for selected inquiry
   const [editServiceTag, setEditServiceTag] = useState('');
@@ -215,11 +170,7 @@ export default function ContactInquiriesAdminDashboard() {
       (filterQualified === 'unqualified' && inq.is_qualified === false) ||
       (filterQualified === 'unset' && inq.is_qualified === null);
     const matchFollowUp = filterFollowUp === 'all' || inq.follow_up_status === filterFollowUp;
-    // Date range filter
-    const createdAt = new Date(inq.created_at);
-    const matchFrom = !dateFrom || createdAt >= new Date(dateFrom);
-    const matchTo = !dateTo || createdAt <= new Date(dateTo + 'T23:59:59');
-    return matchSearch && matchStatus && matchTier && matchQualified && matchFollowUp && matchFrom && matchTo;
+    return matchSearch && matchStatus && matchTier && matchQualified && matchFollowUp;
   });
 
   // Stats
@@ -230,56 +181,6 @@ export default function ContactInquiriesAdminDashboard() {
     pendingFollowUp: inquiries.filter((i) => i.follow_up_status === 'pending' || !i.follow_up_status).length,
     completedFollowUp: inquiries.filter((i) => i.follow_up_status === 'completed').length,
   };
-
-  // Bulk selection helpers
-  const allFilteredSelected = filtered.length > 0 && filtered.every((inq) => selectedIds.has(inq.id));
-  const someSelected = selectedIds.size > 0;
-
-  function toggleSelectAll() {
-    if (allFilteredSelected) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(filtered.map((inq) => inq.id)));
-    }
-  }
-
-  function toggleSelectOne(id: string) {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }
-
-  async function handleBulkStatusUpdate() {
-    if (!bulkStatus || selectedIds.size === 0) return;
-    setBulkSaving(true);
-    setBulkSuccess(false);
-    try {
-      const ids = Array.from(selectedIds);
-      const { error: updateError } = await supabase
-        .from('contact_inquiries')
-        .update({ status: bulkStatus })
-        .in('id', ids);
-      if (updateError) throw updateError;
-      setInquiries((prev) =>
-        prev.map((inq) => (selectedIds.has(inq.id) ? { ...inq, status: bulkStatus } : inq))
-      );
-      if (selected && selectedIds.has(selected.id)) {
-        setSelected((prev) => prev ? { ...prev, status: bulkStatus } : null);
-        setEditStatus(bulkStatus);
-      }
-      setSelectedIds(new Set());
-      setBulkStatus('');
-      setBulkSuccess(true);
-      setTimeout(() => setBulkSuccess(false), 3000);
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Bulk update failed');
-    } finally {
-      setBulkSaving(false);
-    }
-  }
 
   async function handleSave() {
     if (!selected) return;
@@ -409,102 +310,6 @@ export default function ContactInquiriesAdminDashboard() {
         </button>
       </div>
 
-      {/* Date Range Filter + Export Row */}
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="flex items-center gap-2">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground shrink-0">
-            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-          </svg>
-          <span className="text-xs text-muted-foreground font-medium whitespace-nowrap">Date Range:</span>
-        </div>
-        <input
-          type="date"
-          value={dateFrom}
-          onChange={(e) => setDateFrom(e.target.value)}
-          className="px-3 py-2 rounded-xl border border-border bg-input text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent transition-all"
-          title="From date"
-        />
-        <span className="text-xs text-muted-foreground">to</span>
-        <input
-          type="date"
-          value={dateTo}
-          onChange={(e) => setDateTo(e.target.value)}
-          className="px-3 py-2 rounded-xl border border-border bg-input text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent transition-all"
-          title="To date"
-        />
-        {(dateFrom || dateTo) && (
-          <button
-            onClick={() => { setDateFrom(''); setDateTo(''); }}
-            className="text-xs text-muted-foreground hover:text-foreground transition-colors underline underline-offset-2"
-          >
-            Clear dates
-          </button>
-        )}
-        <div className="flex-1" />
-        <button
-          onClick={() => exportToCSV(filtered)}
-          disabled={filtered.length === 0}
-          className="px-4 py-2.5 rounded-xl border border-border bg-card text-foreground text-sm font-medium hover:border-accent/50 hover:bg-accent/5 transition-all flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-          </svg>
-          Export CSV
-          {filtered.length > 0 && (
-            <span className="ml-1 px-1.5 py-0.5 rounded-full bg-secondary text-muted-foreground text-[10px] font-semibold">{filtered.length}</span>
-          )}
-        </button>
-      </div>
-
-      {/* Bulk Action Bar */}
-      {someSelected && (
-        <div className="flex flex-wrap items-center gap-3 px-4 py-3 rounded-xl bg-accent/10 border border-accent/20">
-          <span className="text-sm font-semibold text-foreground">
-            {selectedIds.size} {selectedIds.size === 1 ? 'submission' : 'submissions'} selected
-          </span>
-          <div className="flex items-center gap-2 flex-1">
-            <select
-              value={bulkStatus}
-              onChange={(e) => setBulkStatus(e.target.value)}
-              className="px-3 py-2 rounded-xl border border-border bg-input text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-accent/40 transition-all appearance-none cursor-pointer"
-            >
-              <option value="">— Set status to… —</option>
-              {INQUIRY_STATUS_OPTIONS.map((s) => (
-                <option key={s} value={s}>{INQUIRY_STATUS_LABELS[s]}</option>
-              ))}
-            </select>
-            <button
-              onClick={handleBulkStatusUpdate}
-              disabled={!bulkStatus || bulkSaving}
-              className="px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
-              style={{ background: '#355E3B' }}
-            >
-              {bulkSaving ? (
-                <>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="animate-spin">
-                    <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
-                  </svg>
-                  Updating…
-                </>
-              ) : bulkSuccess ? (
-                <>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="20 6 9 17 4 12"/>
-                  </svg>
-                  Updated
-                </>
-              ) : 'Apply'}
-            </button>
-          </div>
-          <button
-            onClick={() => setSelectedIds(new Set())}
-            className="text-xs text-muted-foreground hover:text-foreground transition-colors underline underline-offset-2 ml-auto"
-          >
-            Clear selection
-          </button>
-        </div>
-      )}
-
       {error && (
         <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm flex items-center gap-2">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -541,8 +346,8 @@ export default function ContactInquiriesAdminDashboard() {
                 </svg>
               </div>
               <p className="text-muted-foreground text-sm">
-                {search || filterStatus !== 'all' || filterTier !== 'all' || filterQualified !== 'all' || filterFollowUp !== 'all' || dateFrom || dateTo
-                  ? 'No inquiries match your filters.' : 'No contact submissions yet.'}
+                {search || filterStatus !== 'all' || filterTier !== 'all' || filterQualified !== 'all' || filterFollowUp !== 'all'
+                  ? 'No inquiries match your filters.' :'No contact submissions yet.'}
               </p>
             </div>
           ) : (
@@ -551,15 +356,6 @@ export default function ContactInquiriesAdminDashboard() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-border bg-secondary/40">
-                      <th className="px-4 py-3 w-10">
-                        <input
-                          type="checkbox"
-                          checked={allFilteredSelected}
-                          onChange={toggleSelectAll}
-                          className="rounded border-border cursor-pointer accent-green-700"
-                          title="Select all visible"
-                        />
-                      </th>
                       <th className="text-left px-5 py-3 text-xs uppercase tracking-widest text-muted-foreground font-semibold">Lead</th>
                       <th className="text-left px-5 py-3 text-xs uppercase tracking-widest text-muted-foreground font-semibold hidden sm:table-cell">Service Tag</th>
                       <th className="text-left px-5 py-3 text-xs uppercase tracking-widest text-muted-foreground font-semibold hidden md:table-cell">Tier</th>
@@ -574,37 +370,23 @@ export default function ContactInquiriesAdminDashboard() {
                       return (
                         <tr
                           key={inq.id}
-                          className={`border-b border-border last:border-0 transition-colors ${
+                          onClick={() => setSelected(selected?.id === inq.id ? null : inq)}
+                          className={`border-b border-border last:border-0 transition-colors cursor-pointer ${
                             selected?.id === inq.id
                               ? 'bg-primary/5'
                               : i % 2 === 0 ? 'hover:bg-secondary/30' : 'bg-secondary/10 hover:bg-secondary/30'
                           }`}
                         >
-                          <td className="px-4 py-3.5" onClick={(e) => e.stopPropagation()}>
-                            <input
-                              type="checkbox"
-                              checked={selectedIds.has(inq.id)}
-                              onChange={() => toggleSelectOne(inq.id)}
-                              className="rounded border-border cursor-pointer accent-green-700"
-                            />
-                          </td>
-                          <td
-                            className="px-5 py-3.5 cursor-pointer"
-                            onClick={() => setSelected(selected?.id === inq.id ? null : inq)}
-                          >
+                          <td className="px-5 py-3.5">
                             <p className="font-medium text-foreground">{inq.name}</p>
                             <p className="text-xs text-muted-foreground mt-0.5">{inq.email}</p>
                             <div className="flex items-center gap-1.5 mt-1">
                               <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border ${INQUIRY_STATUS_COLORS[inq.status] || INQUIRY_STATUS_COLORS['new']}`}>
                                 {INQUIRY_STATUS_LABELS[inq.status] || inq.status}
                               </span>
-                              <span className="text-[10px] text-muted-foreground/50">{formatDate(inq.created_at)}</span>
                             </div>
                           </td>
-                          <td
-                            className="px-5 py-3.5 hidden sm:table-cell cursor-pointer"
-                            onClick={() => setSelected(selected?.id === inq.id ? null : inq)}
-                          >
+                          <td className="px-5 py-3.5 hidden sm:table-cell">
                             {inq.service_interest_tag ? (
                               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-secondary/60 text-foreground border border-border">
                                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -616,10 +398,7 @@ export default function ContactInquiriesAdminDashboard() {
                               <span className="text-xs text-muted-foreground/50 italic">Untagged</span>
                             )}
                           </td>
-                          <td
-                            className="px-5 py-3.5 hidden md:table-cell cursor-pointer"
-                            onClick={() => setSelected(selected?.id === inq.id ? null : inq)}
-                          >
+                          <td className="px-5 py-3.5 hidden md:table-cell">
                             {tierCfg ? (
                               <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${tierCfg.color}`}>
                                 {tierCfg.label}
@@ -628,10 +407,7 @@ export default function ContactInquiriesAdminDashboard() {
                               <span className="text-xs text-muted-foreground/50 italic">No tier</span>
                             )}
                           </td>
-                          <td
-                            className="px-5 py-3.5 cursor-pointer"
-                            onClick={() => setSelected(selected?.id === inq.id ? null : inq)}
-                          >
+                          <td className="px-5 py-3.5">
                             {inq.is_qualified === true && (
                               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700 border border-emerald-200">
                                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -652,10 +428,7 @@ export default function ContactInquiriesAdminDashboard() {
                               <span className="text-xs text-muted-foreground/50 italic">Not reviewed</span>
                             )}
                           </td>
-                          <td
-                            className="px-5 py-3.5 hidden lg:table-cell cursor-pointer"
-                            onClick={() => setSelected(selected?.id === inq.id ? null : inq)}
-                          >
+                          <td className="px-5 py-3.5 hidden lg:table-cell">
                             <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${followUpCfg.color}`}>
                               {followUpCfg.label}
                             </span>
@@ -669,11 +442,8 @@ export default function ContactInquiriesAdminDashboard() {
                   </tbody>
                 </table>
               </div>
-              <div className="px-5 py-3 border-t border-border bg-secondary/20 text-xs text-muted-foreground flex items-center justify-between">
-                <span>Showing {filtered.length} of {inquiries.length} {inquiries.length === 1 ? 'submission' : 'submissions'}</span>
-                {someSelected && (
-                  <span className="text-accent font-medium">{selectedIds.size} selected</span>
-                )}
+              <div className="px-5 py-3 border-t border-border bg-secondary/20 text-xs text-muted-foreground">
+                Showing {filtered.length} of {inquiries.length} {inquiries.length === 1 ? 'submission' : 'submissions'}
               </div>
             </div>
           )}
@@ -780,7 +550,7 @@ export default function ContactInquiriesAdminDashboard() {
                     onClick={() => setEditIsQualified(editIsQualified === true ? null : true)}
                     className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold border transition-all ${
                       editIsQualified === true
-                        ? 'bg-emerald-100 text-emerald-700 border-emerald-300' : 'bg-transparent border-border text-muted-foreground hover:border-emerald-300 hover:text-emerald-700'
+                        ? 'bg-emerald-100 text-emerald-700 border-emerald-300' :'bg-transparent border-border text-muted-foreground hover:border-emerald-300 hover:text-emerald-700'
                     }`}
                   >
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -792,7 +562,7 @@ export default function ContactInquiriesAdminDashboard() {
                     onClick={() => setEditIsQualified(editIsQualified === false ? null : false)}
                     className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold border transition-all ${
                       editIsQualified === false
-                        ? 'bg-red-100 text-red-600 border-red-300' : 'bg-transparent border-border text-muted-foreground hover:border-red-300 hover:text-red-600'
+                        ? 'bg-red-100 text-red-600 border-red-300' :'bg-transparent border-border text-muted-foreground hover:border-red-300 hover:text-red-600'
                     }`}
                   >
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

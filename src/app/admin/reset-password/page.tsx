@@ -46,8 +46,7 @@ export default function AdminResetPasswordPage() {
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
       setSuccess(true);
-      const redirectTimer = setTimeout(() => router.replace('/admin/login'), 3000);
-      return () => clearTimeout(redirectTimer);
+      setTimeout(() => router.replace('/admin/login'), 3000);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to update password. Please try again.');
     } finally {

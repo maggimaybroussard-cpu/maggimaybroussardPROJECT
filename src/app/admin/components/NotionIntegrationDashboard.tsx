@@ -34,7 +34,7 @@ interface CaseOption {
   service: string;
 }
 
-type ActiveView = 'search' | 'create' | 'sync' | 'intake';
+type ActiveView = 'search' | 'create' | 'sync';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -91,15 +91,6 @@ export default function NotionIntegrationDashboard() {
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<SyncResult | null>(null);
   const [syncError, setSyncError] = useState<string | null>(null);
-
-  // Intake notes sync state
-  const [intakeQuery, setIntakeQuery] = useState('client intake notes');
-  const [intakeSyncing, setIntakeSyncing] = useState(false);
-  const [intakeSyncResult, setIntakeSyncResult] = useState<{ synced: number; total: number; items?: Array<{ title: string; notionId: string; notionUrl: string }> } | null>(null);
-  const [intakeSyncError, setIntakeSyncError] = useState<string | null>(null);
-  const [intakeNotes, setIntakeNotes] = useState<Array<{ id: string; title: string; content: string; notion_url: string; notion_last_edited: string; synced_at: string }>>([]);
-  const [loadingIntakeNotes, setLoadingIntakeNotes] = useState(false);
-  const [intakeSearch, setIntakeSearch] = useState('');
 
   // ── Check API config ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -217,44 +208,6 @@ export default function NotionIntegrationDashboard() {
     }
   };
 
-  // ── Intake notes sync ─────────────────────────────────────────────────────
-  const handleIntakeSync = async () => {
-    setIntakeSyncing(true);
-    setIntakeSyncResult(null);
-    setIntakeSyncError(null);
-    try {
-      const res = await fetch('/api/notion/sync-intake-notes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: intakeQuery }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Sync failed');
-      setIntakeSyncResult(data);
-      loadIntakeNotes('');
-    } catch (err) {
-      setIntakeSyncError(err instanceof Error ? err.message : 'Sync failed');
-    } finally {
-      setIntakeSyncing(false);
-    }
-  };
-
-  const loadIntakeNotes = async (search: string) => {
-    setLoadingIntakeNotes(true);
-    try {
-      const params = new URLSearchParams();
-      if (search) params.set('search', search);
-      const res = await fetch(`/api/notion/intake-notes?${params}`);
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to load intake notes');
-      setIntakeNotes(data.notes ?? []);
-    } catch {
-      setIntakeNotes([]);
-    } finally {
-      setLoadingIntakeNotes(false);
-    }
-  };
-
   // ─── Render block content ─────────────────────────────────────────────────
   function renderBlock(block: NotionBlock) {
     switch (block.type) {
@@ -360,7 +313,6 @@ export default function NotionIntegrationDashboard() {
             { id: 'search', label: 'Browse', icon: '🔍' },
             { id: 'create', label: 'Create Page', icon: '✏️' },
             { id: 'sync', label: 'Sync to Case', icon: '🔄' },
-            { id: 'intake', label: 'Intake Notes', icon: '📋' },
           ] as { id: ActiveView; label: string; icon: string }[]).map((v) => (
             <button
               key={v.id}
@@ -721,142 +673,6 @@ export default function NotionIntegrationDashboard() {
                 Client can view synced notes in their portal under &quot;Case Notes&quot;
               </li>
             </ul>
-          </div>
-        </div>
-      )}
-
-      {/* ── Intake Notes Sync View ── */}
-      {activeView === 'intake' && (
-        <div className="space-y-5">
-          {/* Sync controls */}
-          <div className="bg-card border border-border rounded-2xl p-5">
-            <div className="flex items-start justify-between gap-4 mb-4">
-              <div>
-                <p className="text-xs uppercase tracking-widest text-muted-foreground font-semibold mb-1">Client Intake Notes</p>
-                <p className="text-sm text-muted-foreground">Pull client intake notes from Notion into the admin dashboard.</p>
-              </div>
-              <div className="w-9 h-9 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center flex-shrink-0">
-                <span className="text-base">📋</span>
-              </div>
-            </div>
-
-            <div className="flex gap-3">
-              <input
-                type="text"
-                value={intakeQuery}
-                onChange={(e) => setIntakeQuery(e.target.value)}
-                placeholder="Search query (e.g. client intake notes)"
-                className="flex-1 px-3 py-2.5 rounded-xl border border-border bg-input text-foreground text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40 transition-all"
-              />
-              <button
-                onClick={handleIntakeSync}
-                disabled={intakeSyncing}
-                className="px-5 py-2.5 bg-primary text-primary-foreground rounded-xl text-xs font-semibold uppercase tracking-widest hover:opacity-90 transition-all disabled:opacity-60 flex items-center gap-2 whitespace-nowrap"
-              >
-                {intakeSyncing ? (
-                  <>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="animate-spin">
-                      <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-                    </svg>
-                    Syncing…
-                  </>
-                ) : (
-                  <>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M21 2v6h-6" /><path d="M3 12a9 9 0 0 1 15-6.7L21 8" /><path d="M3 22v-6h6" /><path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
-                    </svg>
-                    Sync from Notion
-                  </>
-                )}
-              </button>
-            </div>
-
-            {intakeSyncResult && (
-              <div className="mt-3 p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
-                <p className="text-xs font-semibold text-emerald-800">
-                  ✓ Synced {intakeSyncResult.synced} of {intakeSyncResult.total} pages from Notion
-                </p>
-                {intakeSyncResult.items && intakeSyncResult.items.length > 0 && (
-                  <ul className="mt-2 space-y-1">
-                    {intakeSyncResult.items.slice(0, 5).map((item) => (
-                      <li key={item.notionId} className="text-xs text-emerald-700 flex items-center gap-1.5">
-                        <span className="w-1 h-1 rounded-full bg-emerald-500 flex-shrink-0" />
-                        {item.title}
-                      </li>
-                    ))}
-                    {intakeSyncResult.items.length > 5 && (
-                      <li className="text-xs text-emerald-600">+{intakeSyncResult.items.length - 5} more</li>
-                    )}
-                  </ul>
-                )}
-              </div>
-            )}
-
-            {intakeSyncError && (
-              <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700">{intakeSyncError}</div>
-            )}
-          </div>
-
-          {/* Synced notes list */}
-          <div className="bg-card border border-border rounded-2xl overflow-hidden">
-            <div className="px-5 py-4 border-b border-border/60 flex items-center justify-between gap-3">
-              <p className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">
-                Synced Intake Notes {intakeNotes.length > 0 && `(${intakeNotes.length})`}
-              </p>
-              <input
-                type="text"
-                value={intakeSearch}
-                onChange={(e) => {
-                  setIntakeSearch(e.target.value);
-                  loadIntakeNotes(e.target.value);
-                }}
-                placeholder="Filter notes…"
-                className="px-3 py-1.5 rounded-lg border border-border bg-input text-foreground text-xs placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary/30 w-44"
-              />
-            </div>
-
-            {loadingIntakeNotes ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-              </div>
-            ) : intakeNotes.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 text-center px-6">
-                <span className="text-3xl mb-3">📋</span>
-                <p className="text-sm font-medium text-foreground mb-1">No intake notes synced yet</p>
-                <p className="text-xs text-muted-foreground">Click "Sync from Notion" to pull client intake notes from your workspace.</p>
-              </div>
-            ) : (
-              <div className="divide-y divide-border/50 max-h-[480px] overflow-y-auto">
-                {intakeNotes.map((note) => (
-                  <div key={note.id} className="px-5 py-4 hover:bg-secondary/20 transition-colors">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-foreground truncate">{note.title}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
-                          {note.content?.replace(/^#+ /gm, '').slice(0, 120)}…
-                        </p>
-                        <div className="flex items-center gap-3 mt-2">
-                          <span className="text-xs text-muted-foreground/70">
-                            Last edited: {new Date(note.notion_last_edited).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                          </span>
-                          <span className="text-xs text-muted-foreground/70">
-                            Synced: {new Date(note.synced_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                          </span>
-                        </div>
-                      </div>
-                      <a
-                        href={note.notion_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex-shrink-0 px-3 py-1.5 bg-secondary/40 hover:bg-secondary/70 text-foreground rounded-lg text-xs font-medium transition-colors"
-                      >
-                        Open ↗
-                      </a>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
         </div>
       )}

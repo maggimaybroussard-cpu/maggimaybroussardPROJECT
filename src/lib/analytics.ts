@@ -1,7 +1,5 @@
 'use client';
 
-import { mpTrack } from '@/lib/mixpanel';
-
 declare global {
   interface Window {
     gtag: (...args: unknown[]) => void;
@@ -10,12 +8,9 @@ declare global {
 }
 
 export function trackEvent(eventName: string, eventParams: Record<string, unknown> = {}) {
-  // Fire GA4
   if (typeof window !== 'undefined' && typeof window.gtag === 'function') {
     window.gtag('event', eventName, eventParams);
   }
-  // Fire Mixpanel (dual-tracking)
-  mpTrack(eventName, eventParams);
 }
 
 // Inquiry / contact form events
@@ -866,46 +861,6 @@ export function trackPortalLogin(method: string = 'email') {
   });
   // GA4 recommended login event
   trackEvent('login', { method });
-}
-
-// ── Checkout Flow Start ──────────────────────────────────────────────────────
-
-/**
- * Fired when a user initiates the checkout flow by selecting a payment option.
- * This is the definitive "checkout_flow_start" funnel event — fires before
- * billing details are entered, capturing intent at the earliest checkout step.
- * Use to measure checkout abandonment rate vs. payment completions.
- */
-export function trackCheckoutFlowStart(params: {
-  paymentType: string;
-  amount: number;
-  source?: string;
-}) {
-  trackEvent('checkout_flow_start', {
-    event_category: 'checkout_funnel',
-    event_label: 'Checkout Flow Started',
-    payment_type: params.paymentType,
-    value: params.amount,
-    currency: 'USD',
-    source: params.source ?? 'checkout_page',
-    funnel_step: 1,
-    funnel_step_name: 'payment_type_selected',
-  });
-  // GA4 recommended begin_checkout ecommerce event
-  trackEvent('begin_checkout', {
-    currency: 'USD',
-    value: params.amount,
-    items: [
-      {
-        item_id: params.paymentType,
-        item_name: params.paymentType === 'consultation_deposit' ?'Consultation Deposit'
-          : params.paymentType === 'retainer' ?'Retainer Agreement' :'Hourly Rate Session',
-        price: params.amount,
-        quantity: 1,
-        item_category: 'legal_services',
-      },
-    ],
-  });
 }
 
 // ── Case Milestones ──────────────────────────────────────────────────────────

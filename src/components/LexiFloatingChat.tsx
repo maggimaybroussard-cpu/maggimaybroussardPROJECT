@@ -52,7 +52,6 @@ function detectHighIntent(messages: Message[]): boolean {
 
 export default function LexiFloatingChat() {
   const [open, setOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -83,7 +82,6 @@ export default function LexiFloatingChat() {
   // Initialize visitor ID on mount (client-only)
   useEffect(() => {
     visitorIdRef.current = getVisitorId();
-    setMounted(true);
   }, []);
 
   // Track session start when chat opens
@@ -142,16 +140,14 @@ export default function LexiFloatingChat() {
   // Focus input when opened
   useEffect(() => {
     if (open) {
-      const timer = setTimeout(() => inputRef.current?.focus(), 150);
-      return () => clearTimeout(timer);
+      setTimeout(() => inputRef.current?.focus(), 150);
     }
   }, [open]);
 
   // Focus email input when modal opens
   useEffect(() => {
     if (showEmailModal) {
-      const timer = setTimeout(() => emailInputRef.current?.focus(), 100);
-      return () => clearTimeout(timer);
+      setTimeout(() => emailInputRef.current?.focus(), 100);
     }
   }, [showEmailModal]);
 
@@ -457,8 +453,6 @@ export default function LexiFloatingChat() {
 
   const showSuggestions = messages.length <= 1 && !isLoading;
   const hasConversation = messages.filter((m) => m.role === 'user').length > 0;
-
-  if (!mounted) return null;
 
   return (
     <>

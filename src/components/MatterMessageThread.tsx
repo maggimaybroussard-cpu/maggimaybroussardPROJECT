@@ -114,17 +114,6 @@ export default function MatterMessageThread({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const isAtBottomRef = useRef(true);
-  const scrollTimerRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Cleanup scroll timer on unmount
-  useEffect(() => {
-    return () => {
-      if (scrollTimerRef.current) {
-        clearTimeout(scrollTimerRef.current);
-        scrollTimerRef.current = null;
-      }
-    };
-  }, []);
 
   // ── Fetch initial messages ────────────────────────────────────────────────
 
@@ -349,9 +338,7 @@ export default function MatterMessageThread({
       setSelectedFile(null);
       if (fileInputRef.current) fileInputRef.current.value = '';
       // Real-time will push the new message; scroll to bottom
-      const scrollTimer = setTimeout(() => scrollToBottom('smooth'), 100);
-      // Store on ref so it can be cleared if component unmounts before it fires
-      scrollTimerRef.current = scrollTimer;
+      setTimeout(() => scrollToBottom('smooth'), 100);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to send message.');
     } finally {

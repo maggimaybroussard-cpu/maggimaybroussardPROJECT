@@ -150,7 +150,7 @@ export default function FAQSection({ variant = 'light' }: FAQSectionProps) {
                   ? isDark
                     ? 'bg-accent text-primary' :'bg-primary text-primary-foreground'
                   : isDark
-                  ? 'border border-primary-foreground/30 text-primary-foreground/80 hover:border-accent/50 hover:text-primary-foreground'
+                  ? 'border border-primary-foreground/20 text-primary-foreground/60 hover:border-accent/50 hover:text-primary-foreground'
                   : 'border border-border text-muted-foreground hover:border-primary/40 hover:text-foreground'
               }`}
             >
@@ -195,7 +195,7 @@ export default function FAQSection({ variant = 'light' }: FAQSectionProps) {
                         ? isDark
                           ? 'bg-accent text-primary rotate-45' :'bg-primary text-primary-foreground rotate-45'
                         : isDark
-                        ? 'border border-primary-foreground/30 text-primary-foreground/70'
+                        ? 'border border-primary-foreground/20 text-primary-foreground/50'
                         : 'border border-border text-muted-foreground'
                     }`}
                   >
@@ -221,7 +221,7 @@ export default function FAQSection({ variant = 'light' }: FAQSectionProps) {
                 >
                   <p
                     className={`text-sm leading-relaxed font-light max-w-3xl ${
-                      isDark ? 'text-primary-foreground/80' : 'text-muted-foreground'
+                      isDark ? 'text-primary-foreground/65' : 'text-muted-foreground'
                     }`}
                   >
                     {item.answer}

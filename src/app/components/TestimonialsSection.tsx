@@ -151,6 +151,13 @@ const TRUST_INDICATORS = [
   type: 'association'
 },
 {
+  id: 'lsba',
+  name: 'LSBA',
+  full: 'Louisiana State Bar Association',
+  icon: '🏛️',
+  type: 'bar'
+},
+{
   id: 'cp',
   name: 'CP Certified',
   full: 'Certified Paralegal — NALA',

@@ -44,29 +44,6 @@ export default function LexiAudioRecorder() {
     setRecordings(audioStore.getMeta());
   }, []);
 
-  // Cleanup on unmount: clear timer, stop audio, stop media stream
-  useEffect(() => {
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.onended = null;
-        audioRef.current = null;
-      }
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach((t) => t.stop());
-        streamRef.current = null;
-      }
-      if (mediaRecorderRef.current) {
-        try { mediaRecorderRef.current.stop(); } catch { /* already stopped */ }
-        mediaRecorderRef.current = null;
-      }
-    };
-  }, []);
-
   const startTimer = () => {
     intervalRef.current = setInterval(() => setElapsed(e => e + 1), 1000);
   };

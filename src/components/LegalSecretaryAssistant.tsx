@@ -323,7 +323,6 @@ function LexiSymbolsPanel() {
   const [copied, setCopied] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<string>('All');
   const [searchTerm, setSearchTerm] = useState('');
-  const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const categories = ['All', ...Array.from(new Set(LEGAL_SYMBOLS.map(s => s.category)))];
 
@@ -338,8 +337,7 @@ function LexiSymbolsPanel() {
       await navigator.clipboard.writeText(symbol);
       setCopied(symbol);
       toast.success(`Copied: ${symbol}`);
-      if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
-      copyTimerRef.current = setTimeout(() => setCopied(null), 1500);
+      setTimeout(() => setCopied(null), 1500);
     } catch {
       toast.error('Copy failed — please copy manually');
     }

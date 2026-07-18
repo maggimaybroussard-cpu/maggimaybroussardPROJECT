@@ -161,7 +161,7 @@ function signature(): string {
         <td>
           <p style="margin:0 0 4px; font-size:15px; color:${brand.foreground}; font-family: Georgia, serif;">Warm regards,</p>
           <p style="margin:0 0 2px; font-size:16px; color:${brand.primary}; font-weight:bold; font-family: Georgia, serif;">Maggi May Broussard</p>
-          <p style="margin:0 0 6px; font-size:12px; color:${brand.muted}; font-family: Georgia, serif; letter-spacing:0.04em;">Broussard Legal Services</p>
+          <p style="margin:0 0 6px; font-size:12px; color:${brand.muted}; font-family: Georgia, serif; letter-spacing:0.04em;">Licensed Paralegal · Louisiana &amp; Nationwide</p>
           <a href="mailto:maggimaybroussard@gmail.com" style="color:${brand.accent}; font-size:13px; text-decoration:none; font-family: Georgia, serif;">maggimaybroussard@gmail.com</a>
           &nbsp;<span style="color:${brand.border};">|</span>&nbsp;
           <a href="${SITE_URL}" style="color:${brand.accent}; font-size:13px; text-decoration:none; font-family: Georgia, serif;">maggimay.com</a>
@@ -418,48 +418,28 @@ serve(async (req) => {
         try {
           const firstName = recipientName?.split(" ")[0] ?? recipientName;
           const portalUrl = paymentLink ?? "https://broussardlegalservices.com/portal/invoices";
-          let msgBody = "";
+          let smsBody = "";
 
           if (reminderType === "invoice_upcoming") {
-            msgBody = `Maggi May Broussard Legal Services\n\nHi ${firstName}, invoice #${invoiceNumber} for ${amount} is due on ${dueDate}. Pay securely: ${portalUrl}`;
+            smsBody = `Maggi May Broussard Legal Services\n\nHi ${firstName}, invoice #${invoiceNumber} for ${amount} is due on ${dueDate}. Pay securely: ${portalUrl}\n\nReply STOP to opt out.`;
           } else if (reminderType === "invoice_overdue") {
-            msgBody = `Maggi May Broussard Legal Services\n\nHi ${firstName}, invoice #${invoiceNumber} for ${amount} is OVERDUE (was due ${dueDate}). Please pay now: ${portalUrl}`;
+            smsBody = `Maggi May Broussard Legal Services\n\nHi ${firstName}, invoice #${invoiceNumber} for ${amount} is OVERDUE (was due ${dueDate}). Please pay now: ${portalUrl}\n\nReply STOP to opt out.`;
           } else if (reminderType === "retainer_deadline") {
-            msgBody = `Maggi May Broussard Legal Services\n\nHi ${firstName}, your retainer for ${service} requires payment by ${deadlineDate ?? dueDate}. Complete it here: ${portalUrl}`;
+            smsBody = `Maggi May Broussard Legal Services\n\nHi ${firstName}, your retainer for ${service} requires payment by ${deadlineDate ?? dueDate}. Complete it here: ${portalUrl}\n\nReply STOP to opt out.`;
           }
 
-          if (msgBody) {
+          if (smsBody) {
             const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`;
             const credentials = btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`);
-
-            // Send via WhatsApp (primary)
-            const waFormData = new URLSearchParams({
-              To: `whatsapp:${recipientPhone}`,
-              From: `whatsapp:${TWILIO_PHONE_NUMBER}`,
-              Body: msgBody,
-            });
-            const waRes = await fetch(twilioUrl, {
+            const formData = new URLSearchParams({ To: recipientPhone, From: TWILIO_PHONE_NUMBER, Body: smsBody });
+            await fetch(twilioUrl, {
               method: "POST",
               headers: { Authorization: `Basic ${credentials}`, "Content-Type": "application/x-www-form-urlencoded" },
-              body: waFormData.toString(),
+              body: formData.toString(),
             });
-
-            // SMS fallback if WhatsApp fails
-            if (!waRes.ok) {
-              const smsFormData = new URLSearchParams({
-                To: recipientPhone,
-                From: TWILIO_PHONE_NUMBER,
-                Body: msgBody + "\n\nReply STOP to opt out.",
-              });
-              await fetch(twilioUrl, {
-                method: "POST",
-                headers: { Authorization: `Basic ${credentials}`, "Content-Type": "application/x-www-form-urlencoded" },
-                body: smsFormData.toString(),
-              });
-            }
           }
         } catch (smsErr) {
-          console.error("[send-payment-reminder] WhatsApp/SMS send failed (non-blocking):", smsErr);
+          console.error("[send-payment-reminder] SMS send failed (non-blocking):", smsErr);
         }
       }
     }

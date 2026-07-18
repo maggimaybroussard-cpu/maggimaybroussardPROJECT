@@ -179,7 +179,7 @@ export default function CaseOutcomesSection() {
             <br />
             <span className="italic" style={{ opacity: 0.75 }}>quality, not quantity</span>
           </h2>
-          <p className="text-primary-foreground/75 max-w-xl mx-auto text-sm md:text-base leading-relaxed font-light">
+          <p className="text-primary-foreground/60 max-w-xl mx-auto text-sm md:text-base leading-relaxed font-light">
             A boutique paralegal practice focused on delivering exceptional work for every client — meticulous preparation, deep legal knowledge, and unwavering professionalism.
           </p>
         </div>
@@ -197,7 +197,7 @@ export default function CaseOutcomesSection() {
               </div>
               <div>
                 <h3 className="text-primary-foreground font-semibold text-sm mb-2 leading-snug">{pillar.title}</h3>
-                <p className="text-primary-foreground/65 text-[13px] leading-relaxed">{pillar.desc}</p>
+                <p className="text-primary-foreground/50 text-[13px] leading-relaxed">{pillar.desc}</p>
               </div>
             </div>
           ))}
@@ -226,14 +226,14 @@ export default function CaseOutcomesSection() {
                     <h3 className="font-serif text-2xl md:text-3xl text-primary-foreground mb-2 leading-tight">
                       {stats[0].caseType}
                     </h3>
-                    <p className="text-primary-foreground/70 text-sm">
+                    <p className="text-primary-foreground/50 text-sm">
                       {stats[0].total} matters closed · Most common: {stats[0].topOutcome}
                     </p>
                   </div>
                   <div className="mt-6">
                     <div className="flex items-end gap-3 mb-3">
                       <span className="stat-number text-accent">{stats[0].successRate}%</span>
-                      <span className="text-primary-foreground/75 text-sm mb-2">favorable outcomes</span>
+                      <span className="text-primary-foreground/60 text-sm mb-2">favorable outcomes</span>
                     </div>
                     <div className="w-full h-2 bg-primary-foreground/10 rounded-full overflow-hidden">
                       <div

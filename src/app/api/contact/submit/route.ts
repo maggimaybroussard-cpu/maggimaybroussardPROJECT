@@ -8,138 +8,6 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://broussardlegalserv
 const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 const GA_API_SECRET = process.env.GA_API_SECRET; // optional server-side secret
 
-// ── Airtable CRM config ───────────────────────────────────────────────────────
-const AIRTABLE_API_KEY = process.env.NEXT_PUBLIC_AIRTABLE_API_KEY;
-const AIRTABLE_BASE_ID = 'app6Tk6mUPY4K4ydc';
-const AIRTABLE_CONTACTS_TABLE = 'tbl2TPsG5UHWYPL3n';
-const AIRTABLE_FOLLOWUPS_TABLE = 'tblPrEKXS87nM9WhP';
-
-async function syncToAirtableCRM(params: {
-  name: string;
-  email: string;
-  phone?: string;
-  service: string;
-  message: string;
-  firm?: string;
-  retainerTier?: string;
-  inquiryId: string | null;
-}) {
-  if (!AIRTABLE_API_KEY) return;
-
-  const { name, email, phone, service, message, firm, retainerTier, inquiryId } = params;
-
-  // Map service type to practice area
-  const practiceAreaMap: Record<string, string> = {
-    'Retainer Agreement': 'Business Law',
-    'Monthly Retainer': 'Business Law',
-    'Document Drafting': 'Other',
-    'Legal Research': 'Other',
-    'Case Management': 'Other',
-    'Contract Review': 'Business Law',
-    'Consultation': 'Other',
-  };
-  const practiceArea = practiceAreaMap[service] ?? 'Other';
-
-  const isHighPriority = !!(retainerTier && retainerTier !== 'project');
-  const notesLines = [
-    `Service: ${service}`,
-    firm ? `Firm: ${firm}` : null,
-    retainerTier ? `Retainer Tier: ${retainerTier}` : null,
-    `Message: ${message}`,
-    inquiryId ? `Supabase Inquiry ID: ${inquiryId}` : null,
-  ].filter(Boolean).join('\n');
-
-  const airtableHeaders = {
-    'Content-Type': 'application/json',
-    Authorization: `Bearer ${AIRTABLE_API_KEY}`,
-  };
-
-  // 1. Create Contact record
-  let contactName = name;
-  try {
-    const contactRes = await fetch(
-      `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_CONTACTS_TABLE}`,
-      {
-        method: 'POST',
-        headers: airtableHeaders,
-        body: JSON.stringify({
-          records: [
-            {
-              fields: {
-                fldroaKJba4FoSwgF: name,           // Full Name
-                fldUus9IUOej0l1NA: email,           // Email
-                ...(phone ? { fldZQ0jwfR10t2EfE: phone } : {}), // Phone
-                fldpenj6Oq3GfUWNa: 'Prospect',      // Status
-                fld23SHVFSUBwgwHl: practiceArea,    // Practice Area
-                fldquXgYbnK77yICx: 'Website',       // Source
-                fldpFxxCWpgjxcsJI: notesLines,      // Notes
-              },
-            },
-          ],
-        }),
-      }
-    );
-    if (contactRes.ok) {
-      const contactData = await contactRes.json();
-      contactName = contactData?.records?.[0]?.fields?.['Full Name'] ?? name;
-    }
-  } catch {
-    // non-blocking
-  }
-
-  // 2. Create Follow-up task
-  try {
-    const dueDate = new Date();
-    dueDate.setDate(dueDate.getDate() + 1); // Due tomorrow
-    const dueDateStr = dueDate.toISOString().split('T')[0];
-
-    await fetch(
-      `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_FOLLOWUPS_TABLE}`,
-      {
-        method: 'POST',
-        headers: airtableHeaders,
-        body: JSON.stringify({
-          records: [
-            {
-              fields: {
-                fld3qF8O5rG6nhy8H: `Follow up with ${contactName} — ${service}`, // Follow-up Title
-                fldhpb7v2rFJMJbRN: contactName,                                   // Contact Name
-                fld1b2UD3GD4bw7ZM: dueDateStr,                                    // Due Date
-                fldDFTiIQCnUlcAUG: isHighPriority ? 'High' : 'Medium',           // Priority
-                fldGdVmi12lWQN4iE: 'Pending',                                     // Status
-                fld9sjl7WvuuL0qNe: 'Email',                                       // Type
-                fldTpVb8Ghg9szRbE: `Contact submitted a website inquiry.\n\nEmail: ${email}\n${notesLines}`, // Notes
-              },
-            },
-          ],
-        }),
-      }
-    );
-  } catch {
-    // non-blocking
-  }
-}
-// ── End Airtable CRM sync ─────────────────────────────────────────────────────
-
-// ── Routing: service → reply-to / priority label ─────────────────────────────
-const SERVICE_ROUTING: Record<string, { replyTo: string; priority: 'high' | 'normal'; label: string }> = {
-  'Retainer Agreement': { replyTo: 'maggimay@broussardlegalservices.com', priority: 'high', label: '🔴 HIGH PRIORITY' },
-  'Monthly Retainer': { replyTo: 'maggimay@broussardlegalservices.com', priority: 'high', label: '🔴 HIGH PRIORITY' },
-  'Document Drafting': { replyTo: 'maggimay@broussardlegalservices.com', priority: 'normal', label: '' },
-  'Legal Research': { replyTo: 'maggimay@broussardlegalservices.com', priority: 'normal', label: '' },
-  'Case Management': { replyTo: 'maggimay@broussardlegalservices.com', priority: 'normal', label: '' },
-  'Contract Review': { replyTo: 'maggimay@broussardlegalservices.com', priority: 'normal', label: '' },
-  'Consultation': { replyTo: 'maggimay@broussardlegalservices.com', priority: 'normal', label: '' },
-};
-
-function getServiceRouting(service: string, retainerTier?: string) {
-  // Retainer tier always high priority
-  if (retainerTier && retainerTier !== 'project') {
-    return { replyTo: 'maggimay@broussardlegalservices.com', priority: 'high' as const, label: '🔴 HIGH PRIORITY — Retainer Interest' };
-  }
-  return SERVICE_ROUTING[service] ?? { replyTo: 'maggimay@broussardlegalservices.com', priority: 'normal' as const, label: '' };
-}
-
 // ── GA4 Measurement Protocol helper ─────────────────────────────────────────
 async function sendGA4Event(
   eventName: string,
@@ -201,12 +69,6 @@ const headerHtml = `
 
 function buildInternalEmail(name: string, firm: string, email: string, service: string, message: string, retainerTier: string, inquiryId: string | null) {
   const tierLabel = retainerTier ? ` · ${retainerTier.charAt(0).toUpperCase() + retainerTier.slice(1)} Tier` : '';
-  const routing = getServiceRouting(service, retainerTier);
-  const priorityBanner = routing.priority === 'high'
-    ? `<div style="background-color:#FEF3C7; border:1px solid #F59E0B; border-radius:8px; padding:12px 20px; margin-bottom:20px;">
-        <p style="margin:0; font-size:13px; color:#92400e; font-weight:bold; font-family:Georgia,serif;">&#9888;&nbsp; ${routing.label} — Respond within 2 hours</p>
-      </div>`
-    : '';
   return `
     <!DOCTYPE html>
     <html lang="en">
@@ -224,7 +86,6 @@ function buildInternalEmail(name: string, firm: string, email: string, service: 
             </tr>
             <tr>
               <td style="padding:0 36px 32px;">
-                ${priorityBanner}
                 <div style="background-color:${brand.bgCard}; border:1px solid ${brand.border}; border-radius:10px; overflow:hidden; margin:0 0 20px;">
                   <div style="background-color:${brand.primary}; padding:10px 22px;">
                     <p style="margin:0; font-size:11px; color:${brand.accent}; font-weight:bold; text-transform:uppercase; letter-spacing:0.12em; font-family: Georgia, serif;">Lead Details</p>
@@ -472,19 +333,6 @@ export async function POST(req: NextRequest) {
       // Non-blocking — continue even if DB insert fails
     }
 
-    // ── Sync to Airtable CRM (fire-and-forget) ────────────────────────────
-    syncToAirtableCRM({
-      name,
-      email,
-      phone: phone || undefined,
-      service,
-      message,
-      firm: firm || undefined,
-      retainerTier: retainerTier || undefined,
-      inquiryId,
-    }).catch(() => {});
-    // ─────────────────────────────────────────────────────────────────────
-
     // 2. Send emails via Resend
     if (!RESEND_API_KEY || RESEND_API_KEY === 'your-resend-api-key-here') {
       return NextResponse.json({
@@ -495,10 +343,6 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // ── Determine routing based on service type ──────────────────────────────
-    const routing = getServiceRouting(service, retainerTier || '');
-    const subjectPrefix = routing.priority === 'high' ? '🔴 HIGH PRIORITY — ' : '';
-
     // Send internal notification to Maggi
     const internalRes = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -508,9 +352,9 @@ export async function POST(req: NextRequest) {
       },
       body: JSON.stringify({
         from: 'onboarding@resend.dev',
-        to: ['maggimay@broussardlegalservices.com'],
+        to: ['maggimaybroussard@gmail.com'],
         reply_to: email,
-        subject: `${subjectPrefix}🔔 New Inquiry — ${name} · ${service}`,
+        subject: `🔔 New Inquiry — ${name} · ${service}`,
         html: buildInternalEmail(name, firm, email, service, message, retainerTier || '', inquiryId),
       }),
     });
@@ -518,30 +362,6 @@ export async function POST(req: NextRequest) {
     if (!internalRes.ok) {
       const errBody = await internalRes.json().catch(() => ({}));
       throw new Error((errBody as any)?.message || 'Failed to send notification email');
-    }
-
-    // ── For high-priority (retainer) leads: send a second urgent SMS-style alert ──
-    if (routing.priority === 'high') {
-      fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${RESEND_API_KEY}`,
-        },
-        body: JSON.stringify({
-          from: 'onboarding@resend.dev',
-          to: ['maggimay@broussardlegalservices.com'],
-          reply_to: email,
-          subject: `⚡ Retainer Lead Alert — ${name} — Respond Within 2 Hours`,
-          html: `<div style="font-family:Georgia,serif;max-width:600px;margin:0 auto;padding:24px;background:#FEF3C7;border-radius:10px;border:2px solid #F59E0B;">
-            <h2 style="color:#92400e;margin:0 0 12px;">&#9888; High-Value Retainer Lead</h2>
-            <p style="color:#78350f;font-size:15px;margin:0 0 8px;"><strong>${name}</strong> from <strong>${firm || 'N/A'}</strong> has expressed interest in a <strong>${retainerTier ? retainerTier.charAt(0).toUpperCase() + retainerTier.slice(1) + ' Tier' : 'retainer'}</strong> engagement.</p>
-            <p style="color:#78350f;font-size:14px;margin:0 0 16px;">Service: <strong>${service}</strong></p>
-            <a href="mailto:${email}?subject=Re: Your ${service} Inquiry" style="display:inline-block;padding:12px 24px;background:#92400e;color:#fff;text-decoration:none;border-radius:6px;font-family:Georgia,serif;font-weight:bold;">Reply to ${name} Now &rarr;</a>
-            <p style="color:#92400e;font-size:12px;margin:16px 0 0;">Inquiry ID: ${inquiryId ?? 'N/A'}</p>
-          </div>`,
-        }),
-      }).catch(() => {});
     }
 
     // Send confirmation to visitor (non-blocking)
@@ -575,7 +395,6 @@ export async function POST(req: NextRequest) {
           recipientName: name,
           service,
           source: 'contact_form',
-          priority: routing.priority,
         }),
       }).catch(() => {});
     }

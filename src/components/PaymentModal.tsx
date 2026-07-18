@@ -17,7 +17,7 @@ import {
   trackPaymentError,
 } from '@/lib/analytics';
 
-export type PaymentType = 'consultation_deposit' | 'retainer' | 'hourly_rate';
+export type PaymentType = 'consultation_deposit' | 'retainer';
 
 export interface PaymentOption {
   type: PaymentType;
@@ -38,12 +38,6 @@ export const PAYMENT_OPTIONS: PaymentOption[] = [
     label: 'Retainer Agreement',
     amount: 1500,
     description: 'Monthly retainer for ongoing legal support and document drafting.',
-  },
-  {
-    type: 'hourly_rate',
-    label: 'Hourly Rate',
-    amount: 95,
-    description: 'As-needed paralegal support at $95/hr — pay for exactly what you need.',
   },
 ];
 

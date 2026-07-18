@@ -149,7 +149,7 @@ export default function RetainerPricingSection() {
               <span className="italic opacity-70">no surprises</span>
             </h2>
           </div>
-          <p className="text-sm leading-relaxed max-w-xs text-primary-foreground/75 font-light md:text-right">
+          <p className="text-sm leading-relaxed max-w-xs text-primary-foreground/60 font-light md:text-right">
             Reserve a block of paralegal hours each month at a flat rate. Transparent tracking, predictable costs, flexible terms.
           </p>
         </div>
@@ -173,13 +173,13 @@ export default function RetainerPricingSection() {
 
               {/* Tier name + hours */}
               <div className="mb-6">
-                <p className={`text-xs font-semibold uppercase tracking-[0.3em] mb-2 ${tier.highlight ? 'text-accent-foreground/80' : 'text-primary-foreground/65'}`}>
+                <p className={`text-xs font-semibold uppercase tracking-[0.3em] mb-2 ${tier.highlight ? 'text-accent-foreground/70' : 'text-primary-foreground/50'}`}>
                   {tier.name}
                 </p>
                 <p className={`font-serif text-[2.6rem] leading-none tracking-tight mb-1 ${tier.highlight ? 'text-accent-foreground' : 'text-primary-foreground'}`}>
                   {tier.monthlyTotal}
                 </p>
-                <p className={`text-sm font-light ${tier.highlight ? 'text-accent-foreground/80' : 'text-primary-foreground/65'}`}>
+                <p className={`text-sm font-light ${tier.highlight ? 'text-accent-foreground/70' : 'text-primary-foreground/50'}`}>
                   {tier.hours} · {tier.rate} effective rate
                 </p>
               </div>
@@ -196,7 +196,7 @@ export default function RetainerPricingSection() {
                         <polyline points="20 6 9 17 4 12" />
                       </svg>
                     </span>
-                    <span className={`text-sm font-light leading-snug ${tier.highlight ? 'text-accent-foreground/90' : 'text-primary-foreground/80'}`}>
+                    <span className={`text-sm font-light leading-snug ${tier.highlight ? 'text-accent-foreground/85' : 'text-primary-foreground/65'}`}>
                       {f}
                     </span>
                   </li>
@@ -237,7 +237,7 @@ export default function RetainerPricingSection() {
               <line x1="12" y1="16" x2="12.01" y2="16" />
             </svg>
           </div>
-          <p className="text-sm text-primary-foreground/75 font-light leading-relaxed">
+          <p className="text-sm text-primary-foreground/60 font-light leading-relaxed">
             <span className="text-primary-foreground font-semibold">Need project-based or hourly support?</span>{' '}
             Project engagements start at $95/hr with a defined scope and deliverable. Hourly as-needed billing is available at $95/hr for overflow work without a monthly commitment.{' '}
             <Link href="/book-consultation" className="text-accent underline underline-offset-2 hover:text-accent/80 transition-colors">
@@ -267,7 +267,7 @@ export default function RetainerPricingSection() {
               <span className="text-accent">{note.icon}</span>
               <div>
                 <p className="text-sm font-semibold text-primary-foreground mb-1">{note.label}</p>
-                <p className="text-xs text-primary-foreground/70 font-light leading-relaxed">{note.detail}</p>
+                <p className="text-xs text-primary-foreground/50 font-light leading-relaxed">{note.detail}</p>
               </div>
             </div>
           ))}
