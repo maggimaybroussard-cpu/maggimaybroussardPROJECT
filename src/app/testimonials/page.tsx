@@ -62,7 +62,7 @@ function TestimonialSubmissionForm() {
         rating: form.rating,
         quote: form.quote.slice(0, 160),
         full_quote: form.quote,
-        image: "https://img.rocket.new/generatedImages/rocket_gen_img_1ad86056c-1765741890853.png",
+        image: "https://img.rocket.new/generatedImages/rocket_gen_img_1243153ce-1764635353842.png",
         alt: 'Client testimonial photo',
         featured: false,
         active: false,
