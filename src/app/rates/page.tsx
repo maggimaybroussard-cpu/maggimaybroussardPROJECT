@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import CalendlyWidget from '@/components/CalendlyWidget';
 
 /* ─── Types ──────────────────────────────────────────────────────────── */
 interface RetainerPackage {
@@ -576,6 +577,16 @@ export default function RatesPage() {
               <p className="text-base text-muted-foreground font-light leading-relaxed mb-10 max-w-xl mx-auto">
                 Book a free 15-minute consultation to discuss your matter volume, practice area, and which engagement model makes the most sense for your firm.
               </p>
+
+              {/* ── Live Calendly Booking Widget ─────────────────────── */}
+              <div className="mb-10">
+                <CalendlyWidget
+                  heading="Book Your Free Consultation"
+                  subheading="Select a time that works for you — no obligation."
+                  height={580}
+                />
+              </div>
+
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                 <Link
                   href="/book-consultation"

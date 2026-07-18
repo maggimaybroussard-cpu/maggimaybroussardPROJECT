@@ -18,6 +18,7 @@ import MobileAppSection from './components/MobileAppSection';
 import BrandVideoSection from './components/BrandVideoSection';
 import TrustSignalsBar from '@/components/TrustSignalsBar';
 import AttorneyDisclaimer from '@/components/AttorneyDisclaimer';
+import CalendlyWidget from '@/components/CalendlyWidget';
 
 export const metadata: Metadata = {
   title: 'Contract Paralegal Services New Orleans — Broussard Legal Services',
@@ -134,6 +135,18 @@ export default function HomePage() {
         <TestimonialsSection />
         <TestimonialsCarousel />
         <MobileAppSection />
+
+        {/* ── Calendly Booking Widget ─────────────────────────────────── */}
+        <section id="book-now" className="py-20 md:py-28 bg-secondary/30">
+          <div className="max-w-3xl mx-auto px-5 md:px-10">
+            <CalendlyWidget
+              heading="Book a Free 30-Min Consultation"
+              subheading="Pick a time that works for you — no phone tag, no obligation."
+              height={630}
+            />
+          </div>
+        </section>
+
         <EmailOptInSection />
         <ContactCTASection />
       </main>
