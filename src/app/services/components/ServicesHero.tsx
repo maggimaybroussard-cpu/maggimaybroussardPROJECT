@@ -79,10 +79,22 @@ export default function ServicesHero() {
         </div>
       </section>
 
-      <BookConsultationModal
-        isOpen={bookingModalOpen}
-        onClose={() => setBookingModalOpen(false)} />
-      
-    </>);
+      {/* Paralegal Disclaimer Banner */}
+      <div className="bg-amber-50 border-b border-amber-200">
+        <div className="max-w-7xl mx-auto px-5 md:px-10 py-3">
+          <p className="text-amber-800 text-xs text-center leading-relaxed">
+            <strong>Paralegal Disclaimer:</strong> Broussard Legal Services provides paralegal services under the supervision of a licensed attorney. All work product is reviewed by a licensed attorney. This website does not provide legal advice and use of this site does not create an attorney-client relationship.{' '}
+            <Link href="/disclaimers" className="underline hover:text-amber-900">View full disclaimer →</Link>
+          </p>
+        </div>
+      </div>
 
+      {bookingModalOpen && (
+        <BookConsultationModal
+          isOpen={bookingModalOpen}
+          onClose={() => setBookingModalOpen(false)}
+        />
+      )}
+    </>
+  );
 }

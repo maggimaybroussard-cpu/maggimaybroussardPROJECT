@@ -339,6 +339,13 @@ function CheckoutContent() {
               </span>
             ))}
           </div>
+
+          {/* Paralegal Disclaimer */}
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mt-4">
+            <p className="text-amber-800 text-xs leading-relaxed">
+              <strong>Paralegal Disclaimer:</strong> Broussard Legal Services employs trained paralegals who assist under the supervision of a licensed attorney. Payment does not create an attorney-client relationship until a formal engagement letter is signed. All services are subject to attorney review and approval.
+            </p>
+          </div>
         </div>
 
         {/* Right: option cards */}

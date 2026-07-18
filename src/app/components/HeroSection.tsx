@@ -50,11 +50,10 @@ export default function HeroSection() {
       {/* Background Image — LCP element: priority + fetchpriority=high */}
       <div className="absolute inset-0 hero-bg transition-transform duration-700 ease-out will-change-transform">
         <AppImage
-          src="https://images.unsplash.com/photo-1553714167-d5dddd691160"
-          alt="Modern minimal white bookcase with neatly arranged books and clean shelves in a bright airy library"
+          src="/assets/images/Copilot_20260530_005014-1784416060690.png"
+          alt="Broussard Legal Services professional background texture"
           fill
           priority
-          quality={80}
           className="object-cover object-center"
           sizes="100vw"
           fetchPriority="high"

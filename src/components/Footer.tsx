@@ -102,6 +102,14 @@ export default function Footer() {
               Cookie Preferences
             </button>
           </div>
+
+          {/* Paralegal Disclaimer */}
+          <div className="pt-4 border-t border-border/30">
+            <p className="text-[10px] text-muted-foreground/60 text-center leading-relaxed max-w-3xl mx-auto">
+              <strong className="text-muted-foreground/80">Paralegal Disclaimer:</strong> Broussard Legal Services employs trained paralegals who assist under the supervision of a licensed attorney. All information provided is for general informational purposes only and does not constitute legal advice. No attorney-client relationship is formed by use of this website. For legal advice specific to your situation, please{' '}
+              <Link href="/contact" className="underline hover:text-foreground transition-colors">consult with a licensed attorney</Link>.
+            </p>
+          </div>
         </div>
       </footer>
 

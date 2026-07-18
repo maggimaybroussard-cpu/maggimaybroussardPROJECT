@@ -28,6 +28,7 @@ const LexiCaseFiles = dynamic(() => import('@/components/LexiCaseFiles'), { ssr:
 const LexiSettlementEstimator = dynamic(() => import('@/components/LexiSettlementEstimator'), { ssr: false });
 const LexiDepoPrep = dynamic(() => import('@/components/LexiDepoPrep'), { ssr: false });
 const LexiResearchHistory = dynamic(() => import('@/components/LexiResearchHistory'), { ssr: false });
+const LexiLegislationResearch = dynamic(() => import('@/components/LexiLegislationResearch'), { ssr: false });
 
 interface Message {
   role: 'user' | 'assistant';
@@ -98,6 +99,7 @@ interface ProviderRoute {
 const TAB_PROVIDER_MAP: Record<string, ProviderRoute> = {
   // Research tasks → Perplexity for real-time web search
   research_history: { provider: 'PERPLEXITY', model: 'perplexity/llama-3.1-sonar-small-128k-online', label: 'Perplexity', icon: '🟣' },
+  legislation: { provider: 'PERPLEXITY', model: 'perplexity/llama-3.1-sonar-small-128k-online', label: 'Perplexity', icon: '🟣' },
   // Document drafting & analysis → Claude for deep reasoning
   docs: { provider: 'ANTHROPIC', model: 'anthropic/claude-sonnet-4-6', label: 'Claude', icon: '🟠' },
   brief: { provider: 'ANTHROPIC', model: 'anthropic/claude-sonnet-4-6', label: 'Claude', icon: '🟠' },
@@ -951,7 +953,7 @@ export default function LegalSecretaryAssistant({ onClose, floatingMode = false 
   const [input, setInput] = useState('');
   const [isExpanded, setIsExpanded] = useState(!floatingMode);
   const [showQuickPrompts, setShowQuickPrompts] = useState(true);
-  const [activeTab, setActiveTab] = useState<'chat' | 'email' | 'hours' | 'session' | 'payments' | 'appointments' | 'conflict' | 'docs' | 'symbols' | 'brief' | 'deadline' | 'templates' | 'review' | 'comm' | 'intake' | 'dashboard' | 'billing' | 'audio' | 'folders' | 'search' | 'invoice' | 'casefiles' | 'settlement' | 'depoproep' | 'research_history'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'chat' | 'email' | 'hours' | 'session' | 'payments' | 'appointments' | 'conflict' | 'docs' | 'symbols' | 'brief' | 'deadline' | 'templates' | 'review' | 'comm' | 'intake' | 'dashboard' | 'billing' | 'audio' | 'folders' | 'search' | 'invoice' | 'casefiles' | 'settlement' | 'depoproep' | 'research_history' | 'legislation'>('dashboard');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const conversationRef = useRef<Array<{ role: string; content: string }>>([]);
@@ -1367,6 +1369,7 @@ export default function LegalSecretaryAssistant({ onClose, floatingMode = false 
                 { id: 'settlement', label: 'Settle', icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> },
                 { id: 'depoproep', label: 'Prep', icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> },
                 { id: 'research_history', label: 'History', icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> },
+                { id: 'legislation', label: 'Laws', icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg> },
               ] as const).map(tab => (
                 <button
                   key={tab.id}
@@ -1520,6 +1523,13 @@ export default function LegalSecretaryAssistant({ onClose, floatingMode = false 
             {activeTab === 'research_history' && (
               <div className="flex-1 overflow-hidden">
                 <LexiResearchHistory />
+              </div>
+            )}
+
+            {/* Legislation Research tab */}
+            {activeTab === 'legislation' && (
+              <div className="flex-1 overflow-y-auto p-4">
+                <LexiLegislationResearch />
               </div>
             )}
 
