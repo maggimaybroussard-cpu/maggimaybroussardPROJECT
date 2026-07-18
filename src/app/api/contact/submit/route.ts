@@ -123,21 +123,21 @@ async function syncToAirtableCRM(params: {
 
 // ── Routing: service → reply-to / priority label ─────────────────────────────
 const SERVICE_ROUTING: Record<string, { replyTo: string; priority: 'high' | 'normal'; label: string }> = {
-  'Retainer Agreement': { replyTo: 'maggimaybroussard@gmail.com', priority: 'high', label: '🔴 HIGH PRIORITY' },
-  'Monthly Retainer': { replyTo: 'maggimaybroussard@gmail.com', priority: 'high', label: '🔴 HIGH PRIORITY' },
-  'Document Drafting': { replyTo: 'maggimaybroussard@gmail.com', priority: 'normal', label: '' },
-  'Legal Research': { replyTo: 'maggimaybroussard@gmail.com', priority: 'normal', label: '' },
-  'Case Management': { replyTo: 'maggimaybroussard@gmail.com', priority: 'normal', label: '' },
-  'Contract Review': { replyTo: 'maggimaybroussard@gmail.com', priority: 'normal', label: '' },
-  'Consultation': { replyTo: 'maggimaybroussard@gmail.com', priority: 'normal', label: '' },
+  'Retainer Agreement': { replyTo: 'maggimay@broussardlegalservices.com', priority: 'high', label: '🔴 HIGH PRIORITY' },
+  'Monthly Retainer': { replyTo: 'maggimay@broussardlegalservices.com', priority: 'high', label: '🔴 HIGH PRIORITY' },
+  'Document Drafting': { replyTo: 'maggimay@broussardlegalservices.com', priority: 'normal', label: '' },
+  'Legal Research': { replyTo: 'maggimay@broussardlegalservices.com', priority: 'normal', label: '' },
+  'Case Management': { replyTo: 'maggimay@broussardlegalservices.com', priority: 'normal', label: '' },
+  'Contract Review': { replyTo: 'maggimay@broussardlegalservices.com', priority: 'normal', label: '' },
+  'Consultation': { replyTo: 'maggimay@broussardlegalservices.com', priority: 'normal', label: '' },
 };
 
 function getServiceRouting(service: string, retainerTier?: string) {
   // Retainer tier always high priority
   if (retainerTier && retainerTier !== 'project') {
-    return { replyTo: 'maggimaybroussard@gmail.com', priority: 'high' as const, label: '🔴 HIGH PRIORITY — Retainer Interest' };
+    return { replyTo: 'maggimay@broussardlegalservices.com', priority: 'high' as const, label: '🔴 HIGH PRIORITY — Retainer Interest' };
   }
-  return SERVICE_ROUTING[service] ?? { replyTo: 'maggimaybroussard@gmail.com', priority: 'normal' as const, label: '' };
+  return SERVICE_ROUTING[service] ?? { replyTo: 'maggimay@broussardlegalservices.com', priority: 'normal' as const, label: '' };
 }
 
 // ── GA4 Measurement Protocol helper ─────────────────────────────────────────
@@ -508,7 +508,7 @@ export async function POST(req: NextRequest) {
       },
       body: JSON.stringify({
         from: 'onboarding@resend.dev',
-        to: ['maggimaybroussard@gmail.com'],
+        to: ['maggimay@broussardlegalservices.com'],
         reply_to: email,
         subject: `${subjectPrefix}🔔 New Inquiry — ${name} · ${service}`,
         html: buildInternalEmail(name, firm, email, service, message, retainerTier || '', inquiryId),
@@ -530,7 +530,7 @@ export async function POST(req: NextRequest) {
         },
         body: JSON.stringify({
           from: 'onboarding@resend.dev',
-          to: ['maggimaybroussard@gmail.com'],
+          to: ['maggimay@broussardlegalservices.com'],
           reply_to: email,
           subject: `⚡ Retainer Lead Alert — ${name} — Respond Within 2 Hours`,
           html: `<div style="font-family:Georgia,serif;max-width:600px;margin:0 auto;padding:24px;background:#FEF3C7;border-radius:10px;border:2px solid #F59E0B;">
