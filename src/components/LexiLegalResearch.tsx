@@ -7,7 +7,16 @@ import toast from 'react-hot-toast';
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 type ResearchCategory = 'case_law' | 'statutes' | 'precedent' | 'federal' | 'all';
-type DataSource = 'perplexity' | 'courtlistener' | 'ecfr' | 'openstates' | 'la_legislature' | 'govinfo' | 'case_law_links';
+type DataSource = 'perplexity' | 'courtlistener' | 'ecfr' | 'openstates' | 'la_legislature' | 'govinfo' | 'case_law_links' | 'openai_research';
+
+type OpenAIMode = 'case_law' | 'statute_lookup' | 'brief_generation';
+
+interface OpenAIResearchResult {
+  mode: OpenAIMode;
+  query: string;
+  content: string;
+  timestamp: number;
+}
 
 interface SearchResult {
   query: string;
@@ -120,6 +129,140 @@ const CATEGORY_OPTIONS: Array<{ id: ResearchCategory; label: string; icon: strin
   { id: 'all', label: 'All Sources', icon: '🔍', hint: 'Comprehensive research across all sources' },
 ];
 
+const OPENAI_MODE_OPTIONS: Array<{ id: OpenAIMode; label: string; icon: string; description: string; placeholder: string }> = [
+  {
+    id: 'case_law',
+    label: 'Case Law Analysis',
+    icon: '⚖️',
+    description: 'Analyze relevant case law, identify holdings, and extract key precedents',
+    placeholder: 'e.g. "Analyze negligence per se doctrine in Louisiana personal injury cases" or "Find Fifth Circuit cases on summary judgment standards"',
+  },
+  {
+    id: 'statute_lookup',
+    label: 'Statute Lookup',
+    icon: '📖',
+    description: 'Look up and interpret statutes, codes, and regulations with plain-language explanations',
+    placeholder: 'e.g. "Louisiana R.S. 9:2800 premises liability" or "FLSA overtime exemptions 29 U.S.C. § 207"',
+  },
+  {
+    id: 'brief_generation',
+    label: 'Brief Generation',
+    icon: '📝',
+    description: 'Generate legal argument outlines, motion sections, or intake summaries',
+    placeholder: 'e.g. "Draft argument section for motion to dismiss lack of personal jurisdiction" or "Summarize intake facts for breach of contract matter"',
+  },
+];
+
+const OPENAI_QUICK_PROMPTS: Record<OpenAIMode, string[]> = {
+  case_law: [
+    'Louisiana negligence per se doctrine',
+    'Fifth Circuit summary judgment standard',
+    'Louisiana comparative fault allocation',
+    'Employment discrimination McDonnell Douglas burden shifting',
+    'Louisiana breach of contract damages',
+    'Personal injury causation Louisiana',
+  ],
+  statute_lookup: [
+    'Louisiana R.S. 9:2800 premises liability',
+    'La. C.C. Art. 2315 tort liability',
+    'FLSA overtime exemptions 29 U.S.C. § 207',
+    'Title VII 42 U.S.C. § 2000e discrimination',
+    'Louisiana workers comp La. R.S. 23:1021',
+    'ADA reasonable accommodation 42 U.S.C. § 12112',
+  ],
+  brief_generation: [
+    'Motion to dismiss 12(b)(6) argument section',
+    'Summary judgment no genuine dispute of fact',
+    'Intake summary breach of contract matter',
+    'Opposition to motion to compel discovery',
+    'Demand letter personal injury settlement',
+    'Retainer agreement scope of services clause',
+  ],
+};
+
+function buildOpenAIPrompt(query: string, mode: OpenAIMode, context?: string, selectedState?: string, practiceArea?: string): string {
+  const stateCtx = selectedState ? `\nPRIMARY JURISDICTION: ${selectedState}` : '';
+  const practiceCtx = practiceArea ? `\nPRACTICE AREA: ${practiceArea}` : '';
+  const matterCtx = context ? `\nMATTER CONTEXT: ${context}` : '';
+
+  if (mode === 'case_law') {
+    return `You are Lexi, a highly experienced legal research assistant at Broussard Legal Services. Conduct a thorough case law analysis on the following topic.
+
+RESEARCH QUERY: ${query}${stateCtx}${practiceCtx}${matterCtx}
+
+Provide a structured case law analysis with:
+
+1. **OVERVIEW** — Brief summary of the legal issue and controlling doctrine (2-3 sentences)
+
+2. **LANDMARK CASES** — List 3-5 most important cases with:
+   - Full case name and Bluebook citation
+   - Court and year
+   - Key holding (1-2 sentences)
+   - Relevance to the query
+
+3. **CONTROLLING AUTHORITY** — Identify binding precedent in the relevant jurisdiction
+
+4. **CIRCUIT/STATE SPLIT** (if applicable) — Note any disagreements between courts
+
+5. **RECENT DEVELOPMENTS** — Notable cases from the last 5 years
+
+6. **PRACTICAL APPLICATION** — How to use this case law in practice
+
+Use proper Bluebook citations. Cite only real, verifiable cases.`;
+  }
+
+  if (mode === 'statute_lookup') {
+    return `You are Lexi, a highly experienced legal research assistant at Broussard Legal Services. Look up and interpret the following statute or legal provision.
+
+LOOKUP QUERY: ${query}${stateCtx}${practiceCtx}${matterCtx}
+
+Provide a structured statute analysis with:
+
+1. **STATUTE IDENTIFICATION** — Full citation, title, and current status (in effect / amended / repealed)
+
+2. **PLAIN LANGUAGE SUMMARY** — What the statute says in plain English (2-3 sentences)
+
+3. **KEY PROVISIONS** — List the most important subsections with their requirements or prohibitions
+
+4. **ELEMENTS / REQUIREMENTS** — If it creates a cause of action or defense, list all required elements
+
+5. **EXCEPTIONS & DEFENSES** — Statutory exceptions, safe harbors, or affirmative defenses
+
+6. **RELATED STATUTES & REGULATIONS** — Cross-references to related code sections or CFR provisions
+
+7. **CASE LAW INTERPRETING THIS STATUTE** — 2-3 key cases that have interpreted or applied this statute
+
+8. **PRACTICAL NOTES** — Filing deadlines, notice requirements, or procedural traps
+
+Use proper Bluebook citations throughout.`;
+  }
+
+  // brief_generation
+  return `You are Lexi, a highly experienced legal research assistant at Broussard Legal Services. Generate a professional legal brief section or document based on the following request.
+
+BRIEF REQUEST: ${query}${stateCtx}${practiceCtx}${matterCtx}
+
+Generate a well-structured legal document with:
+
+1. **DOCUMENT TYPE & PURPOSE** — Identify what this document is and its strategic purpose
+
+2. **STATEMENT OF FACTS** (if applicable) — Key facts to include (placeholder format if facts not provided)
+
+3. **LEGAL STANDARD** — The applicable legal standard with citations
+
+4. **ARGUMENT** — Structured legal argument with:
+   - Main thesis
+   - Supporting case law (with Bluebook citations)
+   - Application to facts
+   - Anticipated counterarguments and responses
+
+5. **CONCLUSION** — Requested relief or summary
+
+6. **CITATIONS USED** — List all authorities cited in Bluebook format
+
+Format as a professional legal document. Use [PLACEHOLDER] for case-specific facts not provided. Cite only real, verifiable authorities.`;
+}
+
 // ── Live Data Source Tabs ─────────────────────────────────────────────────────
 const DATA_SOURCE_TABS: Array<{ id: DataSource; label: string; icon: string; description: string; apiPath: string }> = [
   {
@@ -127,6 +270,13 @@ const DATA_SOURCE_TABS: Array<{ id: DataSource; label: string; icon: string; des
     label: 'AI Research',
     icon: '🤖',
     description: 'Perplexity AI — live web search across all legal databases',
+    apiPath: '',
+  },
+  {
+    id: 'openai_research',
+    label: 'OpenAI',
+    icon: '✨',
+    description: 'OpenAI GPT — deep case law analysis, statute lookup & brief generation',
     apiPath: '',
   },
   {
@@ -257,11 +407,41 @@ export default function LexiLegalResearch({ context, onInsertCitation, defaultOp
   const inputRef = useRef<HTMLInputElement>(null);
   const stateDropdownRef = useRef<HTMLDivElement>(null);
 
+  // OpenAI research state
+  const [openAIMode, setOpenAIMode] = useState<OpenAIMode>('case_law');
+  const [openAIResult, setOpenAIResult] = useState<OpenAIResearchResult | null>(null);
+  const [openAIHistory, setOpenAIHistory] = useState<OpenAIResearchResult[]>([]);
+
   const { response, fullResponse, isLoading, error, sendMessage } = useChat(
     'PERPLEXITY',
     'perplexity/sonar-pro',
     false
   );
+
+  const {
+    response: openAIResponse,
+    isLoading: openAILoading,
+    error: openAIError,
+    sendMessage: sendOpenAIMessage,
+  } = useChat('OPEN_AI', 'gpt-5.4', true);
+
+  useEffect(() => {
+    if (openAIError) toast.error('OpenAI research failed — ' + openAIError.message);
+  }, [openAIError]);
+
+  useEffect(() => {
+    if (openAIResponse && !openAILoading && activeDataSource === 'openai_research') {
+      const result: OpenAIResearchResult = {
+        mode: openAIMode,
+        query,
+        content: openAIResponse,
+        timestamp: Date.now(),
+      };
+      setOpenAIResult(result);
+      setOpenAIHistory(prev => [result, ...prev.slice(0, 9)]);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openAIResponse, openAILoading]);
 
   useEffect(() => {
     if (error) toast.error('Legal research failed — ' + error.message);
@@ -341,6 +521,25 @@ export default function LexiLegalResearch({ context, onInsertCitation, defaultOp
   const doSearch = (q: string, cat: ResearchCategory = category) => {
     if (!q.trim() || isLoading) return;
 
+    if (activeDataSource === 'openai_research') {
+      if (openAILoading) return;
+      const stateName = selectedState ? ALL_STATES.find(s => s.code === selectedState)?.name : undefined;
+      const prompt = buildOpenAIPrompt(q.trim(), openAIMode, context, stateName, selectedPracticeArea || undefined);
+      sendOpenAIMessage(
+        [
+          {
+            role: 'system',
+            content: selectedState
+              ? `You are Lexi, a legal research assistant with deep expertise in ${stateName} law and federal law. Always cite real, verifiable authorities in proper Bluebook format. Be thorough and precise.`
+              : 'You are Lexi, a legal research assistant with comprehensive knowledge of all 50 states and federal law. Always cite real, verifiable authorities in proper Bluebook format. Be thorough and precise.',
+          },
+          { role: 'user', content: prompt },
+        ],
+        { max_completion_tokens: 2000, reasoning_effort: 'medium' }
+      );
+      return;
+    }
+
     if (activeDataSource !== 'perplexity') {
       doLiveDataSearch(q, activeDataSource);
       return;
@@ -404,8 +603,9 @@ export default function LexiLegalResearch({ context, onInsertCitation, defaultOp
   };
 
   const selectedStateObj = ALL_STATES.find(s => s.code === selectedState);
-  const isSearching = isLoading || liveDataLoading;
+  const isSearching = isLoading || liveDataLoading || openAILoading;
   const activeTab = DATA_SOURCE_TABS.find(t => t.id === activeDataSource);
+  const activeOpenAIMode = OPENAI_MODE_OPTIONS.find(m => m.id === openAIMode);
 
   return (
     <div className="border border-border rounded-xl overflow-hidden bg-background">
@@ -418,7 +618,7 @@ export default function LexiLegalResearch({ context, onInsertCitation, defaultOp
           <span className="text-base">🔬</span>
           <div className="text-left">
             <p className="text-xs font-semibold text-foreground">Lexi Legal Research</p>
-            <p className="text-[10px] text-muted-foreground">All 50 states · Federal law · CourtListener · eCFR · OpenStates · GovInfo</p>
+            <p className="text-[10px] text-muted-foreground">All 50 states · Federal law · OpenAI · CourtListener · eCFR · OpenStates · GovInfo</p>
           </div>
           {isSearching && (
             <span className="ml-2 flex items-center gap-1 text-[10px] text-primary font-medium">
@@ -444,11 +644,12 @@ export default function LexiLegalResearch({ context, onInsertCitation, defaultOp
                     setActiveDataSource(tab.id);
                     setActiveResult(null);
                     setLiveDataResult(null);
+                    setOpenAIResult(null);
                   }}
                   title={tab.description}
                   className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg border text-[10px] font-semibold transition-all ${
                     activeDataSource === tab.id
-                      ? 'border-primary bg-primary/10 text-primary' :'border-border text-muted-foreground hover:border-primary/40 hover:text-foreground'
+                      ? tab.id === 'openai_research' ?'border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' :'border-primary bg-primary/10 text-primary' :'border-border text-muted-foreground hover:border-primary/40 hover:text-foreground'
                   }`}
                 >
                   <span>{tab.icon}</span>
@@ -460,6 +661,274 @@ export default function LexiLegalResearch({ context, onInsertCitation, defaultOp
               <p className="text-[9px] text-muted-foreground mt-1.5 italic">{activeTab.description}</p>
             )}
           </div>
+
+          {/* ── OpenAI Research Mode Selector ────────────────────────────── */}
+          {activeDataSource === 'openai_research' && (
+            <div className="space-y-3">
+              <div>
+                <p className="text-[10px] text-muted-foreground font-medium mb-2">Research Mode:</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {OPENAI_MODE_OPTIONS.map(mode => (
+                    <button
+                      key={mode.id}
+                      onClick={() => { setOpenAIMode(mode.id); setOpenAIResult(null); }}
+                      title={mode.description}
+                      className={`flex flex-col items-center gap-1 px-2 py-2.5 rounded-xl border text-center transition-all ${
+                        openAIMode === mode.id
+                          ? 'border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' :'border-border text-muted-foreground hover:border-emerald-500/40 hover:text-foreground'
+                      }`}
+                    >
+                      <span className="text-base">{mode.icon}</span>
+                      <span className="text-[9px] font-semibold leading-tight">{mode.label}</span>
+                    </button>
+                  ))}
+                </div>
+                {activeOpenAIMode && (
+                  <p className="text-[9px] text-muted-foreground mt-1.5 italic">{activeOpenAIMode.description}</p>
+                )}
+              </div>
+
+              {/* Jurisdiction + Practice Area for OpenAI */}
+              <div className="grid grid-cols-2 gap-2">
+                <div className="relative" ref={stateDropdownRef}>
+                  <button
+                    onClick={() => { setShowStateDropdown(o => !o); setShowPracticeDropdown(false); }}
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-xl border text-xs transition-all ${
+                      selectedState
+                        ? 'border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' :'border-border text-muted-foreground hover:border-emerald-500/40 hover:text-foreground'
+                    }`}
+                  >
+                    <span className="truncate">
+                      {selectedStateObj ? `${selectedStateObj.code} — ${selectedStateObj.name}` : '🗺️ All States / Federal'}
+                    </span>
+                    <span className="ml-1 shrink-0">▾</span>
+                  </button>
+                  {showStateDropdown && (
+                    <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-background border border-border rounded-xl shadow-lg overflow-hidden">
+                      <div className="p-2 border-b border-border">
+                        <input
+                          autoFocus
+                          value={stateSearch}
+                          onChange={e => setStateSearch(e.target.value)}
+                          placeholder="Search state…"
+                          className="w-full px-2 py-1 text-xs bg-secondary/30 border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-primary/30"
+                        />
+                      </div>
+                      <div className="max-h-48 overflow-y-auto">
+                        <button
+                          onClick={() => { setSelectedState(''); setShowStateDropdown(false); setStateSearch(''); }}
+                          className={`w-full text-left px-3 py-1.5 text-xs hover:bg-primary/5 transition-colors ${!selectedState ? 'text-primary font-semibold' : 'text-foreground'}`}
+                        >
+                          🇺🇸 All States / Federal
+                        </button>
+                        {filteredStates.map(s => (
+                          <button
+                            key={s.code}
+                            onClick={() => { setSelectedState(s.code); setShowStateDropdown(false); setStateSearch(''); }}
+                            className={`w-full text-left px-3 py-1.5 text-xs hover:bg-primary/5 transition-colors ${selectedState === s.code ? 'text-primary font-semibold bg-primary/5' : 'text-foreground'}`}
+                          >
+                            <span className="font-mono text-[10px] text-muted-foreground mr-2">{s.code}</span>
+                            {s.name}
+                            <span className="ml-1 text-[9px] text-muted-foreground">({s.citation})</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="relative">
+                  <button
+                    onClick={() => { setShowPracticeDropdown(o => !o); setShowStateDropdown(false); }}
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-xl border text-xs transition-all ${
+                      selectedPracticeArea
+                        ? 'border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' :'border-border text-muted-foreground hover:border-emerald-500/40 hover:text-foreground'
+                    }`}
+                  >
+                    <span className="truncate">{selectedPracticeArea || '⚖️ Practice Area'}</span>
+                    <span className="ml-1 shrink-0">▾</span>
+                  </button>
+                  {showPracticeDropdown && (
+                    <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-background border border-border rounded-xl shadow-lg overflow-hidden">
+                      <div className="max-h-48 overflow-y-auto">
+                        <button
+                          onClick={() => { setSelectedPracticeArea(''); setShowPracticeDropdown(false); }}
+                          className={`w-full text-left px-3 py-1.5 text-xs hover:bg-primary/5 transition-colors ${!selectedPracticeArea ? 'text-primary font-semibold' : 'text-foreground'}`}
+                        >
+                          All Practice Areas
+                        </button>
+                        {PRACTICE_AREAS.map(pa => (
+                          <button
+                            key={pa}
+                            onClick={() => { setSelectedPracticeArea(pa); setShowPracticeDropdown(false); }}
+                            className={`w-full text-left px-3 py-1.5 text-xs hover:bg-primary/5 transition-colors ${selectedPracticeArea === pa ? 'text-primary font-semibold bg-primary/5' : 'text-foreground'}`}
+                          >
+                            {pa}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Active filters */}
+              {(selectedState || selectedPracticeArea) && (
+                <div className="flex flex-wrap gap-1.5">
+                  {selectedState && (
+                    <span className="flex items-center gap-1 px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/30 rounded-full text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
+                      🗺️ {selectedStateObj?.name}
+                      <button onClick={() => setSelectedState('')} className="ml-0.5 hover:opacity-60">✕</button>
+                    </span>
+                  )}
+                  {selectedPracticeArea && (
+                    <span className="flex items-center gap-1 px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/30 rounded-full text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
+                      ⚖️ {selectedPracticeArea}
+                      <button onClick={() => setSelectedPracticeArea('')} className="ml-0.5 hover:opacity-60">✕</button>
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {/* Search input for OpenAI */}
+              <div className="flex gap-2">
+                <input
+                  value={query}
+                  onChange={e => setQuery(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && doSearch(query)}
+                  placeholder={activeOpenAIMode?.placeholder ?? 'Enter your legal research query…'}
+                  disabled={openAILoading}
+                  className="flex-1 px-3 py-2 bg-background border border-border rounded-xl text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500/30 disabled:opacity-60"
+                />
+                <button
+                  onClick={() => doSearch(query)}
+                  disabled={!query.trim() || openAILoading}
+                  className="px-4 py-2 bg-emerald-600 text-white rounded-xl text-xs font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-emerald-700 transition-colors shrink-0"
+                >
+                  {openAILoading ? '…' : 'Search'}
+                </button>
+              </div>
+
+              {/* Quick prompts */}
+              {!openAIResult && !openAILoading && (
+                <div>
+                  <p className="text-[10px] text-muted-foreground mb-2 font-medium">Quick prompts:</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {OPENAI_QUICK_PROMPTS[openAIMode].map(q => (
+                      <button
+                        key={q}
+                        onClick={() => { setQuery(q); doSearch(q); }}
+                        className="px-2.5 py-1 bg-emerald-500/5 border border-emerald-500/20 rounded-full text-[10px] text-emerald-700 dark:text-emerald-400 hover:border-emerald-500/50 hover:bg-emerald-500/10 transition-colors"
+                      >
+                        {q}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* OpenAI Loading */}
+              {openAILoading && (
+                <div className="flex items-center gap-3 py-4 px-3 bg-emerald-500/5 border border-emerald-500/20 rounded-xl">
+                  <div className="w-5 h-5 rounded-full border-2 border-emerald-500/30 border-t-emerald-500 animate-spin shrink-0" />
+                  <div>
+                    <p className="text-xs font-semibold text-foreground">
+                      {openAIMode === 'case_law' ? 'Analyzing case law with OpenAI…' :
+                       openAIMode === 'statute_lookup'? 'Looking up statute with OpenAI…' : 'Generating legal brief with OpenAI…'}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {openAIMode === 'brief_generation' ?'Drafting structured legal argument with citations…' :'Identifying authorities, holdings, and practical notes…'}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* OpenAI streaming result (live) */}
+              {openAILoading && openAIResponse && (
+                <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-xl p-3 max-h-64 overflow-y-auto">
+                  <div
+                    className="text-xs text-foreground leading-relaxed prose prose-xs max-w-none"
+                    dangerouslySetInnerHTML={{ __html: '<p class="mb-2">' + formatContent(openAIResponse) + '</p>' }}
+                  />
+                </div>
+              )}
+
+              {/* OpenAI Result */}
+              {openAIResult && !openAILoading && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/30 rounded-full text-[9px] font-semibold text-emerald-600 dark:text-emerald-400">
+                          {OPENAI_MODE_OPTIONS.find(m => m.id === openAIResult.mode)?.icon} {OPENAI_MODE_OPTIONS.find(m => m.id === openAIResult.mode)?.label}
+                        </span>
+                        <span className="text-[9px] text-muted-foreground">OpenAI GPT</span>
+                      </div>
+                      <p className="text-xs font-semibold text-foreground mt-1">
+                        Results for: <span className="text-emerald-600 dark:text-emerald-400">{openAIResult.query}</span>
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => { setOpenAIResult(null); setQuery(''); }}
+                      className="text-[10px] text-muted-foreground hover:text-foreground"
+                    >
+                      Clear ✕
+                    </button>
+                  </div>
+
+                  <div className="bg-secondary/20 border border-border rounded-xl p-3 max-h-72 overflow-y-auto">
+                    <div
+                      className="text-xs text-foreground leading-relaxed prose prose-xs max-w-none"
+                      dangerouslySetInnerHTML={{ __html: '<p class="mb-2">' + formatContent(openAIResult.content) + '</p>' }}
+                    />
+                  </div>
+
+                  {(() => {
+                    const extracted = extractCitationsFromText(openAIResult.content);
+                    return extracted.length > 0 ? (
+                      <div>
+                        <p className="text-[10px] font-semibold text-foreground mb-1.5">Detected Citations:</p>
+                        <div className="space-y-1">
+                          {extracted.map((cit, i) => (
+                            <div key={i} className="flex items-center justify-between gap-2 p-2 bg-emerald-500/5 border border-emerald-500/20 rounded-lg">
+                              <span className="text-[10px] text-foreground font-mono flex-1 truncate">{cit}</span>
+                              {onInsertCitation && (
+                                <button
+                                  onClick={() => { onInsertCitation(cit); toast.success('Citation added to TOA'); }}
+                                  className="shrink-0 px-2 py-0.5 bg-emerald-600 text-white rounded text-[9px] font-semibold hover:bg-emerald-700 transition-colors"
+                                >
+                                  + Add
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null;
+                  })()}
+
+                  {/* Recent OpenAI history */}
+                  {openAIHistory.length > 1 && (
+                    <div>
+                      <p className="text-[10px] font-semibold text-muted-foreground mb-1.5">Recent OpenAI searches:</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {openAIHistory.slice(1, 5).map((h, i) => (
+                          <button
+                            key={i}
+                            onClick={() => setOpenAIResult(h)}
+                            className="px-2 py-0.5 bg-secondary/40 border border-border rounded-full text-[10px] text-muted-foreground hover:text-foreground hover:border-emerald-500/40 transition-colors truncate max-w-[140px]"
+                            title={h.query}
+                          >
+                            {OPENAI_MODE_OPTIONS.find(m => m.id === h.mode)?.icon} {h.query}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Jurisdiction + Practice Area filters (only for Perplexity AI) */}
           {activeDataSource === 'perplexity' && (
