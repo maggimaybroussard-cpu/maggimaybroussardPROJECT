@@ -316,11 +316,12 @@ export default function Header({ initialClaims }: HeaderProps) {
             className="md:hidden p-2.5 rounded-full transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent bg-primary-foreground/10 text-accent"
             suppressHydrationWarning
           >
-            <span className="relative block w-[22px] h-[22px]">
+            <span className="relative block w-[22px] h-[22px]" suppressHydrationWarning>
               {/* Hamburger icon */}
               <svg
                 width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
                 aria-hidden="true"
+                suppressHydrationWarning
                 style={{
                   position: 'absolute', top: 0, left: 0,
                   transition: 'opacity 0.2s, transform 0.2s',
@@ -335,6 +336,7 @@ export default function Header({ initialClaims }: HeaderProps) {
               <svg
                 width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
                 aria-hidden="true"
+                suppressHydrationWarning
                 style={{
                   position: 'absolute', top: 0, left: 0,
                   transition: 'opacity 0.2s, transform 0.2s',
