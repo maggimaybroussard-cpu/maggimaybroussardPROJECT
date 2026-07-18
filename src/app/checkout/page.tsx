@@ -24,6 +24,7 @@ import {
   trackLeadQuality,
   trackRetainerPurchased,
   trackCheckoutPaymentFailed,
+  trackCheckoutFlowStart,
 } from '@/lib/analytics';
 
 interface CustomerFormData {
@@ -198,6 +199,18 @@ function CheckoutContent() {
       ],
     });
     trackPaymentTypeSelected(option.type, option.amount);
+    // Checkout flow start — definitive funnel entry event
+    trackCheckoutFlowStart({ paymentType: option.type, amount: option.amount });
+    // Twilio admin notification (non-blocking)
+    fetch('/api/sms/conversion-notify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        event: 'checkout_flow_start',
+        paymentType: option.type,
+        amount: option.amount,
+      }),
+    }).catch(() => {/* non-blocking */});
     setStep('details');
   };
 
@@ -273,6 +286,21 @@ function CheckoutContent() {
         conversionType: 'payment',
         value: selectedOption.amount,
       });
+      // Twilio admin notification for payment completion (non-blocking)
+      fetch('/api/sms/conversion-notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          event: 'payment_complete',
+          paymentType: selectedOption.type,
+          amount: selectedOption.amount,
+          transactionId: pi.id,
+          clientName: formData.firstName
+            ? `${formData.firstName} ${formData.lastName}`.trim()
+            : undefined,
+          email: formData.email || undefined,
+        }),
+      }).catch(() => {/* non-blocking */});
     }
     setSuccessIntent(pi);
     setStep('success');

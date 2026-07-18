@@ -40,6 +40,16 @@ export default function ClientPortalLoginPage() {
       await signIn(email, password);
       trackPortalLogin('email');
       logPortalEvent('portal_login', { method: 'email' });
+      // Twilio admin notification for portal login (non-blocking)
+      fetch('/api/sms/conversion-notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          event: 'portal_login',
+          email,
+          method: 'email',
+        }),
+      }).catch(() => {/* non-blocking */});
       router.replace(redirectTo);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Invalid email or password.');
@@ -55,6 +65,15 @@ export default function ClientPortalLoginPage() {
       await signInWithGoogle(redirectTo);
       trackPortalLogin('google');
       logPortalEvent('portal_login', { method: 'google' });
+      // Twilio admin notification for Google portal login (non-blocking)
+      fetch('/api/sms/conversion-notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          event: 'portal_login',
+          method: 'google',
+        }),
+      }).catch(() => {/* non-blocking */});
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Google sign-in failed. Please try again.');
       setGoogleLoading(false);
