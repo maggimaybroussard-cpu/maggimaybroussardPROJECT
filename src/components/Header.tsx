@@ -26,6 +26,7 @@ const navLinks = [
   { label: 'Contact', href: '/contact' },
   { label: 'Deliverable Hub', href: '/client-deliverable-hub' },
   { label: 'Install App', href: '/mobile-download' },
+  { label: 'Legislation', href: '/legislation' },
 ];
 
 // Grouped nav for mobile
@@ -39,6 +40,7 @@ const mobileNavGroups = [
       { label: 'Blog', href: '/blog' },
       { label: 'Case Studies', href: '/case-studies' },
       { label: 'Testimonials', href: '/testimonials' },
+      { label: 'Legislation', href: '/legislation' },
     ],
   },
   {
