@@ -1,5 +1,7 @@
 'use client';
 
+import { mpTrack, mpIdentify, mpSetProfile, mpSetProfileOnce, mpIncrementProfile, mpReset } from '@/lib/mixpanel';
+
 declare global {
   interface Window {
     gtag: (...args: unknown[]) => void;
@@ -41,6 +43,8 @@ export function trackFormSuccess(serviceName: string) {
     form_id: 'contact_inquiry',
     service_selected: serviceName,
   });
+  // Mixpanel
+  mpTrack('Contact Form Submitted', { service_selected: serviceName, form_id: 'contact_inquiry' });
 }
 
 export function trackFormError(errorReason: string) {
@@ -57,6 +61,8 @@ export function trackCTAClick(ctaLabel: string, ctaLocation: string, destination
     cta_location: ctaLocation,
     destination_url: destination ?? '',
   });
+  // Mixpanel
+  mpTrack('CTA Clicked', { cta_label: ctaLabel, cta_location: ctaLocation, destination_url: destination ?? '' });
 }
 
 // Service card / section engagement
@@ -86,6 +92,7 @@ export function trackCalendlyExternalLink() {
 /** Fired when the payment modal is opened */
 export function trackPaymentModalOpen(source: string) {
   trackEvent('payment_modal_open', { source });
+  mpTrack('Payment Modal Opened', { source });
 }
 
 /** Fired when the user selects a payment type */
@@ -128,6 +135,9 @@ export function trackPaymentSuccess(paymentType: string, amount: number, transac
     currency: 'USD',
     transaction_id: transactionId,
   });
+  // Mixpanel
+  mpTrack('Payment Succeeded', { payment_type: paymentType, amount, currency: 'USD', transaction_id: transactionId });
+  mpIncrementProfile({ total_payments: 1, total_revenue: amount });
 }
 
 // ── Invoice Payment Funnel Events ────────────────────────────────────────────
@@ -166,6 +176,8 @@ export function trackInvoicePayClick(invoiceId: string, invoiceNumber: string, a
       },
     ],
   });
+  // Mixpanel
+  mpTrack('Invoice Pay Clicked', { invoice_id: invoiceId, invoice_number: invoiceNumber, amount, currency: 'USD' });
 }
 
 /** Fired when Stripe checkout session is created successfully */
@@ -205,6 +217,9 @@ export function trackInvoicePaymentSuccess(invoiceId: string, invoiceNumber: str
       },
     ],
   });
+  // Mixpanel
+  mpTrack('Invoice Paid', { invoice_id: invoiceId, invoice_number: invoiceNumber, amount, currency: 'USD', session_id: sessionId });
+  mpIncrementProfile({ invoices_paid: 1, total_invoices_revenue: amount });
 }
 
 /** Fired when client views an invoice detail page */
@@ -256,6 +271,8 @@ export function trackBookConsultationClick(location: string) {
     event_category: 'conversion',
     event_label: 'Book Consultation',
   });
+  // Mixpanel
+  mpTrack('Book Consultation Clicked', { cta_location: location });
 }
 
 /**
@@ -314,6 +331,16 @@ export function trackContactFormSubmission(params: {
     service_type: params.serviceType,
     lead_source: utmSource,
   });
+
+  // Mixpanel
+  mpTrack('Lead Generated', {
+    service_type: params.serviceType,
+    lead_source: utmSource,
+    retainer_tier: params.retainerTier || 'none',
+    inquiry_id: params.inquiryId || '',
+    form_id: 'contact_inquiry',
+  });
+  mpSetProfileOnce({ first_lead_source: utmSource, first_service_interest: params.serviceType });
 }
 
 /**
@@ -369,6 +396,9 @@ export function trackCalendlyBooking(source: string = 'availability_page') {
     form_id: 'calendly_booking',
     source,
   });
+  // Mixpanel
+  mpTrack('Consultation Booked', { booking_channel: 'calendly', source });
+  mpSetProfileOnce({ first_booking_source: source });
 }
 
 /**
@@ -546,6 +576,9 @@ export function trackEmailOptInSubmit(email?: string) {
     form_id: 'email_optin',
     source: 'newsletter_signup',
   });
+  // Mixpanel
+  mpTrack('Email Opt-In Submitted', { form_id: 'email_optin', has_email: !!email });
+  mpSetProfileOnce({ newsletter_signup_date: new Date().toISOString() });
 }
 
 /**
@@ -571,6 +604,8 @@ export function trackPricingPageOpen() {
     event_label: 'Pricing Page Opened',
     page: 'pricing',
   });
+  // Mixpanel
+  mpTrack('Pricing Page Viewed', { page: 'pricing' });
 }
 
 // ── Checkout Funnel Events ───────────────────────────────────────────────────
@@ -603,6 +638,9 @@ export function trackDepositSubmitted(transactionId: string) {
       },
     ],
   });
+  // Mixpanel
+  mpTrack('Deposit Paid', { payment_type: 'consultation_deposit', amount: 150, currency: 'USD', transaction_id: transactionId });
+  mpIncrementProfile({ total_payments: 1, total_revenue: 150 });
 }
 
 /**
@@ -634,6 +672,10 @@ export function trackRetainerPurchased(packageName: string, amount: number, tran
       },
     ],
   });
+  // Mixpanel
+  mpTrack('Retainer Purchased', { package_name: packageName, amount, currency: 'USD', transaction_id: transactionId });
+  mpSetProfile({ retainer_plan: packageName, retainer_amount: amount });
+  mpIncrementProfile({ total_payments: 1, total_revenue: amount });
 }
 
 /**
@@ -650,6 +692,8 @@ export function trackCheckoutPaymentFailed(paymentType: string, errorReason: str
     value,
     currency: 'USD',
   });
+  // Mixpanel
+  mpTrack('Payment Failed', { payment_type: paymentType, error_reason: errorReason, amount: value, currency: 'USD' });
 }
 
 /**
@@ -847,6 +891,9 @@ export function trackFunnelSignupComplete() {
   });
   // GA4 recommended sign_up event
   trackEvent('sign_up', { method: 'email' });
+  // Mixpanel
+  mpTrack('Account Created', { method: 'email' });
+  mpSetProfileOnce({ signup_date: new Date().toISOString(), signup_method: 'email' });
 }
 
 /**
@@ -861,6 +908,10 @@ export function trackPortalLogin(method: string = 'email') {
   });
   // GA4 recommended login event
   trackEvent('login', { method });
+  // Mixpanel
+  mpTrack('Portal Login', { method });
+  mpIncrementProfile({ login_count: 1 });
+  mpSetProfile({ last_login: new Date().toISOString() });
 }
 
 // ── Case Milestones ──────────────────────────────────────────────────────────
@@ -1023,6 +1074,8 @@ export function trackRetainerTierInterest(params: {
       },
     ],
   });
+  // Mixpanel
+  mpTrack('Retainer Tier Viewed', { tier_id: params.tierId, tier_name: params.tierName, tier_price: params.price ?? '', source: params.source });
 }
 
 // ── Google Calendar Booking ───────────────────────────────────────────────────
@@ -1161,6 +1214,16 @@ export function trackIntakeFormComplete(params: {
     source: leadSource,
     service_type: params.serviceType,
   });
+
+  // Mixpanel
+  mpTrack('Intake Form Completed', {
+    service_type: params.serviceType,
+    lead_source: leadSource,
+    utm_medium: utmMedium,
+    utm_campaign: utmCampaign,
+    response_id: params.responseId ?? '',
+  });
+  mpSetProfileOnce({ first_intake_service: params.serviceType, first_intake_source: leadSource });
 }
 
 // ── Time Tracking Events ─────────────────────────────────────────────────────
@@ -1265,6 +1328,8 @@ export function trackPortalDashboardView(caseCount: number, unreadMessages: numb
     case_count: caseCount,
     unread_messages: unreadMessages,
   });
+  // Mixpanel
+  mpTrack('Portal Dashboard Viewed', { case_count: caseCount, unread_messages: unreadMessages });
 }
 
 /**
@@ -1288,6 +1353,9 @@ export function trackPortalMessageSent(hasAttachment: boolean) {
     event_label: 'Message Sent',
     has_attachment: hasAttachment,
   });
+  // Mixpanel
+  mpTrack('Portal Message Sent', { has_attachment: hasAttachment });
+  mpIncrementProfile({ messages_sent: 1 });
 }
 
 /**
@@ -1311,6 +1379,9 @@ export function trackPortalDocumentSigned(documentTitle: string) {
     event_label: 'Document Signed',
     document_title: documentTitle,
   });
+  // Mixpanel
+  mpTrack('Document Signed', { document_title: documentTitle });
+  mpIncrementProfile({ documents_signed: 1 });
 }
 
 /**
@@ -1347,6 +1418,12 @@ export function trackConsultationFunnelEntry(params: {
     utm_medium: params.utmMedium ?? '',
     utm_campaign: params.utmCampaign ?? '',
     referrer: (params.referrer ?? '').slice(0, 200),
+  });
+  // Mixpanel
+  mpTrack('Consultation Funnel Started', {
+    traffic_source: params.trafficSource ?? 'direct',
+    utm_medium: params.utmMedium ?? '',
+    utm_campaign: params.utmCampaign ?? '',
   });
 }
 
@@ -1387,6 +1464,16 @@ export function trackConsultationBooked(params: {
     source: params.trafficSource,
     service_type: params.serviceType,
   });
+  // Mixpanel
+  mpTrack('Consultation Booked', {
+    service_type: params.serviceType,
+    traffic_source: params.trafficSource,
+    utm_campaign: params.utmCampaign ?? '',
+    has_deposit: !!params.hasDeposit,
+    booking_channel: 'calendly',
+  });
+  mpSetProfileOnce({ first_booking_service: params.serviceType, first_booking_source: params.trafficSource });
+  mpIncrementProfile({ consultations_booked: 1 });
 }
 
 /**
@@ -1444,6 +1531,15 @@ export function trackConsultationDepositPaid(params: {
       },
     ],
   });
+  // Mixpanel
+  mpTrack('Consultation Deposit Paid', {
+    service_type: params.serviceType,
+    traffic_source: params.trafficSource,
+    amount: params.amount,
+    currency: 'USD',
+    transaction_id: params.transactionId,
+  });
+  mpIncrementProfile({ total_payments: 1, total_revenue: params.amount });
 }
 
 /**
@@ -1574,6 +1670,8 @@ export function trackWorkflowLeadCreated(params: {
     service_type: params.serviceType ?? 'unknown',
     inquiry_id: params.inquiryId ?? '',
   });
+  // Mixpanel
+  mpTrack('Lead Created', { lead_source: params.source, service_type: params.serviceType ?? 'unknown', inquiry_id: params.inquiryId ?? '' });
 }
 
 /**
@@ -1693,6 +1791,15 @@ export function trackWorkflowPaymentCollected(params: {
       },
     ],
   });
+  // Mixpanel
+  mpTrack('Payment Collected', {
+    case_id: params.caseId ?? '',
+    payment_type: params.paymentType,
+    amount: params.amount,
+    currency: 'USD',
+    transaction_id: params.transactionId,
+  });
+  mpIncrementProfile({ total_payments: 1, total_revenue: params.amount });
 }
 
 /**
@@ -1971,6 +2078,9 @@ export function trackAssistantConversationStart(source: string = 'floating_chat'
     event_label: 'Conversation Started',
     assistant_source: source,
   });
+  // Mixpanel
+  mpTrack('Lexi Chat Opened', { source });
+  mpIncrementProfile({ lexi_conversations: 1 });
 }
 
 /**
@@ -2036,6 +2146,8 @@ export function trackAssistantQueryTopic(params: {
     message_count: params.messageCount,
     assistant_source: params.source ?? 'floating_chat',
   });
+  // Mixpanel
+  mpTrack('Lexi Query Sent', { query_topic: topic, message_count: params.messageCount, source: params.source ?? 'floating_chat' });
 }
 
 /**
@@ -2048,5 +2160,46 @@ export function trackAssistantBookingCTAClick(messageCount: number) {
     event_label: 'Chat → Booking CTA',
     message_count: messageCount,
     assistant_source: 'floating_chat',
+  });
+  // Mixpanel
+  mpTrack('Lexi Booking CTA Clicked', { message_count: messageCount, source: 'floating_chat' });
+}
+
+// ── Mixpanel Identity Helpers (re-exported for use in auth flows) ─────────────
+
+/**
+ * Identify the current user in Mixpanel after login/signup.
+ * Links all subsequent events to the user's profile.
+ */
+export function identifyMixpanelUser(userId: string, profileProps?: {
+  email?: string;
+  name?: string;
+  plan?: string;
+}) {
+  mpIdentify(userId);
+  if (profileProps) {
+    mpSetProfile({
+      ...(profileProps.email ? { $email: profileProps.email } : {}),
+      ...(profileProps.name ? { $name: profileProps.name } : {}),
+      ...(profileProps.plan ? { plan: profileProps.plan } : {}),
+    });
+  }
+}
+
+/**
+ * Reset Mixpanel identity on logout.
+ */
+export function resetMixpanelIdentity() {
+  mpReset();
+}
+
+/**
+ * Track a page view in Mixpanel with the current path.
+ * Call on route changes for SPA-style navigation tracking.
+ */
+export function trackMixpanelPageView(pageName: string, path?: string) {
+  mpTrack('Page Viewed', {
+    page_name: pageName,
+    path: path ?? (typeof window !== 'undefined' ? window.location.pathname : ''),
   });
 }
