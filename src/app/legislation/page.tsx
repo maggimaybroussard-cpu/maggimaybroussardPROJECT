@@ -4,9 +4,6 @@ import React, { useState, useCallback } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import AttorneyDisclaimer from '@/components/AttorneyDisclaimer';
-import LexiLegalResearch from '@/components/LexiLegalResearch';
-import LexiConflictChecker from '@/components/LexiConflictChecker';
-import LexiStateLawBrowser from '@/components/LexiStateLawBrowser';
 
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -199,7 +196,6 @@ export default function LegislationPage() {
   const [selectedState, setSelectedState] = useState<string>('');
   const [stateSearch, setStateSearch] = useState('');
   const [uscFilter, setUscFilter] = useState('');
-  const [lexiTab, setLexiTab] = useState<'research' | 'states' | 'conflicts'>('research');
 
   const filteredStates = ALL_STATES.filter(s =>
     s.state.toLowerCase().includes(stateSearch.toLowerCase()) ||
@@ -248,7 +244,7 @@ export default function LegislationPage() {
             Federal &amp; State Legislation
           </h1>
           <p className="text-muted-foreground text-base md:text-lg max-w-2xl mx-auto mb-6">
-            Search Congress.gov legislation by terminology, browse all 50 U.S. state legal codes, and navigate every title of the United States Code — powered by Lexi AI with LexisNexis &amp; Westlaw integration.
+            Search Congress.gov legislation by terminology, browse all 50 U.S. state legal codes, and navigate every title of the United States Code.
           </p>
           {/* Global search bar */}
           <div className="flex flex-col sm:flex-row gap-2 max-w-2xl mx-auto">
@@ -290,75 +286,8 @@ export default function LegislationPage() {
         </div>
       </section>
 
-      {/* ── LEXI AI RESEARCH PANEL ── */}
-      <div className="max-w-5xl mx-auto px-4 pt-6">
-        <div className="bg-gradient-to-r from-primary/5 via-background to-primary/5 border border-primary/20 rounded-2xl overflow-hidden">
-          {/* Lexi Header */}
-          <div className="px-5 py-4 border-b border-border flex items-center justify-between flex-wrap gap-3">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-base">🤖</div>
-              <div>
-                <h2 className="text-sm font-bold text-foreground">Lexi Legal Research Suite</h2>
-                <p className="text-[10px] text-muted-foreground">
-                  AI-powered research · LexisNexis · Westlaw · All 50 States · Federal Law · Conflict Checker
-                </p>
-              </div>
-            </div>
-            {/* Provider badges */}
-            <div className="flex gap-1.5 flex-wrap">
-              {[
-                { label: 'LexisNexis', color: 'bg-blue-100 text-blue-700 border-blue-200' },
-                { label: 'Westlaw', color: 'bg-orange-100 text-orange-700 border-orange-200' },
-                { label: 'Justia', color: 'bg-green-100 text-green-700 border-green-200' },
-                { label: 'Congress.gov', color: 'bg-purple-100 text-purple-700 border-purple-200' },
-              ].map(p => (
-                <span key={p.label} className={`text-[9px] px-2 py-0.5 rounded-full border font-semibold ${p.color}`}>
-                  {p.label}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          {/* Lexi Tabs */}
-          <div className="px-5 pt-3 flex gap-1 border-b border-border">
-            {[
-              { id: 'research' as const, label: '🔬 AI Legal Research', desc: 'Case law, statutes & precedent' },
-              { id: 'states' as const, label: '🗺️ 50-State Law Browser', desc: 'All codes & categories' },
-              { id: 'conflicts' as const, label: '⚡ Conflict Checker', desc: 'State vs. federal law' },
-            ].map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setLexiTab(tab.id)}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-t-lg text-xs font-medium transition-colors border-b-2 ${
-                  lexiTab === tab.id
-                    ? 'border-primary text-primary bg-primary/5' :'border-transparent text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                <span>{tab.label}</span>
-                <span className={`text-[9px] hidden sm:inline ${lexiTab === tab.id ? 'text-primary/70' : 'text-muted-foreground'}`}>
-                  — {tab.desc}
-                </span>
-              </button>
-            ))}
-          </div>
-
-          {/* Lexi Tab Content */}
-          <div className="p-5">
-            {lexiTab === 'research' && (
-              <LexiLegalResearch defaultOpen={true} />
-            )}
-            {lexiTab === 'states' && (
-              <LexiStateLawBrowser />
-            )}
-            {lexiTab === 'conflicts' && (
-              <LexiConflictChecker defaultOpen={true} defaultState="LA" />
-            )}
-          </div>
-        </div>
-      </div>
-
       {/* Tabs */}
-      <div className="sticky top-[80px] z-30 bg-background border-b border-border mt-6">
+      <div className="sticky top-[80px] z-30 bg-background border-b border-border">
         <div className="max-w-5xl mx-auto px-4 flex gap-1 py-2">
           {[
             { id: 'congress' as SearchTab, label: '🏛️ Congress.gov', desc: 'Bills & Legislation' },
@@ -677,7 +606,7 @@ export default function LegislationPage() {
       {/* Disclaimer */}
       <div className="max-w-5xl mx-auto px-4 pb-8">
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs text-amber-800">
-          <strong>Legal Research Disclaimer:</strong> This page provides links to public legal databases and AI-powered research tools for informational and research purposes only. It does not constitute legal advice. LexisNexis and Westlaw integrations require valid API credentials. Always verify the current version of any statute or regulation through official government sources. Broussard Legal Services is a paralegal services firm — not a law firm. Consult a licensed attorney for legal advice.
+          <strong>Legal Research Disclaimer:</strong> This page provides links to public legal databases for informational and research purposes only. It does not constitute legal advice. Always verify the current version of any statute or regulation through official government sources. Broussard Legal Services is a paralegal services firm — not a law firm. Consult a licensed attorney for legal advice.
         </div>
       </div>
 
