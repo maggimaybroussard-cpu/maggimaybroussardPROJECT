@@ -854,7 +854,7 @@ function SequencesDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
+  const [toast, setToast] = useState<{ msg: string; type: 'success\' | \'error' } | null>(null);
 
   const fetchSequences = useCallback(async () => {
     setLoading(true);
@@ -1239,7 +1239,7 @@ function PaymentRemindersDashboard() {
   const [invoiceFilter, setInvoiceFilter] = useState<string>('all');
   const [reminderFilter, setReminderFilter] = useState<string>('all');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
+  const [toast, setToast] = useState<{ msg: string; type: 'success\' | \'error' } | null>(null);
   const [rescheduleId, setRescheduleId] = useState<string | null>(null);
   const [rescheduleDate, setRescheduleDate] = useState('');
   const [rescheduleTime, setRescheduleTime] = useState('09:00');
@@ -8643,9 +8643,8 @@ id: 'retainer_renewal_notifications' as const,
                 Refresh
               </button>
             </div>
-          </div>
 
-          {/* Table + Detail Panel */}
+            {/* Table + Detail Panel */}
           <div className="flex flex-col lg:flex-row gap-0 min-h-0">
             <div className="flex-1 min-w-0 overflow-x-auto">
               {loading ? (
@@ -8776,7 +8775,7 @@ id: 'retainer_renewal_notifications' as const,
               </div>
             )}
           </div>
-        </div>
+        </>
         )}
       </div>
     </div>
