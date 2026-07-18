@@ -167,6 +167,6 @@ export default function HeroSection() {
         isOpen={bookingModalOpen}
         onClose={() => setBookingModalOpen(false)} />
       
-    </section>);
-
+    </section>
+  );
 }

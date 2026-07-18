@@ -36,49 +36,6 @@ function checkAIRateLimit(ip: string): { allowed: boolean; resetAt: number } {
   return { allowed: true, resetAt: entry.resetAt };
 }
 
-// ── CSRF / Origin validation for public mutation API routes ──────────────────
-
-const ALLOWED_ORIGINS = [
-  'https://broussardlegalservices.com',
-  'https://maggimaybr6854.builtwithrocket.new',
-  'http://localhost:3000',
-  'http://localhost:3001',
-];
-
-/**
- * Public API routes that accept POST from the browser and require origin validation.
- * Webhook routes are excluded — they use their own signature verification.
- */
-const CSRF_PROTECTED_PREFIXES = [
-  '/api/contact/',
-  '/api/email-optin',
-  '/api/consultations/book',
-  '/api/booking/',
-  '/api/portal/',
-  '/api/lexi/',
-  '/api/sms/',
-];
-
-function requiresOriginCheck(pathname: string): boolean {
-  return CSRF_PROTECTED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
-}
-
-function isOriginAllowed(request: NextRequest): boolean {
-  const origin = request.headers.get('origin');
-  const referer = request.headers.get('referer');
-
-  // Allow same-origin requests (no Origin header = server-to-server or same-origin)
-  if (!origin) {
-    // If there's a referer, validate it too
-    if (referer) {
-      return ALLOWED_ORIGINS.some((o) => referer.startsWith(o));
-    }
-    return true; // server-to-server or curl — allow (rate limiting handles abuse)
-  }
-
-  return ALLOWED_ORIGINS.includes(origin);
-}
-
 function getProjectRef(): string {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
   return url.match(/https:\/\/([^.]+)\./)?.[1] ?? '';
@@ -107,16 +64,6 @@ export async function middleware(request: NextRequest) {
   injectTokenFromHeader(request);
 
   const { pathname } = request.nextUrl;
-
-  // ─── Origin / CSRF check for public mutation routes ──────────────────────
-  if (request.method === 'POST' && requiresOriginCheck(pathname)) {
-    if (!isOriginAllowed(request)) {
-      return NextResponse.json(
-        { error: 'Forbidden: cross-origin request not allowed.' },
-        { status: 403 }
-      );
-    }
-  }
 
   // ─── AI chat rate limiting ────────────────────────────────────────────────
   if (pathname === '/api/ai/chat-completion') {

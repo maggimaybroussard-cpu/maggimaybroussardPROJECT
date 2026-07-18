@@ -61,14 +61,14 @@ export default function ServicesHero() {
             {/* Right — stat pills (hidden on small mobile, shown sm+) */}
             <div className="hidden sm:flex flex-col gap-3 sm:gap-4 lg:items-end">
               {[
-              { value: '5+', label: 'Practice Areas Covered' },
-              { value: '48hr', label: 'Standard Turnaround' },
-              { value: '100%', label: 'Remote & Nationwide' },
-              { value: 'NDA', label: 'Strict Confidentiality' }]?.
-              map((stat) =>
-              <div
-                key={stat?.label}
-                className="flex items-center gap-4 bg-primary-foreground/10 backdrop-blur-sm border border-primary-foreground/15 rounded-2xl px-5 sm:px-6 py-3 sm:py-4 lg:min-w-[260px]">
+                { value: '5+', label: 'Practice Areas Covered' },
+                { value: '48hr', label: 'Standard Turnaround' },
+                { value: '100%', label: 'Remote & Nationwide' },
+                { value: 'NDA', label: 'Strict Confidentiality' },
+              ]?.map((stat) =>
+                <div
+                  key={stat?.label}
+                  className="flex items-center gap-4 bg-primary-foreground/10 backdrop-blur-sm border border-primary-foreground/15 rounded-2xl px-5 sm:px-6 py-3 sm:py-4 lg:min-w-[260px]">
                   <span className="font-serif text-2xl sm:text-3xl text-accent">{stat?.value}</span>
                   <span className="text-primary-foreground/70 text-xs sm:text-sm font-light">{stat?.label}</span>
                 </div>
@@ -78,14 +78,14 @@ export default function ServicesHero() {
             {/* Mobile stat pills — compact 2-col grid */}
             <div className="flex sm:hidden grid grid-cols-2 gap-2">
               {[
-              { value: '5+', label: 'Practice Areas' },
-              { value: '48hr', label: 'Turnaround' },
-              { value: '100%', label: 'Remote' },
-              { value: 'NDA', label: 'Confidential' }]?.
-              map((stat) =>
-              <div
-                key={stat?.label}
-                className="flex flex-col items-center bg-primary-foreground/10 backdrop-blur-sm border border-primary-foreground/15 rounded-xl px-3 py-3 text-center">
+                { value: '5+', label: 'Practice Areas' },
+                { value: '48hr', label: 'Turnaround' },
+                { value: '100%', label: 'Remote' },
+                { value: 'NDA', label: 'Confidential' },
+              ]?.map((stat) =>
+                <div
+                  key={stat?.label}
+                  className="flex flex-col items-center bg-primary-foreground/10 backdrop-blur-sm border border-primary-foreground/15 rounded-xl px-3 py-3 text-center">
                   <span className="font-serif text-xl text-accent">{stat?.value}</span>
                   <span className="text-primary-foreground/70 text-[10px] font-light mt-0.5">{stat?.label}</span>
                 </div>
@@ -98,6 +98,6 @@ export default function ServicesHero() {
       <BookConsultationModal
         isOpen={bookingModalOpen}
         onClose={() => setBookingModalOpen(false)} />
-    </>);
-
+    </>
+  );
 }
