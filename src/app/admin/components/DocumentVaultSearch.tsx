@@ -63,15 +63,7 @@ function fmtDate(d: string): string {
   return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-function getFileIcon(fileType: string | null, fileName: string): string {
-  const ext = fileName.split('.').pop()?.toLowerCase() ?? '';
-  if (fileType?.includes('pdf') || ext === 'pdf') return '📕';
-  if (fileType?.includes('word') || ext === 'doc' || ext === 'docx') return '📘';
-  if (fileType?.includes('excel') || ext === 'xls' || ext === 'xlsx') return '📗';
-  if (fileType?.includes('image') || ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) return '🖼️';
-  if (fileType?.includes('text') || ext === 'txt') return '📄';
-  return '📎';
-}
+// duplicate removed
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
