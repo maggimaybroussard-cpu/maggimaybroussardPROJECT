@@ -175,11 +175,12 @@ export default function Header({ initialClaims }: HeaderProps) {
         <div className="max-w-7xl mx-auto px-4 md:px-10 flex items-center justify-between gap-4" suppressHydrationWarning>
           {/* Logo */}
           <div className="flex items-center gap-3 group shrink-0" suppressHydrationWarning>
-            <div className="relative">
+            <div className="relative" suppressHydrationWarning>
               <Link
                 href="/admin"
                 className="focus:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-full"
                 aria-label="Go to Admin"
+                suppressHydrationWarning
               >
                 <AppLogo
                   size={36}
@@ -188,7 +189,7 @@ export default function Header({ initialClaims }: HeaderProps) {
               </Link>
             </div>
 
-            <Link href="/" className="flex items-center gap-2.5" aria-label="Broussard Legal Services — Home">
+            <Link href="/" className="flex items-center gap-2.5" aria-label="Broussard Legal Services — Home" suppressHydrationWarning>
               <span
                 className="font-serif text-lg tracking-tight transition-colors duration-300"
                 style={{ color: '#355E3B' }}
