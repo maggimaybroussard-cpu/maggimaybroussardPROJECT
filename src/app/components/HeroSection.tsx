@@ -67,9 +67,9 @@ export default function HeroSection() {
 
       {/* Animated accent orbs */}
       <div className="absolute bottom-1/3 right-1/4 w-96 h-96 rounded-full opacity-[0.06] blur-3xl pointer-events-none"
-        style={{ background: 'radial-gradient(circle, var(--accent) 0%, transparent 70%)' }} />
+      style={{ background: 'radial-gradient(circle, var(--accent) 0%, transparent 70%)' }} />
       <div className="absolute top-1/4 left-1/3 w-64 h-64 rounded-full opacity-[0.04] blur-3xl pointer-events-none"
-        style={{ background: 'radial-gradient(circle, #C8965A 0%, transparent 70%)' }} />
+      style={{ background: 'radial-gradient(circle, #C8965A 0%, transparent 70%)' }} />
 
       {/* Content */}
       <div className="relative z-10 max-w-7xl mx-auto w-full px-4 sm:px-6 md:px-10 pb-16 sm:pb-24 md:pb-36 pt-28 sm:pt-36 md:pt-48">
@@ -164,23 +164,23 @@ export default function HeroSection() {
           <div className="animate-fade-in-delay-3 hidden md:flex items-center gap-5 mt-10 pt-8 border-t border-primary-foreground/10">
             <div className="flex items-center gap-2">
               <div className="flex -space-x-2">
-                {[1,2,3].map(i => (
-                  <div key={i} className="w-7 h-7 rounded-full bg-accent/20 border-2 border-primary/80 flex items-center justify-center">
+                {[1, 2, 3].map((i) =>
+                <div key={i} className="w-7 h-7 rounded-full bg-accent/20 border-2 border-primary/80 flex items-center justify-center">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="text-accent/60">
-                      <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
+                      <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z" />
                     </svg>
                   </div>
-                ))}
+                )}
               </div>
               <span className="text-[11px] text-primary-foreground/55 font-medium">Trusted by attorneys nationwide</span>
             </div>
             <span className="text-primary-foreground/20">·</span>
             <div className="flex items-center gap-1.5">
-              {[1,2,3,4,5].map(i => (
-                <svg key={i} width="11" height="11" viewBox="0 0 24 24" fill="#C8965A" stroke="none">
+              {[1, 2, 3, 4, 5].map((i) =>
+              <svg key={i} width="11" height="11" viewBox="0 0 24 24" fill="#C8965A" stroke="none">
                   <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                 </svg>
-              ))}
+              )}
               <span className="text-[11px] text-primary-foreground/55 font-medium ml-1">5.0 rated</span>
             </div>
           </div>
@@ -198,6 +198,6 @@ export default function HeroSection() {
       <BookConsultationModal
         isOpen={bookingModalOpen}
         onClose={() => setBookingModalOpen(false)} />
-    </section>
-  );
+    </section>);
+
 }

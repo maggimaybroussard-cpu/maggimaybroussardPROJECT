@@ -5,11 +5,11 @@ import Link from 'next/link';
 import AppImage from '@/components/ui/AppImage';
 
 const stats = [
-  { number: '3+', label: 'Years Experience' },
-  { number: '50', label: 'States Served' },
-  { number: '100%', label: 'Remote & Flexible' },
-  { number: 'Flat-Rate', label: 'Transparent Pricing' },
-];
+{ number: '3+', label: 'Years Experience' },
+{ number: '50', label: 'States Served' },
+{ number: '100%', label: 'Remote & Flexible' },
+{ number: 'Flat-Rate', label: 'Transparent Pricing' }];
+
 
 export default function AboutSection() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -40,7 +40,7 @@ export default function AboutSection() {
           <div suppressHydrationWarning className="scroll-reveal-hidden relative">
             {/* Decorative background shape */}
             <div suppressHydrationWarning className="absolute -inset-4 rounded-[3rem] opacity-[0.04] hidden lg:block"
-              style={{ background: 'radial-gradient(ellipse at 30% 50%, var(--accent) 0%, transparent 70%)' }} />
+            style={{ background: 'radial-gradient(ellipse at 30% 50%, var(--accent) 0%, transparent 70%)' }} />
 
             <div suppressHydrationWarning className="relative card-rounded overflow-hidden aspect-[4/5] max-w-xs sm:max-w-sm mx-auto lg:mx-0 shadow-2xl shadow-primary/15">
               <AppImage
@@ -114,12 +114,12 @@ export default function AboutSection() {
               suppressHydrationWarning
               className="scroll-reveal-hidden grid grid-cols-2 gap-x-5 sm:gap-x-7 gap-y-5 sm:gap-y-6 pt-6 sm:pt-7 md:pt-9 border-t border-border/50"
               style={{ transitionDelay: '0.25s' }}>
-              {stats.map((stat) => (
-                <div suppressHydrationWarning key={stat.label} className="space-y-1.5 group">
+              {stats.map((stat) =>
+              <div suppressHydrationWarning key={stat.label} className="space-y-1.5 group">
                   <p suppressHydrationWarning className="stat-number transition-colors duration-300 group-hover:text-[#8B3A45]">{stat.number}</p>
                   <p suppressHydrationWarning className="text-[10px] sm:text-[11px] uppercase tracking-[0.22em] text-muted-foreground font-medium">{stat.label}</p>
                 </div>
-              ))}
+              )}
             </div>
 
             {/* Quote */}
@@ -152,6 +152,6 @@ export default function AboutSection() {
           </div>
         </div>
       </div>
-    </section>
-  );
+    </section>);
+
 }
