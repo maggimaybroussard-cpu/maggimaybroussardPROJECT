@@ -74,6 +74,7 @@ interface HeaderProps {
 export default function Header({ initialClaims }: HeaderProps) {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   // SSR-consistent auth state seeded from server-fetched claims
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(
     initialClaims != null
@@ -161,6 +162,10 @@ export default function Header({ initialClaims }: HeaderProps) {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [menuOpen]);
 
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   return (
     <>
       <nav
@@ -203,12 +208,12 @@ export default function Header({ initialClaims }: HeaderProps) {
                 href={link?.href}
                 role="listitem"
                 aria-current={
-                  pathname === link?.href || (link?.href === '/' && (pathname === '/' || pathname === '/homepage'))
+                  mounted && (pathname === link?.href || (link?.href === '/' && (pathname === '/' || pathname === '/homepage')))
                     ? 'page'
                     : undefined
                 }
                 className={`px-3 py-2 rounded-full text-[11px] font-semibold uppercase tracking-widest transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent whitespace-nowrap ${
-                  pathname === link?.href || (link?.href === '/' && (pathname === '/' || pathname === '/homepage'))
+                  mounted && (pathname === link?.href || (link?.href === '/' && (pathname === '/' || pathname === '/homepage')))
                     ? 'bg-[#8B3A45] text-white' :'text-primary-foreground/80 hover:text-white hover:bg-accent/80'
                 }`}
               >
@@ -399,9 +404,9 @@ export default function Header({ initialClaims }: HeaderProps) {
                     key={link.href}
                     href={link.href}
                     onClick={() => setMenuOpen(false)}
-                    aria-current={pathname === link.href ? 'page' : undefined}
+                    aria-current={mounted && pathname === link.href ? 'page' : undefined}
                     className={`px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-200 truncate ${
-                      pathname === link.href
+                      mounted && pathname === link.href
                         ? 'bg-[#8B3A45] text-white'
                         : 'bg-secondary/60 text-foreground hover:bg-secondary hover:text-accent'
                     }`}
