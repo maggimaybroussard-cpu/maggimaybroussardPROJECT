@@ -143,7 +143,7 @@ function PaymentFormInner({ clientSecret, onSuccess, onError }: PaymentFormInner
 /* ─── Main checkout content ──────────────────────────────────────────── */
 function CheckoutContent() {
   const searchParams = useSearchParams();
-  const preType = searchParams.get('type') as 'consultation_deposit' | 'retainer' | null;
+  const preType = searchParams.get('type') as 'consultation_deposit' | 'retainer' | 'hourly_rate' | null;
 
   const [step, setStep] = useState<'select' | 'details' | 'payment' | 'success'>(
     preType ? 'details' : 'select'
