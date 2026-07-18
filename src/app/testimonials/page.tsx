@@ -7,6 +7,221 @@ import Link from 'next/link';
 import AppImage from '@/components/ui/AppImage';
 import { createClient } from '@/lib/supabase/client';
 
+// ── Testimonial Submission Form ───────────────────────────────────────────────
+
+interface SubmissionForm {
+  name: string;
+  role: string;
+  firm: string;
+  location: string;
+  service: string;
+  rating: number;
+  quote: string;
+}
+
+const SERVICES = [
+'Litigation Support',
+'Document Drafting',
+'Legal Research',
+'Contract Review',
+'Case Management',
+'Intake & Onboarding',
+'Other'];
+
+
+function TestimonialSubmissionForm() {
+  const [form, setForm] = React.useState<SubmissionForm>({
+    name: '', role: '', firm: '', location: '', service: '', rating: 5, quote: ''
+  });
+  const [submitting, setSubmitting] = React.useState(false);
+  const [submitted, setSubmitted] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
+  const handleRating = (r: number) => setForm((prev) => ({ ...prev, rating: r }));
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.name || !form.quote || !form.service) {
+      setError('Please fill in your name, service, and review.');
+      return;
+    }
+    setSubmitting(true);
+    setError(null);
+    try {
+      const supabase = createClient();
+      const { error: dbError } = await supabase.from('testimonials').insert({
+        name: form.name,
+        role: form.role,
+        firm: form.firm,
+        location: form.location,
+        service: form.service,
+        rating: form.rating,
+        quote: form.quote.slice(0, 160),
+        full_quote: form.quote,
+        image: "https://img.rocket.new/generatedImages/rocket_gen_img_1ad86056c-1765741890853.png",
+        alt: 'Client testimonial photo',
+        featured: false,
+        active: false,
+        sort_order: 999
+      });
+      if (dbError) throw dbError;
+      setSubmitted(true);
+    } catch {
+      setError('Something went wrong. Please try again or email us directly.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (submitted) {
+    return (
+      <div className="text-center py-12">
+        <div className="w-14 h-14 rounded-full bg-accent/10 flex items-center justify-center mx-auto mb-5">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#B76E79" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+        </div>
+        <h3 className="font-serif text-2xl text-foreground mb-2">Thank you for your review!</h3>
+        <p className="text-sm text-muted-foreground max-w-sm mx-auto">Your testimonial has been submitted and will appear after review. We appreciate you taking the time to share your experience.</p>
+      </div>);
+
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-5">
+      {/* Star Rating */}
+      <div>
+        <label className="block text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">Your Rating</label>
+        <div className="flex items-center gap-1">
+          {[1, 2, 3, 4, 5].map((star) =>
+          <button
+            key={star}
+            type="button"
+            onClick={() => handleRating(star)}
+            className="focus:outline-none"
+            aria-label={`Rate ${star} star${star !== 1 ? 's' : ''}`}>
+            
+              <svg width="24" height="24" viewBox="0 0 24 24"
+            fill={star <= form.rating ? '#C8965A' : 'none'}
+            stroke={star <= form.rating ? '#C8965A' : '#C8965A40'}
+            strokeWidth="1.5">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+              </svg>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Name + Role */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label htmlFor="sub-name" className="block text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-1.5">Name *</label>
+          <input
+            id="sub-name"
+            name="name"
+            value={form.name}
+            onChange={handleChange}
+            placeholder="Jane Smith"
+            required
+            className="w-full px-4 py-3 bg-input border border-border rounded-xl text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent/50 transition-all" />
+          
+        </div>
+        <div>
+          <label htmlFor="sub-role" className="block text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-1.5">Title / Role</label>
+          <input
+            id="sub-role"
+            name="role"
+            value={form.role}
+            onChange={handleChange}
+            placeholder="Partner, Solo Practitioner..."
+            className="w-full px-4 py-3 bg-input border border-border rounded-xl text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent/50 transition-all" />
+          
+        </div>
+      </div>
+
+      {/* Firm + Location */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label htmlFor="sub-firm" className="block text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-1.5">Firm / Organization</label>
+          <input
+            id="sub-firm"
+            name="firm"
+            value={form.firm}
+            onChange={handleChange}
+            placeholder="Smith & Associates"
+            className="w-full px-4 py-3 bg-input border border-border rounded-xl text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent/50 transition-all" />
+          
+        </div>
+        <div>
+          <label htmlFor="sub-location" className="block text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-1.5">City, State</label>
+          <input
+            id="sub-location"
+            name="location"
+            value={form.location}
+            onChange={handleChange}
+            placeholder="New Orleans, LA"
+            className="w-full px-4 py-3 bg-input border border-border rounded-xl text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent/50 transition-all" />
+          
+        </div>
+      </div>
+
+      {/* Service */}
+      <div>
+        <label htmlFor="sub-service" className="block text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-1.5">Service Used *</label>
+        <select
+          id="sub-service"
+          name="service"
+          value={form.service}
+          onChange={handleChange}
+          required
+          className="w-full px-4 py-3 bg-input border border-border rounded-xl text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent/50 transition-all">
+          
+          <option value="">Select a service...</option>
+          {SERVICES.map((s) => <option key={s} value={s}>{s}</option>)}
+        </select>
+      </div>
+
+      {/* Review */}
+      <div>
+        <label htmlFor="sub-quote" className="block text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-1.5">Your Review *</label>
+        <textarea
+          id="sub-quote"
+          name="quote"
+          value={form.quote}
+          onChange={handleChange}
+          rows={5}
+          required
+          placeholder="Share your experience working with Maggi May Broussard..."
+          className="w-full px-4 py-3 bg-input border border-border rounded-xl text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent/50 transition-all resize-none" />
+        
+      </div>
+
+      {error &&
+      <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3">{error}</p>
+      }
+
+      <button
+        type="submit"
+        disabled={submitting}
+        className="w-full py-3.5 bg-accent text-accent-foreground rounded-full text-xs font-semibold uppercase tracking-widest hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+        
+        {submitting ?
+        <>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="animate-spin">
+              <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+            </svg>
+            Submitting...
+          </> :
+        'Submit Review'}
+      </button>
+    </form>);
+
+}
+
 interface Testimonial {
   id: string;
   name: string;
@@ -364,6 +579,25 @@ export default function TestimonialsPage() {
                   View Case Studies
                 </Link>
               </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Submit a Testimonial */}
+        <section className="py-16 md:py-24 bg-secondary/40">
+          <div className="max-w-2xl mx-auto px-5 md:px-10">
+            <div className="mb-10 text-center">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-accent mb-4 flex items-center justify-center gap-3">
+                <span className="w-6 h-px bg-accent" />
+                Share Your Experience
+              </p>
+              <h2 className="font-serif text-3xl md:text-4xl text-foreground mb-3">Leave a Review</h2>
+              <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                Worked with Maggi May? We'd love to hear about your experience. Your review helps other attorneys find the right paralegal support.
+              </p>
+            </div>
+            <div className="bg-card border border-border rounded-2xl p-7 md:p-10">
+              <TestimonialSubmissionForm />
             </div>
           </div>
         </section>

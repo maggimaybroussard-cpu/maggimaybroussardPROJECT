@@ -7,6 +7,7 @@ import AppLogo from '@/components/ui/AppLogo';
 
 const navLinks = [
   { label: 'Home', href: '/' },
+  { label: 'Features', href: '/features' },
   { label: 'Services', href: '/services' },
   { label: 'Pricing', href: '/pricing' },
   { label: 'Rates', href: '/rates' },
@@ -36,6 +37,7 @@ const mobileNavGroups = [
     label: 'Explore',
     links: [
       { label: 'Home', href: '/' },
+      { label: 'Features', href: '/features' },
       { label: 'Services', href: '/services' },
       { label: 'Pricing', href: '/pricing' },
       { label: 'Rates', href: '/rates' },
