@@ -3,11 +3,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useChat } from '@/lib/hooks/useChat';
 import toast from 'react-hot-toast';
+import LexiVoiceIntake from '@/components/LexiVoiceIntake';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 type ResearchCategory = 'case_law' | 'statutes' | 'precedent' | 'federal' | 'all';
-type DataSource = 'perplexity' | 'courtlistener' | 'ecfr' | 'openstates' | 'la_legislature' | 'govinfo' | 'case_law_links' | 'openai_research';
+type DataSource = 'perplexity' | 'courtlistener' | 'ecfr' | 'openstates' | 'la_legislature' | 'govinfo' | 'case_law_links' | 'openai_research' | 'claude_drafting' | 'gemini_docs' | 'notion_kb' | 'voice_intake';
 
 type OpenAIMode = 'case_law' | 'statute_lookup' | 'brief_generation';
 type PerplexityMode = 'case_law' | 'statute_lookup' | 'brief_generation';
@@ -425,6 +426,34 @@ const DATA_SOURCE_TABS: Array<{ id: DataSource; label: string; icon: string; des
     apiPath: '',
   },
   {
+    id: 'claude_drafting',
+    label: 'Claude',
+    icon: '🧠',
+    description: 'Anthropic Claude — complex drafting, demand letters & long-form briefs with deep reasoning',
+    apiPath: '',
+  },
+  {
+    id: 'gemini_docs',
+    label: 'Gemini Docs',
+    icon: '📄',
+    description: 'Gemini multimodal — upload and analyze PDFs, contracts, and court documents',
+    apiPath: '',
+  },
+  {
+    id: 'notion_kb',
+    label: 'Knowledge Base',
+    icon: '📚',
+    description: 'Notion — Maggi\'s internal notes, case knowledge, and practice guides',
+    apiPath: '',
+  },
+  {
+    id: 'voice_intake',
+    label: 'Voice Intake',
+    icon: '🎙️',
+    description: 'Record client case details — transcribed and summarized into a structured intake record',
+    apiPath: '',
+  },
+  {
     id: 'courtlistener',
     label: 'CourtListener',
     icon: '⚖️',
@@ -580,6 +609,54 @@ export default function LexiLegalResearch({ context, onInsertCitation, defaultOp
     error: openAIError,
     sendMessage: sendOpenAIMessage,
   } = useChat('OPEN_AI', 'gpt-5.4', true);
+
+  // Claude drafting state
+  const [claudeMode, setClaudeMode] = useState<'demand_letter' | 'brief' | 'motion' | 'memo'>('brief');
+  const [claudeResult, setClaudeResult] = useState<string | null>(null);
+  const {
+    response: claudeResponse,
+    isLoading: claudeLoading,
+    error: claudeError,
+    sendMessage: sendClaudeMessage,
+  } = useChat('ANTHROPIC', 'claude-sonnet-4-6', true);
+
+  // Gemini multimodal state
+  const [geminiFile, setGeminiFile] = useState<File | null>(null);
+  const [geminiPrompt, setGeminiPrompt] = useState('');
+  const [geminiResult, setGeminiResult] = useState<string | null>(null);
+  const geminiFileRef = useRef<HTMLInputElement>(null);
+  const {
+    response: geminiResponse,
+    isLoading: geminiLoading,
+    error: geminiError,
+    sendMessage: sendGeminiMessage,
+  } = useChat('GEMINI', 'gemini/gemini-2.5-flash', true);
+
+  // Notion KB state
+  const [notionQuery, setNotionQuery] = useState('');
+  const [notionResults, setNotionResults] = useState<Array<{ title: string; content: string; url?: string; category?: string }>>([]);
+  const [notionLoading, setNotionLoading] = useState(false);
+  const [notionError, setNotionError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (claudeError) toast.error('Claude drafting failed — ' + claudeError.message);
+  }, [claudeError]);
+
+  useEffect(() => {
+    if (claudeResponse && !claudeLoading) {
+      setClaudeResult(claudeResponse);
+    }
+  }, [claudeResponse, claudeLoading]);
+
+  useEffect(() => {
+    if (geminiError) toast.error('Gemini analysis failed — ' + geminiError.message);
+  }, [geminiError]);
+
+  useEffect(() => {
+    if (geminiResponse && !geminiLoading) {
+      setGeminiResult(geminiResponse);
+    }
+  }, [geminiResponse, geminiLoading]);
 
   useEffect(() => {
     if (perplexityDeepError) toast.error('Perplexity deep research failed — ' + perplexityDeepError.message);
@@ -780,10 +857,85 @@ export default function LexiLegalResearch({ context, onInsertCitation, defaultOp
   };
 
   const selectedStateObj = ALL_STATES.find(s => s.code === selectedState);
-  const isSearching = isLoading || perplexityDeepLoading || liveDataLoading || openAILoading;
+  const isSearching = isLoading || perplexityDeepLoading || liveDataLoading || openAILoading || claudeLoading || geminiLoading || notionLoading;
   const activeTab = DATA_SOURCE_TABS.find(t => t.id === activeDataSource);
   const activeOpenAIMode = OPENAI_MODE_OPTIONS.find(m => m.id === openAIMode);
   const activePerplexityMode = PERPLEXITY_MODE_OPTIONS.find(m => m.id === perplexityMode);
+
+  // ── Notion KB search ──────────────────────────────────────────────────────────
+  const searchNotionKB = async (q: string) => {
+    if (!q.trim()) return;
+    setNotionLoading(true);
+    setNotionError(null);
+    setNotionResults([]);
+    try {
+      const res = await fetch('/api/notion/knowledge-base', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: q.trim(), limit: 10 }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error ?? 'Notion search failed');
+      }
+      const data = await res.json();
+      setNotionResults(data.results ?? data.pages ?? []);
+    } catch (err) {
+      setNotionError(err instanceof Error ? err.message : 'Notion search failed');
+    } finally {
+      setNotionLoading(false);
+    }
+  };
+
+  // ── Claude drafting ───────────────────────────────────────────────────────────
+  const handleClaudeDraft = () => {
+    if (!query.trim() || claudeLoading) return;
+    setClaudeResult(null);
+    const modePrompts: Record<string, string> = {
+      demand_letter: `Draft a professional demand letter for the following matter. Include all required legal elements, specific demands, response deadline, and consequences of non-compliance. Use formal legal language appropriate for Louisiana practice.\n\nMATTER: ${query}`,
+      brief: `Draft a comprehensive legal brief section for the following matter. Include statement of facts, legal standard, argument with citations, and conclusion. Use proper Bluebook citations and formal legal writing style.\n\nMATTER: ${query}`,
+      motion: `Draft a motion for the following matter. Include caption, introduction, statement of facts, legal argument with citations, and prayer for relief. Format for Louisiana state court filing.\n\nMATTER: ${query}`,
+      memo: `Draft a legal memorandum analyzing the following issue. Include question presented, brief answer, facts, discussion with analysis, and conclusion. Use proper legal citation format.\n\nISSUE: ${query}`,
+    };
+    sendClaudeMessage([
+      {
+        role: 'system',
+        content: 'You are Lexi, an expert legal drafting assistant at Broussard Legal Services specializing in Louisiana law and federal practice. Draft professional, court-ready legal documents with proper citations, formal language, and complete structure. Use [PLACEHOLDER] for case-specific facts not provided.',
+      },
+      { role: 'user', content: modePrompts[claudeMode] },
+    ], { max_tokens: 3000, reasoning_effort: 'high' });
+  };
+
+  // ── Gemini multimodal ─────────────────────────────────────────────────────────
+  const handleGeminiAnalyze = async () => {
+    if (!geminiFile || geminiLoading) return;
+    setGeminiResult(null);
+    try {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const dataUri = reader.result as string;
+        const prompt = geminiPrompt.trim() || 'Please analyze this document and provide a comprehensive legal summary including: key parties, important dates, obligations, rights, potential issues, and any notable clauses or provisions.';
+        const content: Array<{ type: string; text?: string; file?: { file_data: string }; image_url?: { url: string } }> = [
+          { type: 'text', text: prompt },
+        ];
+        if (geminiFile.type.startsWith('image/')) {
+          content.push({ type: 'image_url', image_url: { url: dataUri } });
+        } else {
+          content.push({ type: 'file', file: { file_data: dataUri } });
+        }
+        sendGeminiMessage([
+          {
+            role: 'system',
+            content: 'You are Lexi, an expert legal document analyst at Broussard Legal Services. Analyze uploaded legal documents, contracts, court filings, and PDFs with precision. Extract key information, identify legal issues, and provide actionable insights.',
+          },
+          { role: 'user', content: content as any },
+        ], { max_tokens: 3000 });
+      };
+      reader.readAsDataURL(geminiFile);
+    } catch {
+      toast.error('Failed to process document');
+    }
+  };
 
   return (
     <div className="border border-border rounded-xl overflow-hidden bg-background">
@@ -827,7 +979,11 @@ export default function LexiLegalResearch({ context, onInsertCitation, defaultOp
                   title={tab.description}
                   className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg border text-[10px] font-semibold transition-all ${
                     activeDataSource === tab.id
-                      ? tab.id === 'openai_research' ?'border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' :'border-primary bg-primary/10 text-primary' :'border-border text-muted-foreground hover:border-primary/40 hover:text-foreground'
+                      ? tab.id === 'openai_research' ? 'border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                      : tab.id === 'claude_drafting' ? 'border-violet-500 bg-violet-500/10 text-violet-600 dark:text-violet-400'
+                      : tab.id === 'gemini_docs' ? 'border-blue-500 bg-blue-500/10 text-blue-600 dark:text-blue-400'
+                      : tab.id === 'notion_kb' ? 'border-amber-500 bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                      : tab.id === 'voice_intake'? 'border-rose-500 bg-rose-500/10 text-rose-600 dark:text-rose-400' :'border-primary bg-primary/10 text-primary' :'border-border text-muted-foreground hover:border-primary/40 hover:text-foreground'
                   }`}
                 >
                   <span>{tab.icon}</span>
@@ -1311,35 +1467,289 @@ export default function LexiLegalResearch({ context, onInsertCitation, defaultOp
             </div>
           )}
 
-          {/* Search input */}
-          <div className="flex gap-2">
-            <input
-              ref={inputRef}
-              value={query}
-              onChange={e => setQuery(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleSearch()}
-              placeholder={
-                activeDataSource === 'courtlistener' ? 'Search federal court opinions…' :
-                activeDataSource === 'ecfr' ? 'Search CFR regulations (e.g. OSHA 29 CFR 1910)…' :
-                activeDataSource === 'openstates' ? 'Search state bills (e.g. minimum wage Louisiana)…' :
-                activeDataSource === 'la_legislature' ? 'Search Louisiana bills (e.g. HB 123 or keyword)…' :
-                activeDataSource === 'govinfo' ? 'Search Federal Register, U.S. Code, CFR…' :
-                activeDataSource === 'case_law_links' ? 'Search Google Scholar, Justia, Cornell LII…' :
-                activeDataSource === 'perplexity' ? (activePerplexityMode?.placeholder ?? 'Search case law, statutes, regulations…') :
-                selectedState ? `Search ${selectedStateObj?.name} law…` :
-                'Search case law, statutes, regulations…'
-              }
-              disabled={isSearching}
-              className="flex-1 px-3 py-2 bg-background border border-border rounded-xl text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:opacity-60"
-            />
-            <button
-              onClick={handleSearch}
-              disabled={!query.trim() || isSearching}
-              className="px-4 py-2 bg-primary text-primary-foreground rounded-xl text-xs font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary/90 transition-colors shrink-0"
-            >
-              {isSearching ? '…' : 'Search'}
-            </button>
-          </div>
+          {/* ── Claude Drafting Panel ─────────────────────────────────────── */}
+          {activeDataSource === 'claude_drafting' && (
+            <div className="space-y-3">
+              <div>
+                <p className="text-[10px] text-muted-foreground font-medium mb-2">Document Type:</p>
+                <div className="grid grid-cols-4 gap-1.5">
+                  {[
+                    { id: 'demand_letter', label: 'Demand Letter', icon: '📨' },
+                    { id: 'brief', label: 'Legal Brief', icon: '📝' },
+                    { id: 'motion', label: 'Motion', icon: '⚖️' },
+                    { id: 'memo', label: 'Legal Memo', icon: '📋' },
+                  ].map(mode => (
+                    <button
+                      key={mode.id}
+                      onClick={() => { setClaudeMode(mode.id as typeof claudeMode); setClaudeResult(null); }}
+                      className={`flex flex-col items-center gap-1 px-2 py-2.5 rounded-xl border text-center transition-all ${
+                        claudeMode === mode.id
+                          ? 'border-violet-500 bg-violet-500/10 text-violet-600 dark:text-violet-400'
+                          : 'border-border text-muted-foreground hover:border-violet-500/40 hover:text-foreground'
+                      }`}
+                    >
+                      <span className="text-base">{mode.icon}</span>
+                      <span className="text-[9px] font-semibold leading-tight">{mode.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <input
+                  value={query}
+                  onChange={e => setQuery(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleClaudeDraft()}
+                  placeholder={
+                    claudeMode === 'demand_letter' ? 'Describe the matter for the demand letter…' :
+                    claudeMode === 'brief' ? 'Describe the legal issue or motion for the brief…' :
+                    claudeMode === 'motion'? 'Describe the motion and grounds…' : 'Describe the legal issue for analysis…'
+                  }
+                  disabled={claudeLoading}
+                  className="flex-1 px-3 py-2 bg-background border border-border rounded-xl text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-violet-500/30 disabled:opacity-60"
+                />
+                <button
+                  onClick={handleClaudeDraft}
+                  disabled={!query.trim() || claudeLoading}
+                  className="px-4 py-2 bg-violet-600 text-white rounded-xl text-xs font-semibold disabled:opacity-50 hover:bg-violet-700 transition-colors shrink-0"
+                >
+                  {claudeLoading ? '…' : 'Draft'}
+                </button>
+              </div>
+
+              {claudeLoading && (
+                <div className="flex items-center gap-3 py-3 px-3 bg-violet-500/5 border border-violet-500/20 rounded-xl">
+                  <div className="w-4 h-4 rounded-full border-2 border-violet-500/30 border-t-violet-500 animate-spin shrink-0" />
+                  <p className="text-xs text-foreground">Claude is drafting with deep reasoning…</p>
+                </div>
+              )}
+
+              {(claudeLoading && claudeResponse) && (
+                <div className="bg-violet-500/5 border border-violet-500/20 rounded-xl p-3 max-h-64 overflow-y-auto">
+                  <div className="text-xs text-foreground leading-relaxed whitespace-pre-wrap">{claudeResponse}</div>
+                </div>
+              )}
+
+              {claudeResult && !claudeLoading && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="px-2 py-0.5 bg-violet-500/10 border border-violet-500/30 rounded-full text-[9px] font-semibold text-violet-600 dark:text-violet-400">
+                      🧠 Claude · Deep Reasoning
+                    </span>
+                    <button
+                      onClick={() => { navigator.clipboard.writeText(claudeResult); toast.success('Copied to clipboard'); }}
+                      className="text-[10px] text-muted-foreground hover:text-foreground"
+                    >
+                      Copy ⎘
+                    </button>
+                  </div>
+                  <div className="bg-secondary/20 border border-border rounded-xl p-3 max-h-72 overflow-y-auto">
+                    <div className="text-xs text-foreground leading-relaxed whitespace-pre-wrap">{claudeResult}</div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── Gemini Multimodal Panel ───────────────────────────────────── */}
+          {activeDataSource === 'gemini_docs' && (
+            <div className="space-y-3">
+              <div
+                onClick={() => geminiFileRef.current?.click()}
+                className={`border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-all ${
+                  geminiFile ? 'border-blue-400 bg-blue-50/50' : 'border-border hover:border-blue-400/50 hover:bg-blue-50/20'
+                }`}
+              >
+                <input
+                  ref={geminiFileRef}
+                  type="file"
+                  accept=".pdf,.txt,.jpg,.jpeg,.png,.webp"
+                  className="hidden"
+                  onChange={e => {
+                    const file = e.target.files?.[0];
+                    if (file) { setGeminiFile(file); setGeminiResult(null); }
+                  }}
+                />
+                {geminiFile ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <span className="text-xl">📄</span>
+                    <div className="text-left">
+                      <p className="text-xs font-medium text-foreground">{geminiFile.name}</p>
+                      <p className="text-[10px] text-muted-foreground">{(geminiFile.size / 1024).toFixed(1)} KB</p>
+                    </div>
+                    <button
+                      onClick={e => { e.stopPropagation(); setGeminiFile(null); setGeminiResult(null); if (geminiFileRef.current) geminiFileRef.current.value = ''; }}
+                      className="ml-2 text-muted-foreground hover:text-foreground text-xs"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <span className="text-2xl block mb-1">📤</span>
+                    <p className="text-xs font-medium text-foreground">Upload PDF, contract, or court document</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">PDF, TXT, JPG, PNG, WebP supported</p>
+                  </>
+                )}
+              </div>
+
+              <input
+                value={geminiPrompt}
+                onChange={e => setGeminiPrompt(e.target.value)}
+                placeholder="What would you like Gemini to analyze? (optional — defaults to full legal summary)"
+                className="w-full px-3 py-2 bg-background border border-border rounded-xl text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+              />
+
+              <button
+                onClick={handleGeminiAnalyze}
+                disabled={!geminiFile || geminiLoading}
+                className="w-full py-2.5 bg-blue-600 text-white rounded-xl text-xs font-semibold disabled:opacity-50 hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+              >
+                {geminiLoading ? (
+                  <><div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" /> Analyzing…</>
+                ) : (
+                  <><span>📄</span> Analyze Document</>
+                )}
+              </button>
+
+              {geminiLoading && geminiResponse && (
+                <div className="bg-blue-500/5 border border-blue-500/20 rounded-xl p-3 max-h-64 overflow-y-auto">
+                  <div className="text-xs text-foreground leading-relaxed whitespace-pre-wrap">{geminiResponse}</div>
+                </div>
+              )}
+
+              {geminiResult && !geminiLoading && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="px-2 py-0.5 bg-blue-500/10 border border-blue-500/30 rounded-full text-[9px] font-semibold text-blue-600 dark:text-blue-400">
+                      📄 Gemini · Document Analysis
+                    </span>
+                    <button
+                      onClick={() => { navigator.clipboard.writeText(geminiResult); toast.success('Copied to clipboard'); }}
+                      className="text-[10px] text-muted-foreground hover:text-foreground"
+                    >
+                      Copy ⎘
+                    </button>
+                  </div>
+                  <div className="bg-secondary/20 border border-border rounded-xl p-3 max-h-72 overflow-y-auto">
+                    <div className="text-xs text-foreground leading-relaxed whitespace-pre-wrap">{geminiResult}</div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── Notion Knowledge Base Panel ───────────────────────────────── */}
+          {activeDataSource === 'notion_kb' && (
+            <div className="space-y-3">
+              <div className="flex gap-2">
+                <input
+                  value={notionQuery}
+                  onChange={e => setNotionQuery(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && searchNotionKB(notionQuery)}
+                  placeholder="Search Maggi's notes, case knowledge, practice guides…"
+                  disabled={notionLoading}
+                  className="flex-1 px-3 py-2 bg-background border border-border rounded-xl text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-amber-500/30 disabled:opacity-60"
+                />
+                <button
+                  onClick={() => searchNotionKB(notionQuery)}
+                  disabled={!notionQuery.trim() || notionLoading}
+                  className="px-4 py-2 bg-amber-600 text-white rounded-xl text-xs font-semibold disabled:opacity-50 hover:bg-amber-700 transition-colors shrink-0"
+                >
+                  {notionLoading ? '…' : 'Search'}
+                </button>
+              </div>
+
+              {notionLoading && (
+                <div className="flex items-center gap-2 py-3 px-3 bg-amber-500/5 border border-amber-500/20 rounded-xl">
+                  <div className="w-4 h-4 rounded-full border-2 border-amber-500/30 border-t-amber-500 animate-spin shrink-0" />
+                  <p className="text-xs text-foreground">Searching Notion knowledge base…</p>
+                </div>
+              )}
+
+              {notionError && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
+                  <p className="text-xs text-red-700">{notionError}</p>
+                  <p className="text-[10px] text-red-500 mt-0.5">Check that NOTION_API_KEY is configured in your environment</p>
+                </div>
+              )}
+
+              {notionResults.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-[10px] text-muted-foreground font-medium">{notionResults.length} result{notionResults.length !== 1 ? 's' : ''} from Notion</p>
+                  {notionResults.map((result, i) => (
+                    <div key={i} className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-3">
+                      <div className="flex items-start justify-between gap-2 mb-1.5">
+                        <p className="text-xs font-semibold text-foreground">{result.title}</p>
+                        {result.category && (
+                          <span className="px-1.5 py-0.5 bg-amber-500/10 rounded text-[9px] text-amber-700 dark:text-amber-400 shrink-0">{result.category}</span>
+                        )}
+                      </div>
+                      {result.content && (
+                        <p className="text-xs text-muted-foreground leading-relaxed line-clamp-3">{result.content}</p>
+                      )}
+                      {result.url && (
+                        <a href={result.url} target="_blank" rel="noopener noreferrer" className="text-[10px] text-amber-600 hover:underline mt-1.5 block">
+                          Open in Notion →
+                        </a>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {!notionLoading && !notionError && notionResults.length === 0 && notionQuery && (
+                <div className="text-center py-4 text-muted-foreground">
+                  <p className="text-xs">No results found in Notion knowledge base</p>
+                  <p className="text-[10px] mt-0.5">Try different keywords or check your Notion API key</p>
+                </div>
+              )}
+
+              {!notionQuery && !notionLoading && (
+                <div className="text-center py-4">
+                  <span className="text-2xl block mb-2">📚</span>
+                  <p className="text-xs text-muted-foreground">Search Maggi's internal notes, case strategies, and practice guides stored in Notion</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── Voice Intake Panel ────────────────────────────────────────── */}
+          {activeDataSource === 'voice_intake' && (
+            <LexiVoiceIntake />
+          )}
+
+          {/* Search input (only for non-special tabs) */}
+          {activeDataSource !== 'claude_drafting' && activeDataSource !== 'gemini_docs' && activeDataSource !== 'notion_kb' && activeDataSource !== 'voice_intake' && (
+            <div className="flex gap-2">
+              <input
+                ref={inputRef}
+                value={query}
+                onChange={e => setQuery(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleSearch()}
+                placeholder={
+                  activeDataSource === 'courtlistener' ? 'Search federal court opinions…' :
+                  activeDataSource === 'ecfr' ? 'Search CFR regulations (e.g. OSHA 29 CFR 1910)…' :
+                  activeDataSource === 'openstates' ? 'Search state bills (e.g. minimum wage Louisiana)…' :
+                  activeDataSource === 'la_legislature' ? 'Search Louisiana bills (e.g. HB 123 or keyword)…' :
+                  activeDataSource === 'govinfo' ? 'Search Federal Register, U.S. Code, CFR…' :
+                  activeDataSource === 'case_law_links' ? 'Search Google Scholar, Justia, Cornell LII…' :
+                  activeDataSource === 'perplexity' ? (activePerplexityMode?.placeholder ?? 'Search case law, statutes, regulations…') :
+                  selectedState ? `Search ${selectedStateObj?.name} law…` :
+                  'Search case law, statutes, regulations…'
+                }
+                disabled={isSearching}
+                className="flex-1 px-3 py-2 bg-background border border-border rounded-xl text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:opacity-60"
+              />
+              <button
+                onClick={handleSearch}
+                disabled={!query.trim() || isSearching}
+                className="px-4 py-2 bg-primary text-primary-foreground rounded-xl text-xs font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary/90 transition-colors shrink-0"
+              >
+                {isSearching ? '…' : 'Search'}
+              </button>
+            </div>
+          )}
 
           {/* Quick searches (Perplexity only) */}
           {activeDataSource === 'perplexity' && !activeResult && !isLoading && !perplexityDeepLoading && (

@@ -137,6 +137,10 @@ const PracticeManagementSuite = dynamic(() => import('./components/PracticeManag
 const AILegalSecretaryDashboard = dynamic(() => import('./components/AILegalSecretaryDashboard'), { ssr: false });
 const LinearProjectsDashboard = dynamic(() => import('./components/LinearProjectsDashboard'), { ssr: false });
 const ClioSyncDashboard = dynamic(() => import('./components/ClioSyncDashboard'), { ssr: false });
+const AdminBugBoardDashboard = dynamic(() => import('./components/AdminBugBoardDashboard'), { ssr: false });
+const UnifiedAnalyticsDashboard = dynamic(() => import('./components/UnifiedAnalyticsDashboard'), { ssr: false });
+const ClioSyncHealthPanel = dynamic(() => import('./components/ClioSyncHealthPanel'), { ssr: false });
+const DocumentVaultSearch = dynamic(() => import('./components/DocumentVaultSearch'), { ssr: false });
 const AirtableCRMDashboard = dynamic(() => import('./components/AirtableCRMDashboard'), { ssr: false });
 const ConsultationOutcomesDashboard = dynamic(() => import('./components/ConsultationOutcomesDashboard'), { ssr: false });
 const ConsultationPipelineReport = dynamic(() => import('./components/ConsultationPipelineReport'), { ssr: false });
@@ -854,7 +858,7 @@ function SequencesDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const [toast, setToast] = useState<{ msg: string; type: 'success\' | \'error' } | null>(null);
+  const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
 
   const fetchSequences = useCallback(async () => {
     setLoading(true);
@@ -1239,7 +1243,7 @@ function PaymentRemindersDashboard() {
   const [invoiceFilter, setInvoiceFilter] = useState<string>('all');
   const [reminderFilter, setReminderFilter] = useState<string>('all');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const [toast, setToast] = useState<{ msg: string; type: 'success\' | \'error' } | null>(null);
+  const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
   const [rescheduleId, setRescheduleId] = useState<string | null>(null);
   const [rescheduleDate, setRescheduleDate] = useState('');
   const [rescheduleTime, setRescheduleTime] = useState('09:00');
@@ -4906,9 +4910,8 @@ function _CaseManagementDashboardInline_REMOVED() {
                               rel="noopener noreferrer"
                               className="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-border text-xs font-semibold text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-all"
                             >
-                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-                            </svg>
-                              Schedule
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                              Book Consultation
                             </a>
                           </div>
                         </div>
@@ -8534,6 +8537,34 @@ id: 'retainer_renewal_notifications' as const,
         {/* ── Clio Sync Tab ── */}
         {activeTab === 'clio_sync' && <ClioSyncDashboard />}
 
+        {/* ── Bug Board Tab ── */}
+        {activeTab === 'bug_board' && (
+          <div className="p-6">
+            <AdminBugBoardDashboard />
+          </div>
+        )}
+
+        {/* ── Unified Analytics Tab ── */}
+        {activeTab === 'unified_analytics' && (
+          <div className="p-6">
+            <UnifiedAnalyticsDashboard />
+          </div>
+        )}
+
+        {/* ── Clio Health Tab ── */}
+        {activeTab === 'clio_health' && (
+          <div className="p-6">
+            <ClioSyncHealthPanel />
+          </div>
+        )}
+
+        {/* ── Document Vault Search Tab ── */}
+        {activeTab === 'document_vault' && (
+          <div className="p-6">
+            <DocumentVaultSearch />
+          </div>
+        )}
+
         {/* ── Consultation Outcomes Tab ── */}
         {activeTab === 'consultation_outcomes' && <ConsultationOutcomesDashboard />}
 
@@ -8732,17 +8763,13 @@ id: 'retainer_renewal_notifications' as const,
                   </div>
                   <div className="flex flex-col gap-2.5 mb-5">
                     <a href={`mailto:${selectedInquiry.email}`} className="flex items-center gap-2.5 text-sm text-accent hover:underline">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
                       {selectedInquiry.email}
                     </a>
-                    <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/></svg>
-                      {selectedInquiry.service}
-                    </div>
-                    <div className="flex items-center gap-2.5 text-xs text-muted-foreground/70">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                      Submitted {formatDate(selectedInquiry.created_at)}
-                    </div>
+                  </div>
+                  <div className="mb-5">
+                    <p className="text-xs uppercase tracking-widest text-muted-foreground font-semibold mb-2">Service</p>
+                    <p className="text-sm text-foreground">{selectedInquiry.service}</p>
                   </div>
                   <div className="mb-5">
                     <p className="text-xs uppercase tracking-widest text-muted-foreground font-semibold mb-2">Message</p>
@@ -8759,24 +8786,21 @@ id: 'retainer_renewal_notifications' as const,
                   <div className="mb-5 flex gap-2">
                     <a href="https://calendly.com/maggimaybroussard" target="_blank" rel="noopener noreferrer" className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 rounded-xl border border-border text-xs font-semibold text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-all">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                      Book
+                      Book Consultation
                     </a>
-                    <a href={`mailto:${selectedInquiry.email}?subject=Re: Your Inquiry — Maggi May Broussard`} className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold uppercase tracking-widest transition-all hover:opacity-90" style={{ background: '#355E3B', color: '#fff' }}>
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-                      Reply
-                    </a>
-                  </div>
-                  <div>
-                    <p className="text-xs uppercase tracking-widest text-muted-foreground font-semibold mb-2">Internal Notes</p>
-                    <textarea value={notesValue} onChange={(e) => setNotesValue(e.target.value)} rows={4} placeholder="Add internal notes about this inquiry…" className="w-full px-3 py-2.5 rounded-xl border border-border bg-secondary/30 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent resize-none" />
-                    <button onClick={handleSaveNotes} disabled={savingNotes} className="mt-2 w-full py-2 rounded-xl bg-foreground text-background text-xs font-semibold uppercase tracking-widest hover:opacity-90 transition-opacity disabled:opacity-50">{savingNotes ? 'Saving…' : 'Save Notes'}</button>
+                    <button
+                      onClick={() => handleStatusChange(selectedInquiry.id, 'converted')}
+                      disabled={updatingId === selectedInquiry.id}
+                      className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-all disabled:opacity-60"
+                    >
+                      Mark Converted
+                    </button>
                   </div>
                 </div>
               </div>
             )}
           </div>
-        </>
-        )}
+        </div>
       </div>
     </div>
   );
