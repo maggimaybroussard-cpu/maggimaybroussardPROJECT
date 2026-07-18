@@ -1009,6 +1009,158 @@ export default function ClientHomePage() {
 
         </div>
 
+        {/* ── Unified Portal Overview ── */}
+        <div className="mt-6 bg-card border border-border rounded-2xl overflow-hidden">
+          <div className="px-5 py-4 flex items-center justify-between border-b border-border/60" style={{ background: 'rgba(53,94,59,0.03)' }}>
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'rgba(53,94,59,0.12)' }}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#355E3B" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" />
+                </svg>
+              </div>
+              <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: '#355E3B' }}>Portal Overview</p>
+            </div>
+            <p className="text-[11px] text-muted-foreground">All your matter activity at a glance</p>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-y md:divide-y-0 divide-border/60">
+            {/* Matters */}
+            <Link href="/portal/cases" className="group p-5 flex flex-col gap-3 hover:bg-muted/20 transition-colors">
+              <div className="flex items-center justify-between">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(53,94,59,0.1)' }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#355E3B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" />
+                  </svg>
+                </div>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground/40 group-hover:text-muted-foreground transition-colors">
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-xl font-serif font-light text-foreground">{inquiry ? '1' : '0'}</p>
+                <p className="text-xs font-semibold text-foreground mt-0.5">Active Matters</p>
+                <p className="text-[11px] text-muted-foreground font-light mt-0.5 truncate">
+                  {inquiry ? inquiry.service : 'No active matter'}
+                </p>
+              </div>
+              <span className="text-[10px] font-semibold uppercase tracking-widest group-hover:underline" style={{ color: '#355E3B' }}>View Cases →</span>
+            </Link>
+
+            {/* Invoices */}
+            <Link href="/portal/invoices" className="group p-5 flex flex-col gap-3 hover:bg-muted/20 transition-colors">
+              <div className="flex items-center justify-between">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(200,150,90,0.1)' }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C8965A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="1" y="4" width="22" height="16" rx="2" ry="2" /><line x1="1" y1="10" x2="23" y2="10" />
+                  </svg>
+                </div>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground/40 group-hover:text-muted-foreground transition-colors">
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-xl font-serif font-light" style={{ color: overdueInvoices.length > 0 ? '#DC2626' : '#C8965A' }}>
+                  {pendingInvoices.length}
+                </p>
+                <p className="text-xs font-semibold text-foreground mt-0.5">Pending Invoices</p>
+                <p className="text-[11px] text-muted-foreground font-light mt-0.5">
+                  {overdueInvoices.length > 0 ? `${overdueInvoices.length} overdue` : invoices.length === 0 ? 'No invoices yet' : `${invoices.length} total`}
+                </p>
+              </div>
+              <span className="text-[10px] font-semibold uppercase tracking-widest group-hover:underline" style={{ color: '#C8965A' }}>View Invoices →</span>
+            </Link>
+
+            {/* Documents */}
+            <Link href="/portal/documents" className="group p-5 flex flex-col gap-3 hover:bg-muted/20 transition-colors">
+              <div className="flex items-center justify-between">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(79,70,229,0.1)' }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4F46E5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+                  </svg>
+                </div>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground/40 group-hover:text-muted-foreground transition-colors">
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-xl font-serif font-light text-foreground">—</p>
+                <p className="text-xs font-semibold text-foreground mt-0.5">Documents</p>
+                <p className="text-[11px] text-muted-foreground font-light mt-0.5">Case files &amp; deliverables</p>
+              </div>
+              <span className="text-[10px] font-semibold uppercase tracking-widest group-hover:underline" style={{ color: '#4F46E5' }}>View Documents →</span>
+            </Link>
+
+            {/* Messages */}
+            <Link href="/portal/messages" className="group p-5 flex flex-col gap-3 hover:bg-muted/20 transition-colors">
+              <div className="flex items-center justify-between">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(37,99,235,0.1)' }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2563EB" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                  </svg>
+                </div>
+                {unreadMessages.length > 0 && (
+                  <span className="inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold text-white" style={{ background: '#2563EB' }}>
+                    {unreadMessages.length}
+                  </span>
+                )}
+              </div>
+              <div>
+                <p className="text-xl font-serif font-light" style={{ color: unreadMessages.length > 0 ? '#2563EB' : undefined }}>
+                  {unreadMessages.length}
+                </p>
+                <p className="text-xs font-semibold text-foreground mt-0.5">Unread Messages</p>
+                <p className="text-[11px] text-muted-foreground font-light mt-0.5">
+                  {messages.length === 0 ? 'No messages yet' : `${messages.length} total`}
+                </p>
+              </div>
+              <span className="text-[10px] font-semibold uppercase tracking-widest group-hover:underline" style={{ color: '#2563EB' }}>Open Messages →</span>
+            </Link>
+          </div>
+
+          {/* Quick action row */}
+          <div className="px-5 py-4 border-t border-border/60 flex flex-wrap gap-2">
+            <Link
+              href="/portal/intake-questionnaire"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium transition-all duration-200 hover:opacity-80"
+              style={{ borderColor: 'rgba(53,94,59,0.25)', color: '#355E3B', background: 'rgba(53,94,59,0.06)' }}
+            >
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+              </svg>
+              Complete Intake Form
+            </Link>
+            <Link
+              href="/portal/signatures"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium transition-all duration-200 hover:opacity-80"
+              style={{ borderColor: 'rgba(124,58,237,0.25)', color: '#7C3AED', background: 'rgba(124,58,237,0.06)' }}
+            >
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+              </svg>
+              Sign Retainer Agreement
+            </Link>
+            <Link
+              href="/portal/book"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium transition-all duration-200 hover:opacity-80"
+              style={{ borderColor: 'rgba(200,150,90,0.25)', color: '#C8965A', background: 'rgba(200,150,90,0.06)' }}
+            >
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
+              </svg>
+              Book Appointment
+            </Link>
+            <Link
+              href="/portal/files"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium transition-all duration-200 hover:opacity-80"
+              style={{ borderColor: 'rgba(79,70,229,0.25)', color: '#4F46E5', background: 'rgba(79,70,229,0.06)' }}
+            >
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 3h18v4H3z" /><path d="M3 10h18v11H3z" />
+              </svg>
+              File Repository
+            </Link>
+          </div>
+        </div>
+
         {/* ── Notion Case Notes Card ── */}
         <div className="mt-6 bg-card border border-border rounded-2xl overflow-hidden">
           <div className="px-5 py-4 flex items-center justify-between border-b border-border/60">

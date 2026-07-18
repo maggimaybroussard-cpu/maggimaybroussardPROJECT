@@ -9,6 +9,7 @@ import RetainerPricingSection from './components/RetainerPricingSection';
 import CaseProcessTimeline from './components/CaseProcessTimeline';
 import CaseOutcomesSection from './components/CaseOutcomesSection';
 import TestimonialsSection from './components/TestimonialsSection';
+import TestimonialsCarousel from './components/TestimonialsCarousel';
 import ContactCTASection from './components/ContactCTASection';
 import EmailOptInSection from './components/EmailOptInSection';
 import EmailOptInModal from './components/EmailOptInModal';
@@ -131,6 +132,7 @@ export default function HomePage() {
         <CaseProcessTimeline />
         <CaseOutcomesSection />
         <TestimonialsSection />
+        <TestimonialsCarousel />
         <MobileAppSection />
         <EmailOptInSection />
         <ContactCTASection />
