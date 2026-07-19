@@ -150,6 +150,16 @@ export default function BookConsultationPage() {
       <Header />
       <main className="min-h-screen bg-background">
 
+        {/* Paralegal Disclaimer */}
+        <div className="bg-amber-50 border-b border-amber-200">
+          <div className="max-w-7xl mx-auto px-5 md:px-10 py-2.5">
+            <p className="text-amber-800 text-xs text-center leading-relaxed">
+              <strong>Paralegal Notice:</strong> Booking a consultation does not create an attorney-client relationship. Broussard Legal Services provides paralegal support under attorney supervision.{' '}
+              <Link href="/disclaimers" className="underline hover:text-amber-900">Full disclaimer</Link>
+            </p>
+          </div>
+        </div>
+
         {/* Hero */}
         <section
           className="relative pt-28 pb-12 px-5 md:px-10 overflow-hidden"

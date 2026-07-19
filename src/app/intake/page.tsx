@@ -71,6 +71,16 @@ function TypeformIntake() {
         </div>
       </section>
 
+      {/* Paralegal Disclaimer */}
+      <div className="bg-amber-50 border-b border-amber-200">
+        <div className="max-w-3xl mx-auto px-5 py-3">
+          <p className="text-amber-800 text-xs text-center leading-relaxed">
+            <strong>Paralegal Notice:</strong> This intake form is reviewed by a paralegal under attorney supervision. Submitting this form does not create an attorney-client relationship or constitute legal advice.{' '}
+            <a href="/disclaimers" className="underline hover:text-amber-900">Full disclaimer</a>
+          </p>
+        </div>
+      </div>
+
       {/* Typeform embed */}
       <main className="flex-1 w-full">
         <Widget

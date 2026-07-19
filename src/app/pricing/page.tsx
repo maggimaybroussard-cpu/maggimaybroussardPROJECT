@@ -103,6 +103,16 @@ export default function PricingPage() {
       <Header />
       <PricingPageClient />
 
+      {/* Paralegal Disclaimer */}
+      <div className="bg-amber-50 border-y border-amber-200">
+        <div className="max-w-7xl mx-auto px-5 md:px-10 py-3">
+          <p className="text-amber-800 text-xs text-center leading-relaxed">
+            <strong>Paralegal Disclaimer:</strong> Broussard Legal Services provides paralegal services under the supervision of a licensed attorney. All pricing reflects paralegal support services only and does not include attorney fees. Use of this website does not create an attorney-client relationship.{' '}
+            <a href="/disclaimers" className="underline hover:text-amber-900">View full disclaimer →</a>
+          </p>
+        </div>
+      </div>
+
       {/* Case Studies Social Proof */}
       <CaseStudiesSocialProof
         heading="Outcomes That Justify the Investment"

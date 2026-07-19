@@ -125,6 +125,17 @@ export default function ContactPage() {
       <Header />
       <main>
         <ContactHero />
+
+        {/* Paralegal Disclaimer */}
+        <div className="bg-amber-50 border-b border-amber-200">
+          <div className="max-w-7xl mx-auto px-5 md:px-10 py-3">
+            <p className="text-amber-800 text-xs text-center leading-relaxed">
+              <strong>Paralegal Notice:</strong> Broussard Legal Services provides paralegal support under attorney supervision. Contacting us does not create an attorney-client relationship. For legal advice, please consult a licensed attorney.{' '}
+              <a href="/disclaimers" className="underline hover:text-amber-900">View full disclaimer →</a>
+            </p>
+          </div>
+        </div>
+
         <ContactSplit />
         <CalendlyBookingSection />
         <GoogleCalendarBookingSection />

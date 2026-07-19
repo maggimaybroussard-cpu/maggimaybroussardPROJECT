@@ -135,6 +135,8 @@ const DocumentManagementDashboard = dynamic(() => import('./components/DocumentM
 const PracticeManagementSuite = dynamic(() => import('./components/PracticeManagementSuite'), { ssr: false });
 const AILegalSecretaryDashboard = dynamic(() => import('./components/AILegalSecretaryDashboard'), { ssr: false });
 const TeamPermissionsDashboard = dynamic(() => import('./components/TeamPermissionsDashboard'), { ssr: false });
+const TimesheetToInvoiceConverter = dynamic(() => import('./components/TimesheetToInvoiceConverter'), { ssr: false });
+const ConflictOfInterestChecker = dynamic(() => import('./components/ConflictOfInterestChecker'), { ssr: false });
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import LexiAuditLogDashboard from './LexiAuditLogDashboard';
+import ConflictOfInterestChecker from './ConflictOfInterestChecker';
 
 interface ConflictCheckResult {
   id: string;
@@ -327,98 +328,7 @@ export default function LexiAdminTools() {
 
       {/* Conflict Checker */}
       {activeView === 'conflict_checker' && (
-        <div className="grid gap-6 lg:grid-cols-2">
-          {/* Check Form */}
-          <div className="rounded-2xl border border-border bg-card p-6">
-            <h3 className="font-serif text-lg text-foreground mb-4">Run Conflict Check</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-1.5">Prospective Client Name *</label>
-                <input type="text" placeholder="Full name or entity name" value={checkForm.checked_name} onChange={e => setCheckForm(p => ({ ...p, checked_name: e.target.value }))}
-                  className="w-full px-4 py-2.5 rounded-xl border border-border bg-input text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-accent/40" />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-1.5">Email Address</label>
-                <input type="email" placeholder="client@example.com" value={checkForm.checked_email} onChange={e => setCheckForm(p => ({ ...p, checked_email: e.target.value }))}
-                  className="w-full px-4 py-2.5 rounded-xl border border-border bg-input text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-accent/40" />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-1.5">Business / Entity Name</label>
-                <input type="text" placeholder="Company or organization" value={checkForm.checked_entity} onChange={e => setCheckForm(p => ({ ...p, checked_entity: e.target.value }))}
-                  className="w-full px-4 py-2.5 rounded-xl border border-border bg-input text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-accent/40" />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-1.5">Opposing Party (if known)</label>
-                <input type="text" placeholder="Opposing party name" value={checkForm.opposing_party} onChange={e => setCheckForm(p => ({ ...p, opposing_party: e.target.value }))}
-                  className="w-full px-4 py-2.5 rounded-xl border border-border bg-input text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-accent/40" />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-1.5">Service Type</label>
-                <input type="text" placeholder="e.g. Business Litigation" value={checkForm.service_type} onChange={e => setCheckForm(p => ({ ...p, service_type: e.target.value }))}
-                  className="w-full px-4 py-2.5 rounded-xl border border-border bg-input text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-accent/40" />
-              </div>
-              <button onClick={runConflictCheck} disabled={checking || !checkForm.checked_name.trim()}
-                className="w-full py-2.5 rounded-xl text-white text-xs font-semibold uppercase tracking-widest transition-all hover:opacity-90 disabled:opacity-50"
-                style={{ background: '#4A3728' }}>
-                {checking ? 'Scanning Records…' : 'Run Conflict Check'}
-              </button>
-            </div>
-
-            {/* Result */}
-            {checkResult && (
-              <div className={`mt-5 p-4 rounded-xl border ${RISK_COLORS[checkResult.risk_level]}`}>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-semibold text-sm">
-                    {checkResult.risk_level === 'none' ? '✓ No Conflicts Found' : `⚠ ${checkResult.conflict_count} Conflict${checkResult.conflict_count !== 1 ? 's' : ''} Found`}
-                  </span>
-                  <span className={`px-2 py-0.5 rounded-full text-xs font-bold border ${RISK_COLORS[checkResult.risk_level]}`}>
-                    {checkResult.risk_level.toUpperCase()} RISK
-                  </span>
-                </div>
-                {checkResult.conflicts_found.length > 0 && (
-                  <ul className="space-y-1.5 mt-3">
-                    {checkResult.conflicts_found.map((c, i) => (
-                      <li key={i} className="text-xs flex items-start gap-1.5">
-                        <span className="mt-0.5">•</span>
-                        <span>{c.description}</span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Recent Checks */}
-          <div className="rounded-2xl border border-border bg-card overflow-hidden">
-            <div className="px-5 py-4 border-b border-border">
-              <h3 className="font-serif text-lg text-foreground">Recent Checks</h3>
-            </div>
-            {loading ? (
-              <div className="p-8 text-center text-muted-foreground text-sm">Loading…</div>
-            ) : conflictChecks.length === 0 ? (
-              <div className="p-8 text-center text-muted-foreground text-sm">No conflict checks yet.</div>
-            ) : (
-              <div className="divide-y divide-border max-h-96 overflow-y-auto">
-                {conflictChecks.map(c => (
-                  <div key={c.id} className="px-5 py-3.5">
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <p className="font-medium text-foreground text-sm">{c.checked_name}</p>
-                        {c.checked_email && <p className="text-xs text-muted-foreground">{c.checked_email}</p>}
-                        {c.opposing_party && <p className="text-xs text-muted-foreground">vs. {c.opposing_party}</p>}
-                        <p className="text-xs text-muted-foreground/60 mt-0.5">{fmtDate(c.created_at)}</p>
-                      </div>
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border ${RISK_COLORS[c.risk_level]}`}>
-                        {c.risk_level === 'none' ? '✓ Clear' : `${c.conflict_count} conflict${c.conflict_count !== 1 ? 's' : ''}`}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
+        <ConflictOfInterestChecker />
       )}
 
       {/* Invoice Drafts */}

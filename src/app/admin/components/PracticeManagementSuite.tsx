@@ -9,6 +9,7 @@ const TimeEntryModule = dynamic(() => import('./TimeEntryModule'), { ssr: false 
 const MatterInvoiceBuilder = dynamic(() => import('./MatterInvoiceBuilder'), { ssr: false });
 const ContractTemplatesDashboard = dynamic(() => import('./ContractTemplatesDashboard'), { ssr: false });
 const DocumentManagementDashboard = dynamic(() => import('./DocumentManagementDashboard'), { ssr: false });
+const TimesheetToInvoiceConverter = dynamic(() => import('./TimesheetToInvoiceConverter'), { ssr: false });
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -325,11 +326,12 @@ function KPIStrip({ kpi }: { kpi: KPIData }) {
 
 // ─── Sub-tab nav ──────────────────────────────────────────────────────────────
 
-type SubTab = 'timer' | 'time_log' | 'invoices' | 'contracts' | 'documents';
+type SubTab = 'timer' | 'time_log' | 'convert' | 'invoices' | 'contracts' | 'documents';
 
 const SUB_TABS: { id: SubTab; label: string; icon: string; desc: string }[] = [
   { id: 'timer', label: 'Live Timer', icon: '⏱', desc: 'Start/stop billing clock' },
   { id: 'time_log', label: 'Time Log', icon: '📋', desc: 'Log & review entries' },
+  { id: 'convert', label: 'Convert → Invoice', icon: '⚡', desc: 'One-click timesheet to invoice' },
   { id: 'invoices', label: 'Invoice Builder', icon: '🧾', desc: 'Build & send invoices' },
   { id: 'contracts', label: 'Contracts', icon: '📄', desc: 'Templates & generation' },
   { id: 'documents', label: 'Documents', icon: '🗂', desc: 'Organize & search files' },
@@ -495,6 +497,8 @@ export default function PracticeManagementSuite() {
         )}
 
         {activeTab === 'time_log' && <TimeEntryModule />}
+
+        {activeTab === 'convert' && <TimesheetToInvoiceConverter />}
 
         {activeTab === 'invoices' && <MatterInvoiceBuilder />}
 
