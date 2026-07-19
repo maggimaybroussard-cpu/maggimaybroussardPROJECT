@@ -74,6 +74,7 @@ const IOLTATrustLedger = dynamic(() => import('./components/IOLTATrustLedger'), 
 const LexiAdminTools = dynamic(() => import('./components/LexiAdminTools'), { ssr: false });
 const MonthlyReportDashboard = dynamic(() => import('./components/MonthlyReportDashboard'), { ssr: false });
 const ReferralClaimsDashboard = dynamic(() => import('./components/ReferralClaimsDashboard'), { ssr: false });
+const ReferralTrackingDashboard = dynamic(() => import('./components/ReferralTrackingDashboard'), { ssr: false });
 const LexiDocumentDraftsDashboard = dynamic(() => import('./components/LexiDocumentDraftsDashboard'), { ssr: false });
 const LegalDocumentTemplatesDashboard = dynamic(() => import('./components/LegalDocumentTemplatesDashboard'), { ssr: false });
 const ParalegalBillableHoursLogger = dynamic(() => import('./components/ParalegalBillableHoursLogger'), { ssr: false });
@@ -8247,7 +8248,12 @@ id: 'retainer_renewal_notifications' as const,
         {activeTab === 'monthly_reports' && <MonthlyReportDashboard />}
 
         {/* ── Referral Claims Tab ── */}
-        {activeTab === 'referral_claims' && <ReferralClaimsDashboard />}
+        {activeTab === 'referral_claims' && (
+          <div className="space-y-8">
+            <ReferralTrackingDashboard />
+            <ReferralClaimsDashboard />
+          </div>
+        )}
 
         {/* ── Legal Document Templates Tab ── */}
         {activeTab === 'legal_doc_templates' && <LegalDocumentTemplatesDashboard />}

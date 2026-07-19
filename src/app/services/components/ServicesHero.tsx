@@ -71,7 +71,7 @@ export default function ServicesHero() {
                 className="flex items-center gap-4 bg-primary-foreground/10 backdrop-blur-sm border border-primary-foreground/15 rounded-2xl px-6 py-4 lg:min-w-[260px]">
                 
                   <span className="font-serif text-3xl text-accent">{stat?.value}</span>
-                  <span className="text-primary-foreground/70 text-sm font-light">{stat?.label}</span>
+                  <span className="text-sm font-light" style={{ color: '#1b2a4a' }}>{stat?.label}</span>
                 </div>
               )}
             </div>

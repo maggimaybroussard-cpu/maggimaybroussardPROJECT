@@ -1,291 +1,195 @@
-import React from 'react';
-import type { Metadata } from 'next';
+'use client';
+
+import React, { useState } from 'react';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import BookConsultationModal from '@/components/BookConsultationModal';
 
-// ── Practice area data ─────────────────────────────────────────────────────────
-
-interface PracticeArea {
+const PRACTICE_AREAS: Record<string, {
   slug: string;
   title: string;
   headline: string;
   description: string;
-  longDescription: string;
   services: string[];
-  faqs: { question: string; answer: string }[];
+  faqs: { q: string; a: string }[];
   icon: string;
   color: string;
-}
-
-const PRACTICE_AREAS: PracticeArea[] = [
-  {
+}> = {
+  'family-law': {
     slug: 'family-law',
-    title: 'Family Law',
-    headline: 'Family Law Paralegal Support — Divorce, Custody & More',
-    description: 'Expert paralegal support for family law matters including divorce, child custody, adoption, and domestic relations.',
-    longDescription: 'Family law matters are among the most emotionally charged legal proceedings. Broussard Legal Services provides experienced paralegal support for family law attorneys handling divorce, child custody and support, adoption, guardianship, domestic violence protective orders, and property division. We handle document drafting, research, case management, and client intake so your attorneys can focus on advocacy.',
+    title: 'Family Law Paralegal Support',
+    headline: 'Expert Paralegal Assistance for Family Law Matters',
+    description: 'Broussard Legal Services provides comprehensive paralegal support for family law attorneys — from divorce filings and custody agreements to adoption paperwork and protective orders. Remote, reliable, and nationwide.',
     services: [
-      'Divorce petition drafting and filing preparation',
-      'Child custody agreement drafting',
-      'Child support calculation worksheets',
-      'Adoption paperwork and home study coordination',
-      'Domestic violence protective order preparation',
-      'Property division analysis and documentation',
-      'Parenting plan drafting',
-      'Mediation preparation and summaries',
+      'Divorce petition drafting & filing preparation',
+      'Child custody & support agreement drafting',
+      'Adoption paperwork & home study coordination',
+      'Protective order preparation',
+      'Property settlement agreement drafting',
+      'Parenting plan preparation',
+      'Mediation summary preparation',
+      'Client intake & questionnaire management',
     ],
     faqs: [
-      {
-        question: 'What family law documents can a paralegal draft?',
-        answer: 'A paralegal can draft divorce petitions, custody agreements, child support worksheets, parenting plans, property settlement agreements, and adoption paperwork — all under attorney supervision.',
-      },
-      {
-        question: 'How does paralegal support reduce family law costs?',
-        answer: 'Paralegals handle document-intensive tasks at a lower billing rate than attorneys, reducing overall legal fees while maintaining quality. Research, drafting, and case management are all handled efficiently.',
-      },
-      {
-        question: 'Can you help with emergency protective orders?',
-        answer: 'Yes. We can assist with emergency protective order paperwork preparation on an expedited basis. Contact us directly for urgent family law matters.',
-      },
+      { q: 'Can a paralegal draft divorce papers?', a: 'Yes. Under attorney supervision, a paralegal can draft divorce petitions, property settlement agreements, and parenting plans. All documents are reviewed by a licensed attorney before filing.' },
+      { q: 'How long does family law document preparation take?', a: 'Standard turnaround is 24–48 hours for most family law documents. Complex matters such as contested divorces may require 3–5 business days.' },
+      { q: 'Do you handle emergency protective orders?', a: 'Yes. We offer expedited preparation for emergency protective orders and temporary restraining orders. Contact us immediately for urgent matters.' },
     ],
     icon: '👨‍👩‍👧',
-    color: '#355E3B',
+    color: 'from-rose-50 to-pink-50',
   },
-  {
+  'contracts': {
     slug: 'contracts',
-    title: 'Contracts & Business Agreements',
-    headline: 'Contract Review & Drafting Paralegal Support',
-    description: 'Professional paralegal support for contract drafting, review, and negotiation across all business agreement types.',
-    longDescription: 'Contracts are the foundation of every business relationship. Broussard Legal Services provides thorough paralegal support for contract attorneys handling commercial agreements, vendor contracts, employment agreements, NDAs, licensing agreements, and more. We draft, review, redline, and organize contracts with precision and speed.',
+    title: 'Contract Review & Drafting Paralegal Support',
+    headline: 'Precise Contract Review and Drafting Assistance',
+    description: 'Thorough contract review, redlining, and drafting support for business and personal agreements. Broussard Legal Services helps attorneys deliver faster, more accurate contract work at scale.',
     services: [
-      'Commercial contract drafting and redlining',
-      'NDA and confidentiality agreement preparation',
-      'Employment agreement and offer letter drafting',
-      'Vendor and supplier contract review',
-      'Licensing and IP agreement support',
-      'Contract clause library management',
-      'Contract comparison and summary memos',
-      'Signature coordination and execution tracking',
+      'Contract review & redlining',
+      'NDA drafting & review',
+      'Service agreement preparation',
+      'Lease agreement review',
+      'Employment contract review',
+      'Vendor agreement drafting',
+      'Contract summary memos',
+      'Clause library management',
     ],
     faqs: [
-      {
-        question: 'What types of contracts can a paralegal review?',
-        answer: 'Paralegals can review commercial contracts, NDAs, employment agreements, vendor contracts, licensing agreements, service agreements, and more — flagging issues for attorney review.',
-      },
-      {
-        question: 'How quickly can contract review be completed?',
-        answer: 'Standard contract review turnaround is 24–48 hours. Rush review is available for urgent matters. Complex multi-party agreements may require additional time.',
-      },
-      {
-        question: 'Do you handle contract redlining?',
-        answer: 'Yes. We provide detailed redline markups with tracked changes and a summary memo explaining each proposed modification and its rationale.',
-      },
+      { q: 'What types of contracts can you review?', a: 'We review commercial contracts, NDAs, service agreements, employment contracts, lease agreements, vendor agreements, and more — all under attorney supervision.' },
+      { q: 'How quickly can you turn around a contract review?', a: 'Standard contract reviews are completed within 24–48 hours. Rush reviews for urgent matters can be completed same-day.' },
+      { q: 'Do you provide redlined documents?', a: 'Yes. We provide fully redlined documents with tracked changes and a summary memo highlighting key issues and recommended revisions.' },
     ],
     icon: '📄',
-    color: '#1d4ed8',
+    color: 'from-blue-50 to-indigo-50',
   },
-  {
-    slug: 'business-law',
-    title: 'Business Law',
-    headline: 'Business Law Paralegal Support — Formation to Compliance',
-    description: 'Comprehensive paralegal support for business law attorneys handling entity formation, corporate governance, and compliance.',
-    longDescription: 'From startup formation to ongoing corporate compliance, Broussard Legal Services supports business law attorneys with entity formation documents, operating agreements, corporate minutes, regulatory filings, and transactional support. We handle the document-intensive work so your attorneys can focus on strategy and client relationships.',
+  'business': {
+    slug: 'business',
+    title: 'Business & Corporate Paralegal Support',
+    headline: 'Corporate Paralegal Services for Business Attorneys',
+    description: 'From entity formation to corporate governance, Broussard Legal Services supports business and corporate attorneys with precise, efficient paralegal work — remote and nationwide.',
     services: [
-      'LLC and corporation formation documents',
-      'Operating agreement and bylaw drafting',
-      'Corporate minutes and resolutions',
-      'Annual report and compliance filing preparation',
-      'Business purchase and sale agreement support',
-      'Due diligence checklist management',
-      'Regulatory research and compliance memos',
-      'UCC filing preparation',
+      'Entity formation document preparation',
+      'Operating agreement drafting',
+      'Corporate minute book maintenance',
+      'Annual report preparation',
+      'Registered agent coordination',
+      'Business license research',
+      'Due diligence document review',
+      'Merger & acquisition document support',
     ],
     faqs: [
-      {
-        question: 'What business formation documents can a paralegal prepare?',
-        answer: 'Paralegals can prepare articles of incorporation, articles of organization, operating agreements, bylaws, initial resolutions, and EIN application materials under attorney supervision.',
-      },
-      {
-        question: 'Can you assist with business acquisitions?',
-        answer: 'Yes. We support M&A transactions with due diligence checklists, document organization, entity research, and drafting of ancillary transaction documents.',
-      },
-      {
-        question: 'Do you handle ongoing corporate compliance?',
-        answer: 'Yes. We track annual report deadlines, prepare corporate minutes, draft resolutions, and maintain corporate record books for ongoing compliance.',
-      },
+      { q: 'Can you help with LLC formation documents?', a: 'Yes. We prepare articles of organization, operating agreements, and initial resolutions for LLCs, corporations, and other business entities under attorney supervision.' },
+      { q: 'Do you handle corporate minute books?', a: 'Yes. We maintain and update corporate minute books, including annual meeting minutes, resolutions, and officer/director records.' },
+      { q: 'Can you assist with due diligence reviews?', a: 'Yes. We organize and review due diligence documents, prepare summaries, and flag key issues for attorney review in M&A and financing transactions.' },
     ],
     icon: '🏢',
-    color: '#7c3aed',
+    color: 'from-amber-50 to-yellow-50',
   },
-  {
-    slug: 'litigation-support',
-    title: 'Litigation Support',
-    headline: 'Litigation Support Paralegal Services — Trial Ready',
-    description: 'Full-service litigation support including discovery management, deposition prep, trial preparation, and court filing assistance.',
-    longDescription: 'Litigation is document-intensive and deadline-driven. Broussard Legal Services provides comprehensive litigation support including discovery management, deposition preparation, trial exhibit organization, court filing coordination, legal research, and case timeline management. We keep your cases organized and your deadlines met.',
+  'litigation': {
+    slug: 'litigation',
+    title: 'Litigation Support Paralegal Services',
+    headline: 'Full-Service Litigation Support for Trial Attorneys',
+    description: 'Comprehensive litigation support from complaint drafting through trial preparation. Broussard Legal Services helps litigation attorneys stay organized, meet deadlines, and win cases.',
     services: [
-      'Discovery request and response drafting',
-      'Document review and privilege log preparation',
-      'Deposition summary and outline preparation',
-      'Trial exhibit organization and indexing',
-      'Court filing preparation and coordination',
-      'Case chronology and timeline creation',
-      'Legal research memos and case law summaries',
-      'Witness list and contact management',
+      'Complaint & answer drafting',
+      'Discovery request preparation',
+      'Deposition summary preparation',
+      'Trial exhibit organization',
+      'Case chronology preparation',
+      'Legal research & memo drafting',
+      'Court filing coordination',
+      'Settlement demand letter drafting',
     ],
     faqs: [
-      {
-        question: 'What litigation support tasks can a paralegal handle?',
-        answer: 'Paralegals handle discovery drafting and responses, document review, deposition prep, exhibit organization, court filing coordination, legal research, and case management.',
-      },
-      {
-        question: 'Can you assist with e-discovery?',
-        answer: 'Yes. We assist with document collection, review, privilege log preparation, and production coordination for electronic discovery matters.',
-      },
-      {
-        question: 'Do you handle multi-jurisdiction litigation?',
-        answer: 'Yes. We support litigation in federal and state courts across all 50 states, with experience in multi-district litigation and complex commercial cases.',
-      },
+      { q: 'What litigation support services do you offer?', a: 'We offer complaint drafting, discovery preparation, deposition summaries, trial exhibit organization, case chronologies, legal research, court filing coordination, and settlement demand letters.' },
+      { q: 'Can you help with e-discovery?', a: 'Yes. We assist with document review, privilege log preparation, and e-discovery organization under attorney supervision.' },
+      { q: 'Do you prepare deposition summaries?', a: 'Yes. We prepare comprehensive deposition summaries with page-line references, key testimony highlights, and contradiction analysis.' },
     ],
     icon: '⚖️',
-    color: '#b45309',
+    color: 'from-slate-50 to-gray-50',
   },
-  {
+  'estate-planning': {
     slug: 'estate-planning',
-    title: 'Estate Planning & Probate',
-    headline: 'Estate Planning Paralegal Support — Wills, Trusts & Probate',
-    description: 'Paralegal support for estate planning attorneys handling wills, trusts, powers of attorney, and probate administration.',
-    longDescription: 'Estate planning requires careful document preparation and client communication. Broussard Legal Services supports estate planning attorneys with will and trust drafting, beneficiary designation reviews, power of attorney preparation, healthcare directive drafting, and probate administration support.',
+    title: 'Estate Planning Paralegal Support',
+    headline: 'Estate Planning Document Preparation & Probate Support',
+    description: 'Broussard Legal Services supports estate planning and probate attorneys with precise document preparation, client intake management, and probate administration assistance.',
     services: [
-      'Will and testament drafting',
-      'Revocable and irrevocable trust preparation',
-      'Power of attorney document drafting',
-      'Healthcare directive and living will preparation',
-      'Beneficiary designation review and coordination',
-      'Probate petition and inventory preparation',
-      'Estate administration correspondence',
-      'Asset transfer documentation',
+      'Will & trust drafting assistance',
+      'Power of attorney preparation',
+      'Healthcare directive drafting',
+      'Probate petition preparation',
+      'Estate inventory preparation',
+      'Beneficiary designation review',
+      'Client intake & asset questionnaires',
+      'Trust administration support',
     ],
     faqs: [
-      {
-        question: 'What estate planning documents can a paralegal draft?',
-        answer: 'Paralegals draft wills, trusts, powers of attorney, healthcare directives, living wills, and beneficiary designation forms under attorney supervision.',
-      },
-      {
-        question: 'Can you assist with probate administration?',
-        answer: 'Yes. We assist with probate petitions, inventory preparation, creditor notices, estate accounting, and distribution documentation.',
-      },
-      {
-        question: 'Do you handle special needs trusts?',
-        answer: 'Yes. We support drafting of special needs trusts, supplemental needs trusts, and other specialized estate planning instruments.',
-      },
+      { q: 'Can a paralegal prepare a will?', a: 'Under attorney supervision, a paralegal can draft will documents based on attorney instructions and client information. All documents are reviewed and signed off by a licensed attorney.' },
+      { q: 'Do you handle probate administration?', a: 'Yes. We assist with probate petition preparation, estate inventory, creditor notices, and court filing coordination under attorney supervision.' },
+      { q: 'Can you prepare trust documents?', a: 'Yes. We prepare revocable living trusts, irrevocable trusts, special needs trusts, and other trust documents under attorney direction.' },
     ],
-    icon: '📋',
-    color: '#0f766e',
+    icon: '🏛️',
+    color: 'from-emerald-50 to-teal-50',
   },
-  {
+  'real-estate': {
     slug: 'real-estate',
-    title: 'Real Estate Law',
-    headline: 'Real Estate Paralegal Support — Transactions & Closings',
-    description: 'Paralegal support for real estate attorneys handling residential and commercial transactions, closings, and title matters.',
-    longDescription: 'Real estate transactions require precise documentation and tight deadline management. Broussard Legal Services supports real estate attorneys with purchase agreement review, title search coordination, closing document preparation, deed drafting, and post-closing follow-up.',
+    title: 'Real Estate Paralegal Support',
+    headline: 'Real Estate Transaction & Closing Support',
+    description: 'From purchase agreements to closing coordination, Broussard Legal Services provides expert paralegal support for real estate attorneys handling residential and commercial transactions.',
     services: [
-      'Purchase and sale agreement review',
-      'Title search coordination and review',
-      'Closing document preparation and checklist',
-      'Deed drafting and recording preparation',
+      'Purchase agreement review & preparation',
+      'Title search coordination',
+      'Closing document preparation',
+      'Deed drafting & recording coordination',
+      'Lease agreement review',
       'Mortgage document review',
-      'Lease agreement drafting and review',
-      'HOA document review and summary',
-      'Post-closing document organization',
+      'HOA document review',
+      'Real estate due diligence support',
     ],
     faqs: [
-      {
-        question: 'What real estate documents can a paralegal prepare?',
-        answer: 'Paralegals prepare deeds, closing checklists, purchase agreement summaries, lease agreements, title commitment reviews, and post-closing document packages.',
-      },
-      {
-        question: 'Can you assist with commercial real estate transactions?',
-        answer: 'Yes. We support commercial purchases, sales, leases, and financing transactions with document preparation, due diligence support, and closing coordination.',
-      },
-      {
-        question: 'Do you handle landlord-tenant matters?',
-        answer: 'Yes. We assist with lease drafting, eviction notice preparation, security deposit documentation, and landlord-tenant compliance research.',
-      },
+      { q: 'Can you help with real estate closings?', a: 'Yes. We prepare closing documents, coordinate with title companies, review HUD-1/ALTA settlement statements, and organize all closing materials under attorney supervision.' },
+      { q: 'Do you handle commercial real estate transactions?', a: 'Yes. We support commercial real estate transactions including purchase agreements, lease negotiations, due diligence reviews, and closing coordination.' },
+      { q: 'Can you prepare deeds?', a: 'Yes. We draft warranty deeds, quitclaim deeds, and other deed types under attorney supervision, and coordinate recording with the appropriate county clerk.' },
     ],
     icon: '🏠',
-    color: '#0369a1',
+    color: 'from-cyan-50 to-sky-50',
   },
-];
+};
 
-const PRACTICE_AREA_MAP = new Map(PRACTICE_AREAS.map((pa) => [pa.slug, pa]));
+export default function PracticeAreaPage({ params }: { params: { 'practice-area': string } }) {
+  const slug = params['practice-area'];
+  const area = PRACTICE_AREAS[slug];
+  const [bookingOpen, setBookingOpen] = useState(false);
 
-// ── Metadata ───────────────────────────────────────────────────────────────────
-
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ 'practice-area': string }>;
-}): Promise<Metadata> {
-  const { 'practice-area': slug } = await params;
-  const area = PRACTICE_AREA_MAP.get(slug);
-  if (!area) return { title: 'Not Found' };
+  if (!area) {
+    notFound();
+  }
 
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://broussardlegalservices.com';
-  return {
-    title: `${area.headline} — Broussard Legal Services`,
-    description: area.description,
-    alternates: { canonical: `${baseUrl}/services/${slug}` },
-    openGraph: {
-      title: `${area.headline} — Broussard Legal Services`,
-      description: area.description,
-      url: `${baseUrl}/services/${slug}`,
-      type: 'website',
-      images: [{ url: '/assets/images/og-image.png', width: 1200, height: 630, alt: area.title }],
-    },
-  };
-}
 
-export function generateStaticParams() {
-  return PRACTICE_AREAS.map((pa) => ({ 'practice-area': pa.slug }));
-}
-
-// ── Page ───────────────────────────────────────────────────────────────────────
-
-export default async function PracticeAreaPage({
-  params,
-}: {
-  params: Promise<{ 'practice-area': string }>;
-}) {
-  const { 'practice-area': slug } = await params;
-  const area = PRACTICE_AREA_MAP.get(slug);
-  if (!area) notFound();
-
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://broussardlegalservices.com';
-  const calendlyUrl = process.env.NEXT_PUBLIC_CALENDLY_URL || 'https://calendly.com/broussardlegal';
-
-  const serviceSchema = {
+  const schemaData = {
     '@context': 'https://schema.org',
     '@type': 'Service',
-    name: area.headline,
-    description: area.longDescription,
+    name: area.title,
+    description: area.description,
     provider: {
       '@type': 'ProfessionalService',
       name: 'Broussard Legal Services',
       url: baseUrl,
-      telephone: '+1-504-458-2831',
+      telephone: '',
       address: {
         '@type': 'PostalAddress',
-        streetAddress: '900 Camp Street Suite 3rd Fl. PMB 70111',
         addressLocality: 'New Orleans',
         addressRegion: 'LA',
-        postalCode: '70130',
         addressCountry: 'US',
       },
     },
-    areaServed: { '@type': 'Country', name: 'US' },
+    serviceType: 'Paralegal Services',
+    areaServed: {
+      '@type': 'Country',
+      name: 'United States',
+    },
     url: `${baseUrl}/services/${slug}`,
   };
 
@@ -294,168 +198,138 @@ export default async function PracticeAreaPage({
     '@type': 'FAQPage',
     mainEntity: area.faqs.map((faq) => ({
       '@type': 'Question',
-      name: faq.question,
-      acceptedAnswer: { '@type': 'Answer', text: faq.answer },
+      name: faq.q,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: faq.a,
+      },
     })),
-  };
-
-  const breadcrumbSchema = {
-    '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
-    itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'Home', item: baseUrl },
-      { '@type': 'ListItem', position: 2, name: 'Services', item: `${baseUrl}/services` },
-      { '@type': 'ListItem', position: 3, name: area.title, item: `${baseUrl}/services/${slug}` },
-    ],
   };
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(serviceSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaData) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
 
       <Header />
 
-      <main className="min-h-screen" style={{ background: '#FAF7F2' }}>
-        {/* Hero */}
-        <section className="pt-24 pb-16 px-4" style={{ background: `linear-gradient(135deg, #FAF7F2 0%, #F5EDE0 100%)` }}>
-          <div className="max-w-4xl mx-auto">
-            {/* Breadcrumb */}
-            <nav className="flex items-center gap-2 text-sm mb-8" style={{ color: '#7A6B5D' }}>
-              <Link href="/" className="hover:underline">Home</Link>
-              <span>/</span>
-              <Link href="/services" className="hover:underline">Services</Link>
-              <span>/</span>
-              <span style={{ color: '#4A3728' }}>{area.title}</span>
-            </nav>
-
-            <div className="flex items-center gap-4 mb-6">
-              <span className="text-5xl">{area.icon}</span>
-              <div>
-                <p className="text-sm font-semibold uppercase tracking-widest mb-1" style={{ color: area.color }}>
-                  Practice Area
-                </p>
-                <h1 className="text-4xl font-bold leading-tight" style={{ color: '#2C1F14' }}>
-                  {area.title}
-                </h1>
-              </div>
-            </div>
-
-            <p className="text-xl leading-relaxed mb-8 max-w-3xl" style={{ color: '#4A3728' }}>
-              {area.longDescription}
-            </p>
-
-            <div className="flex flex-wrap gap-3">
-              <a
-                href={calendlyUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-white transition-all hover:opacity-90"
-                style={{ background: area.color }}
-              >
-                Book a Free Consultation
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M5 12h14M12 5l7 7-7 7" />
-                </svg>
-              </a>
-              <Link
-                href="/services"
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold border transition-all hover:bg-white"
-                style={{ color: '#4A3728', borderColor: '#D9D0C5' }}
-              >
-                All Services
-              </Link>
-            </div>
+      {/* Hero */}
+      <section className={`bg-gradient-to-br ${area.color} pt-32 pb-16 px-5 md:px-10`}>
+        <div className="max-w-5xl mx-auto">
+          <div className="flex items-center gap-3 mb-4">
+            <Link href="/services" className="text-sm text-slate-500 hover:text-slate-700 transition-colors">Services</Link>
+            <span className="text-slate-400">/</span>
+            <span className="text-sm text-slate-700 font-medium">{area.title}</span>
           </div>
-        </section>
-
-        {/* Services list */}
-        <section className="py-16 px-4">
-          <div className="max-w-4xl mx-auto">
-            <h2 className="text-2xl font-bold mb-8" style={{ color: '#2C1F14' }}>
-              {area.title} Paralegal Services
-            </h2>
-            <div className="grid sm:grid-cols-2 gap-4">
-              {area.services.map((service, i) => (
-                <div
-                  key={i}
-                  className="flex items-start gap-3 p-4 rounded-xl border bg-white"
-                  style={{ borderColor: '#D9D0C5' }}
-                >
-                  <span
-                    className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 text-white text-xs font-bold"
-                    style={{ background: area.color }}
-                  >
-                    ✓
-                  </span>
-                  <span style={{ color: '#2C1F14' }}>{service}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* FAQ */}
-        <section className="py-16 px-4" style={{ background: '#F5EDE0' }}>
-          <div className="max-w-3xl mx-auto">
-            <h2 className="text-2xl font-bold mb-8" style={{ color: '#2C1F14' }}>
-              Frequently Asked Questions — {area.title}
-            </h2>
-            <div className="space-y-4">
-              {area.faqs.map((faq, i) => (
-                <div key={i} className="bg-white rounded-xl p-6 border" style={{ borderColor: '#D9D0C5' }}>
-                  <h3 className="font-semibold mb-2" style={{ color: '#2C1F14' }}>{faq.question}</h3>
-                  <p className="text-sm leading-relaxed" style={{ color: '#4A3728' }}>{faq.answer}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* CTA */}
-        <section className="py-16 px-4">
-          <div className="max-w-2xl mx-auto text-center">
-            <h2 className="text-2xl font-bold mb-4" style={{ color: '#2C1F14' }}>
-              Ready to Get Started with {area.title} Support?
-            </h2>
-            <p className="mb-8" style={{ color: '#4A3728' }}>
-              Book a free 15-minute consultation to discuss your {area.title.toLowerCase()} paralegal needs.
-            </p>
-            <a
-              href={calendlyUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-8 py-4 rounded-xl font-semibold text-white text-lg transition-all hover:opacity-90"
-              style={{ background: area.color }}
+          <div className="text-5xl mb-4">{area.icon}</div>
+          <h1 className="text-4xl md:text-5xl font-serif font-bold text-[#1b2a4a] mb-4 leading-tight">
+            {area.headline}
+          </h1>
+          <p className="text-lg text-slate-600 max-w-2xl mb-8 leading-relaxed">
+            {area.description}
+          </p>
+          <div className="flex flex-wrap gap-3">
+            <button
+              onClick={() => setBookingOpen(true)}
+              className="inline-flex items-center gap-2 px-7 py-3.5 bg-[#1b2a4a] text-white rounded-full text-sm font-semibold hover:bg-[#1b2a4a]/90 transition-all duration-300"
             >
-              Book Free Consultation
-            </a>
+              Book a Free Consultation
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
+            </button>
+            <Link
+              href="/pricing"
+              className="inline-flex items-center gap-2 px-7 py-3.5 border border-[#1b2a4a]/30 text-[#1b2a4a] rounded-full text-sm font-semibold hover:border-[#1b2a4a] transition-all duration-300"
+            >
+              View Pricing
+            </Link>
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* Other practice areas */}
-        <section className="py-16 px-4 border-t" style={{ borderColor: '#D9D0C5' }}>
-          <div className="max-w-4xl mx-auto">
-            <h2 className="text-xl font-bold mb-6" style={{ color: '#2C1F14' }}>Other Practice Areas</h2>
-            <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-3">
-              {PRACTICE_AREAS.filter((pa) => pa.slug !== slug).map((pa) => (
-                <Link
-                  key={pa.slug}
-                  href={`/services/${pa.slug}`}
-                  className="flex items-center gap-3 p-4 rounded-xl border bg-white hover:shadow-sm transition-all"
-                  style={{ borderColor: '#D9D0C5' }}
-                >
-                  <span className="text-2xl">{pa.icon}</span>
-                  <span className="font-medium text-sm" style={{ color: '#2C1F14' }}>{pa.title}</span>
-                </Link>
-              ))}
-            </div>
+      {/* Paralegal Disclaimer */}
+      <div className="bg-amber-50 border-b border-amber-200">
+        <div className="max-w-5xl mx-auto px-5 md:px-10 py-3">
+          <p className="text-amber-800 text-xs text-center leading-relaxed">
+            <strong>Paralegal Disclaimer:</strong> All paralegal services are provided under the supervision of a licensed attorney. This does not constitute legal advice.{' '}
+            <Link href="/disclaimers" className="underline hover:text-amber-900">View full disclaimer →</Link>
+          </p>
+        </div>
+      </div>
+
+      {/* Services List */}
+      <section className="py-16 px-5 md:px-10 bg-white">
+        <div className="max-w-5xl mx-auto">
+          <h2 className="text-2xl font-serif font-bold text-[#1b2a4a] mb-8">What We Handle</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {area.services.map((service, i) => (
+              <div key={i} className="flex items-start gap-3 p-4 rounded-xl border border-slate-100 bg-slate-50">
+                <span className="text-emerald-500 mt-0.5">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                </span>
+                <span className="text-sm text-slate-700 font-medium">{service}</span>
+              </div>
+            ))}
           </div>
-        </section>
-      </main>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section className="py-16 px-5 md:px-10 bg-slate-50">
+        <div className="max-w-3xl mx-auto">
+          <h2 className="text-2xl font-serif font-bold text-[#1b2a4a] mb-8">Frequently Asked Questions</h2>
+          <div className="space-y-6">
+            {area.faqs.map((faq, i) => (
+              <div key={i} className="bg-white rounded-2xl border border-slate-200 p-6">
+                <h3 className="font-semibold text-[#1b2a4a] mb-2">{faq.q}</h3>
+                <p className="text-slate-600 text-sm leading-relaxed">{faq.a}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section className="py-16 px-5 md:px-10 bg-[#1b2a4a]">
+        <div className="max-w-3xl mx-auto text-center">
+          <h2 className="text-3xl font-serif font-bold text-white mb-4">Ready to Get Started?</h2>
+          <p className="text-white/70 mb-8">Book a free consultation to discuss your {area.title.toLowerCase()} needs.</p>
+          <button
+            onClick={() => setBookingOpen(true)}
+            className="inline-flex items-center gap-2 px-8 py-4 bg-white text-[#1b2a4a] rounded-full text-sm font-bold hover:bg-white/90 transition-all duration-300"
+          >
+            Book Free Consultation
+          </button>
+        </div>
+      </section>
+
+      {/* All Practice Areas */}
+      <section className="py-12 px-5 md:px-10 bg-white border-t border-slate-100">
+        <div className="max-w-5xl mx-auto">
+          <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-widest mb-6">All Practice Areas</h3>
+          <div className="flex flex-wrap gap-3">
+            {Object.values(PRACTICE_AREAS).map((pa) => (
+              <Link
+                key={pa.slug}
+                href={`/services/${pa.slug}`}
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium border transition-all duration-200 ${
+                  pa.slug === slug
+                    ? 'bg-[#1b2a4a] text-white border-[#1b2a4a]'
+                    : 'bg-white text-slate-600 border-slate-200 hover:border-[#1b2a4a] hover:text-[#1b2a4a]'
+                }`}
+              >
+                <span>{pa.icon}</span>
+                {pa.title.split(' Paralegal')[0].split(' Support')[0]}
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
 
       <Footer />
+
+      {bookingOpen && (
+        <BookConsultationModal isOpen={bookingOpen} onClose={() => setBookingOpen(false)} />
+      )}
     </>
   );
 }

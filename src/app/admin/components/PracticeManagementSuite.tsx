@@ -10,6 +10,251 @@ const MatterInvoiceBuilder = dynamic(() => import('./MatterInvoiceBuilder'), { s
 const ContractTemplatesDashboard = dynamic(() => import('./ContractTemplatesDashboard'), { ssr: false });
 const DocumentManagementDashboard = dynamic(() => import('./DocumentManagementDashboard'), { ssr: false });
 
+// ─── Timesheet → Invoice Converter ───────────────────────────────────────────
+
+interface TimesheetToInvoiceConverterProps {
+  cases: CaseOption[];
+  supabase: ReturnType<typeof createClient>;
+  onConverted: () => void;
+}
+
+interface UnbilledEntry {
+  id: string;
+  hours: number;
+  hourly_rate: number;
+  work_type: string;
+  description: string | null;
+  work_date: string;
+  inquiry_id: string | null;
+  retainer_subscription_id: string | null;
+}
+
+function TimesheetToInvoiceConverter({ cases, supabase, onConverted }: TimesheetToInvoiceConverterProps) {
+  const [selectedClientId, setSelectedClientId] = useState('');
+  const [unbilledEntries, setUnbilledEntries] = useState<UnbilledEntry[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [converting, setConverting] = useState(false);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [dueDate, setDueDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 30);
+    return d.toISOString().split('T')[0];
+  });
+  const [notes, setNotes] = useState('');
+
+  const selectedCase = cases.find(c => c.id === selectedClientId);
+
+  const loadUnbilled = useCallback(async (clientId: string) => {
+    setLoading(true);
+    setUnbilledEntries([]);
+    setSuccess(null);
+    setError(null);
+    try {
+      const { data, error: err } = await supabase
+        .from('retainer_time_logs')
+        .select('id, hours, hourly_rate, work_type, description, work_date, inquiry_id, retainer_subscription_id')
+        .eq('inquiry_id', clientId)
+        .eq('billable', true)
+        .is('billed_at', null)
+        .is('invoice_id', null)
+        .order('work_date', { ascending: true });
+      if (err) throw err;
+      setUnbilledEntries(data ?? []);
+    } catch (e: unknown) {
+      setError('Could not load unbilled entries.');
+    } finally {
+      setLoading(false);
+    }
+  }, [supabase]);
+
+  useEffect(() => {
+    if (selectedClientId) loadUnbilled(selectedClientId);
+  }, [selectedClientId, loadUnbilled]);
+
+  const totalHours = unbilledEntries.reduce((s, e) => s + Number(e.hours), 0);
+  const totalAmount = unbilledEntries.reduce((s, e) => s + Number(e.hours) * Number(e.hourly_rate || 250), 0);
+
+  const handleConvert = async () => {
+    if (!selectedCase || unbilledEntries.length === 0) return;
+    setConverting(true);
+    setError(null);
+    try {
+      // Create invoice draft
+      const lineItems = unbilledEntries.map(e => ({
+        description: `${e.work_type ? e.work_type.charAt(0).toUpperCase() + e.work_type.slice(1) : 'Work'}${e.description ? ': ' + e.description : ''}`,
+        hours: Number(e.hours),
+        rate: Number(e.hourly_rate || 250),
+        total: Number(e.hours) * Number(e.hourly_rate || 250),
+        work_date: e.work_date,
+        work_type: e.work_type,
+      }));
+
+      const { data: invoice, error: invErr } = await supabase
+        .from('client_invoices')
+        .insert({
+          inquiry_id: selectedCase.id,
+          client_name: selectedCase.name,
+          client_email: selectedCase.email,
+          amount: totalAmount,
+          amount_paid: 0,
+          payment_status: 'unpaid',
+          due_date: dueDate,
+          line_items: lineItems,
+          notes: notes || `Invoice for ${totalHours.toFixed(2)} hours of paralegal services`,
+          service: selectedCase.service,
+          retainer_subscription_id: selectedCase.retainer_subscription_id,
+        })
+        .select('id')
+        .single();
+
+      if (invErr) throw invErr;
+
+      // Mark time entries as billed
+      const entryIds = unbilledEntries.map(e => e.id);
+      const { error: updateErr } = await supabase
+        .from('retainer_time_logs')
+        .update({ billed_at: new Date().toISOString(), invoice_id: invoice.id })
+        .in('id', entryIds);
+
+      if (updateErr) throw updateErr;
+
+      setSuccess(`✅ Invoice draft created for ${selectedCase.name} — ${fmt(totalAmount)} (${totalHours.toFixed(2)}h). ${entryIds.length} time entries marked as billed.`);
+      setUnbilledEntries([]);
+      onConverted();
+    } catch (e: unknown) {
+      setError('Conversion failed. Please try again.');
+    } finally {
+      setConverting(false);
+    }
+  };
+
+  return (
+    <div className="max-w-3xl space-y-6">
+      <div className="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-5">
+        <div className="flex items-center gap-3 mb-1">
+          <span className="text-2xl">⚡</span>
+          <h3 className="text-lg font-bold text-slate-900">One-Click Timesheet → Invoice</h3>
+        </div>
+        <p className="text-sm text-slate-600">Select a client to convert all their unbilled time entries into a new invoice draft instantly.</p>
+      </div>
+
+      {success && (
+        <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 text-sm text-emerald-700">{success}</div>
+      )}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700">{error}</div>
+      )}
+
+      <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-5">
+        <div>
+          <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Select Client</label>
+          <select
+            value={selectedClientId}
+            onChange={e => setSelectedClientId(e.target.value)}
+            className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-300 bg-white"
+          >
+            <option value="">— Choose a client —</option>
+            {cases.map(c => (
+              <option key={c.id} value={c.id}>{c.name} · {c.service}</option>
+            ))}
+          </select>
+        </div>
+
+        {loading && (
+          <div className="text-center py-6 text-slate-400 text-sm">Loading unbilled entries…</div>
+        )}
+
+        {!loading && selectedClientId && unbilledEntries.length === 0 && !success && (
+          <div className="text-center py-6 text-slate-400 text-sm">No unbilled time entries found for this client.</div>
+        )}
+
+        {!loading && unbilledEntries.length > 0 && (
+          <>
+            {/* Summary */}
+            <div className="grid grid-cols-3 gap-3">
+              <div className="bg-slate-50 rounded-xl p-3 text-center">
+                <div className="text-xl font-bold text-slate-900">{unbilledEntries.length}</div>
+                <div className="text-xs text-slate-500 mt-0.5">Entries</div>
+              </div>
+              <div className="bg-slate-50 rounded-xl p-3 text-center">
+                <div className="text-xl font-bold text-slate-900">{totalHours.toFixed(2)}h</div>
+                <div className="text-xs text-slate-500 mt-0.5">Total Hours</div>
+              </div>
+              <div className="bg-emerald-50 rounded-xl p-3 text-center">
+                <div className="text-xl font-bold text-emerald-700">{fmt(totalAmount)}</div>
+                <div className="text-xs text-emerald-600 mt-0.5">Invoice Total</div>
+              </div>
+            </div>
+
+            {/* Line items preview */}
+            <div className="border border-slate-100 rounded-xl overflow-hidden">
+              <div className="bg-slate-50 px-4 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wide grid grid-cols-4 gap-2">
+                <span className="col-span-2">Description</span>
+                <span>Hours</span>
+                <span className="text-right">Amount</span>
+              </div>
+              <div className="divide-y divide-slate-100 max-h-48 overflow-y-auto">
+                {unbilledEntries.map(e => (
+                  <div key={e.id} className="px-4 py-2.5 text-sm grid grid-cols-4 gap-2 items-center">
+                    <span className="col-span-2 text-slate-700 truncate">
+                      {e.work_type ? e.work_type.charAt(0).toUpperCase() + e.work_type.slice(1) : 'Work'}
+                      {e.description ? ` — ${e.description}` : ''}
+                    </span>
+                    <span className="text-slate-600">{Number(e.hours).toFixed(2)}h</span>
+                    <span className="text-right font-medium text-slate-900">{fmt(Number(e.hours) * Number(e.hourly_rate || 250))}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Invoice options */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Due Date</label>
+                <input
+                  type="date"
+                  value={dueDate}
+                  onChange={e => setDueDate(e.target.value)}
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-300"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Notes (optional)</label>
+                <input
+                  type="text"
+                  value={notes}
+                  onChange={e => setNotes(e.target.value)}
+                  placeholder="Add a note to the invoice…"
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-300"
+                />
+              </div>
+            </div>
+
+            <button
+              onClick={handleConvert}
+              disabled={converting}
+              className="w-full flex items-center justify-center gap-2 bg-[#1b2a4a] text-white py-3.5 rounded-xl font-semibold text-sm hover:bg-[#1b2a4a]/90 disabled:opacity-60 transition-all duration-200"
+            >
+              {converting ? (
+                <>
+                  <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+                  Converting…
+                </>
+              ) : (
+                <>
+                  <span>⚡</span>
+                  Convert {unbilledEntries.length} Entries → Invoice Draft ({fmt(totalAmount)})
+                </>
+              )}
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface CaseOption {
@@ -325,11 +570,12 @@ function KPIStrip({ kpi }: { kpi: KPIData }) {
 
 // ─── Sub-tab nav ──────────────────────────────────────────────────────────────
 
-type SubTab = 'timer' | 'time_log' | 'invoices' | 'contracts' | 'documents';
+type SubTab = 'timer' | 'time_log' | 'invoices' | 'contracts' | 'documents' | 'convert_invoice';
 
 const SUB_TABS: { id: SubTab; label: string; icon: string; desc: string }[] = [
   { id: 'timer', label: 'Live Timer', icon: '⏱', desc: 'Start/stop billing clock' },
   { id: 'time_log', label: 'Time Log', icon: '📋', desc: 'Log & review entries' },
+  { id: 'convert_invoice', label: 'Convert to Invoice', icon: '⚡', desc: 'One-click timesheet → invoice' },
   { id: 'invoices', label: 'Invoice Builder', icon: '🧾', desc: 'Build & send invoices' },
   { id: 'contracts', label: 'Contracts', icon: '📄', desc: 'Templates & generation' },
   { id: 'documents', label: 'Documents', icon: '🗂', desc: 'Organize & search files' },
