@@ -16,6 +16,8 @@ import EmailOptInModal from './components/EmailOptInModal';
 import HomepageTracker from './components/HomepageTracker';
 import MobileAppSection from './components/MobileAppSection';
 import BrandVideoSection from './components/BrandVideoSection';
+import HomepageJsonLd from './components/HomepageJsonLd';
+import StripePaymentCTA from './components/StripePaymentCTA';
 
 export const metadata: Metadata = {
   title: 'Contract Paralegal Services New Orleans — Broussard Legal Services',
@@ -46,47 +48,9 @@ export const metadata: Metadata = {
 };
 
 export default function HomePage() {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
-
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            '@context': 'https://schema.org',
-            '@type': 'WebPage',
-            name: 'Contract Paralegal Services',
-            description: 'Professional contract paralegal for law firms nationwide. Remote litigation support, legal research, document drafting, and case management assistance.',
-            url: baseUrl,
-            image: `${baseUrl}/assets/images/og-image.png`,
-            publisher: {
-              '@type': 'Organization',
-              name: 'Broussard Legal Services',
-              logo: {
-                '@type': 'ImageObject',
-                url: `${baseUrl}/assets/images/app_logo.png`,
-              },
-            },
-          }),
-        }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            '@context': 'https://schema.org',
-            '@type': 'ProfessionalService',
-            name: 'Broussard Legal Services — Contract Paralegal Services',
-            description: 'Remote contract paralegal services for law firms nationwide',
-            url: baseUrl,
-            image: `${baseUrl}/assets/images/app_logo.png`,
-            areaServed: 'US',
-            serviceType: ['Litigation Support', 'Legal Research', 'Document Drafting', 'Case Management'],
-            priceRange: '$750–$2,800/month',
-          }),
-        }}
-      />
+      <HomepageJsonLd />
       <Header />
       <main id="main-content" suppressHydrationWarning>
         <HomepageTracker />
@@ -95,6 +59,7 @@ export default function HomePage() {
         <AboutSection />
         <ServicesPreviewSection />
         <RetainerPricingSection />
+        <StripePaymentCTA />
         <CaseProcessTimeline />
         <CaseOutcomesSection />
         <TestimonialsSection />
