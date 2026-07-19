@@ -19,27 +19,25 @@ export default function AdminLoginPage() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [checkingSession, setCheckingSession] = useState(true);
+  const [checkingSession, setCheckingSession] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   const supabase = createClient();
 
   useEffect(() => {
+    setMounted(true);
+    setCheckingSession(true);
     supabase.auth.getSession().then(({ data: { session }, error }) => {
       if (error) {
-        // Supabase config error (e.g. Invalid API key in preview env) — just show the form
         setCheckingSession(false);
         return;
       }
       if (session) {
-        // ── 2FA CHECK (commented out — re-enable when ready) ──────────────────
-        // checkTotpAndRedirect(session.user.id);
-        // ─────────────────────────────────────────────────────────────────────
         router.replace('/admin');
       } else {
         setCheckingSession(false);
       }
     }).catch(() => {
-      // Network or unexpected error — still show the form
       setCheckingSession(false);
     });
   }, []);
