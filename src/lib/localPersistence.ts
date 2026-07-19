@@ -1,5 +1,3 @@
-'use client';
-
 // ── Local Persistence Utility ─────────────────────────────────────────────────
 // Prevents data loss by persisting key app state to localStorage
 
