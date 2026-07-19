@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, use } from 'react';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Header from '@/components/Header';
@@ -157,8 +157,9 @@ const PRACTICE_AREAS: Record<string, {
   },
 };
 
-export default function PracticeAreaPage({ params }: { params: { 'practice-area': string } }) {
-  const slug = params['practice-area'];
+export default function PracticeAreaPage({ params }: { params: Promise<{ 'practice-area': string }> }) {
+  const resolvedParams = use(params);
+  const slug = resolvedParams['practice-area'];
   const area = PRACTICE_AREAS[slug];
   const [bookingOpen, setBookingOpen] = useState(false);
 
