@@ -14,6 +14,7 @@ const navLinks = [
   { label: 'Testimonials', href: '/testimonials' },
   { label: 'Legislation', href: '/legislation' },
   { label: 'Availability', href: '/availability' },
+  { label: 'Book Consultation', href: '/booking' },
   { label: 'Intake Status', href: '/intake-status' },
   { label: 'New Intake', href: '/portal/intake' },
   { label: 'Contracts', href: '/contracts' },
@@ -46,8 +47,9 @@ const mobileNavGroups = [
   {
     label: 'Work With Me',
     links: [
+      { label: 'Book Consultation', href: '/booking' },
       { label: 'Strategy Session', href: '/strategy-session' },
-      { label: 'Book Consultation', href: '/prospect-booking' },
+      { label: 'Book Now', href: '/prospect-booking' },
       { label: 'Schedule', href: '/schedule' },
       { label: 'Book Appointment', href: '/book-appointment' },
       { label: 'Contact', href: '/contact' },

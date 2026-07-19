@@ -471,6 +471,84 @@ export default function IntegrationSettingsHub() {
       color: '#4285F4',
     },
     {
+      id: 'google_meet',
+      name: 'Google Meet',
+      description: 'Video consultation links auto-generated and sent with every booking confirmation',
+      category: 'calendar',
+      connected: gcalStatus?.connected ?? false,
+      accountInfo: gcalStatus?.connected ? 'Meet links auto-generated via Calendar API' : undefined,
+      lastSync: gcalStatus?.connected ? 'Active — links sent on booking' : undefined,
+      envKey: 'NEXT_PUBLIC_GOOGLE_CLIENT_ID',
+      envConfigured: googleConfigured,
+      docsUrl: 'https://developers.google.com/meet',
+      icon: (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <polygon points="23 7 16 12 23 17 23 7" fill="#00897B" fillOpacity="0.15" stroke="#00897B" strokeWidth="1.5" strokeLinejoin="round"/>
+          <rect x="1" y="5" width="15" height="14" rx="2" fill="#00897B" fillOpacity="0.1" stroke="#00897B" strokeWidth="1.5"/>
+        </svg>
+      ),
+      color: '#00897B',
+    },
+    {
+      id: 'google_docs',
+      name: 'Google Docs',
+      description: 'Case notes, intake documents, and engagement letters synced to Google Docs',
+      category: 'storage',
+      connected: googleConfigured,
+      accountInfo: googleConfigured ? 'Document drafting via Lexi AI' : undefined,
+      lastSync: googleConfigured ? 'Active — Lexi can draft to Docs' : undefined,
+      envKey: 'NEXT_PUBLIC_GOOGLE_CLIENT_ID',
+      envConfigured: googleConfigured,
+      docsUrl: 'https://developers.google.com/docs/api',
+      icon: (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" fill="#4285F4" fillOpacity="0.1" stroke="#4285F4" strokeWidth="1.5" strokeLinejoin="round"/>
+          <polyline points="14 2 14 8 20 8" stroke="#4285F4" strokeWidth="1.5" strokeLinejoin="round"/>
+          <line x1="16" y1="13" x2="8" y2="13" stroke="#4285F4" strokeWidth="1.2" strokeLinecap="round"/>
+          <line x1="16" y1="17" x2="8" y2="17" stroke="#4285F4" strokeWidth="1.2" strokeLinecap="round"/>
+        </svg>
+      ),
+      color: '#4285F4',
+    },
+    {
+      id: 'google_sheets',
+      name: 'Google Sheets',
+      description: 'Billing records, time logs, and case data exported to Google Sheets',
+      category: 'storage',
+      connected: googleConfigured,
+      accountInfo: googleConfigured ? 'Billing & time tracking exports' : undefined,
+      lastSync: googleConfigured ? 'Active — data export available' : undefined,
+      envKey: 'NEXT_PUBLIC_GOOGLE_CLIENT_ID',
+      envConfigured: googleConfigured,
+      docsUrl: 'https://developers.google.com/sheets/api',
+      icon: (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="3" y="3" width="18" height="18" rx="2" fill="#0F9D58" fillOpacity="0.1" stroke="#0F9D58" strokeWidth="1.5"/>
+          <line x1="3" y1="9" x2="21" y2="9" stroke="#0F9D58" strokeWidth="1.2"/>
+          <line x1="3" y1="15" x2="21" y2="15" stroke="#0F9D58" strokeWidth="1.2"/>
+          <line x1="9" y1="3" x2="9" y2="21" stroke="#0F9D58" strokeWidth="1.2"/>
+          <line x1="15" y1="3" x2="15" y2="21" stroke="#0F9D58" strokeWidth="1.2"/>
+        </svg>
+      ),
+      color: '#0F9D58',
+    },
+    {
+      id: 'google_voice',
+      name: 'Google Voice',
+      description: 'Direct client calls routed through Google Voice for professional communication',
+      category: 'crm',
+      connected: false,
+      envKey: 'NEXT_PUBLIC_GOOGLE_CLIENT_ID',
+      envConfigured: googleConfigured,
+      docsUrl: 'https://voice.google.com',
+      icon: (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a19.79 19.79 0 01-3.07-8.68A2 2 0 012 .98h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 8.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z" fill="#DB4437" fillOpacity="0.1" stroke="#DB4437" strokeWidth="1.5" strokeLinejoin="round"/>
+        </svg>
+      ),
+      color: '#DB4437',
+    },
+    {
       id: 'stripe',
       name: 'Stripe',
       description: 'Process payments, manage invoices, and handle retainer subscriptions',
