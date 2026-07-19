@@ -2,9 +2,6 @@
 
 import React, { memo, useMemo } from 'react';
 
-import AppImage from './AppImage';
-
-
 interface AppLogoProps {
   src?: string;
   iconName?: string;
@@ -29,13 +26,13 @@ const AppLogo = memo(function AppLogo({
 
   return (
     <div className={containerClassName} onClick={onClick}>
-      <AppImage
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
         src={src}
         alt="Broussard Legal Services logo"
         width={size}
         height={size}
-        className="flex-shrink-0 object-contain"
-        style={{ background: 'transparent' }}
+        style={{ width: size, height: size, objectFit: 'contain', flexShrink: 0, background: 'transparent' }}
       />
     </div>
   );
