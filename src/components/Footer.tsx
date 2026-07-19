@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import AppLogo from '@/components/ui/AppLogo';
+import Image from 'next/image';
 import CCPALink from '@/components/CCPALink';
 import ConsentPreferenceCenter from '@/components/ConsentPreferenceCenter';
 import { detectRegion } from '@/lib/consent';
@@ -22,13 +22,32 @@ export default function Footer() {
       <footer className="border-t border-border/60 bg-background">
         <div className="max-w-7xl mx-auto px-5 md:px-10 py-10 flex flex-col gap-7">
           <div className="flex flex-col gap-6 sm:flex-row sm:justify-between sm:items-start">
-            {/* Logo + Name */}
-            <Link href="/" className="flex items-center gap-2.5 group shrink-0">
-              <AppLogo size={28} />
-              <span className="font-serif text-[15px] tracking-tight transition-colors duration-200 group-hover:text-accent" style={{ color: '#355E3B' }}>
-                Broussard Legal Services
-              </span>
-            </Link>
+            {/* Logo + Name + Business Card Image */}
+            <div className="flex flex-col gap-3 shrink-0">
+              <Link href="/" className="flex items-center gap-2.5 group">
+                <div className="relative w-8 h-8 rounded-lg overflow-hidden border border-border/40 shadow-sm">
+                  <Image
+                    src="/assets/images/Gemini_Generated_Image_c0brnc0brnc0brnc-1784431758558.png"
+                    alt="Broussard Legal Services logo"
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+                <span className="font-serif text-[15px] tracking-tight transition-colors duration-200 group-hover:text-accent" style={{ color: '#355E3B' }}>
+                  Broussard Legal Services
+                </span>
+              </Link>
+              {/* Business card image */}
+              <div className="relative w-40 h-24 rounded-xl overflow-hidden border border-border/40 shadow-md">
+                <Image
+                  src="/assets/images/Gemini_Generated_Image_c0brnc0brnc0brnc-1784431758558.png"
+                  alt="Broussard Legal Services business card"
+                  fill
+                  className="object-cover"
+                />
+              </div>
+            </div>
+
             {/* Business Address */}
             <address className="not-italic text-[12px] text-muted-foreground/80 leading-relaxed sm:text-left">
               <span className="font-semibold text-muted-foreground">Broussard Legal Services</span><br />
@@ -49,7 +68,7 @@ export default function Footer() {
               </a>
             </address>
 
-            {/* Primary Links — two columns on mobile, row on sm+ */}
+            {/* Primary Links */}
             <nav className="flex items-start flex-wrap gap-x-6 gap-y-3 sm:gap-x-5 sm:gap-y-2" aria-label="Footer navigation">
               <Link href="/" className="text-[13px] font-medium text-muted-foreground hover:text-foreground transition-colors duration-200">Home</Link>
               <Link href="/services" className="text-[13px] font-medium text-muted-foreground hover:text-foreground transition-colors duration-200">Services</Link>

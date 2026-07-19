@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import AppLogo from '@/components/ui/AppLogo';
+import Image from 'next/image';
 
 const navLinks = [
   { label: 'Home', href: '/' },
@@ -70,6 +70,234 @@ const mobileNavGroups = [
     ],
   },
 ];
+
+// ── Billing Counter ───────────────────────────────────────────────────────────
+
+function formatDuration(seconds: number): string {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
+
+function BillingCounter() {
+  const [open, setOpen] = useState(false);
+  const [elapsed, setElapsed] = useState(0);
+  const [running, setRunning] = useState(false);
+  const [startTs, setStartTs] = useState<number | null>(null);
+  const [description, setDescription] = useState('');
+  const [client, setClient] = useState('');
+  const [rate, setRate] = useState(250);
+  const [sessions, setSessions] = useState<Array<{ desc: string; client: string; duration: number; earned: number }>>([]);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
+
+  // Persist/restore from localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('header_billing_state');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.running && parsed.startTs) {
+          setRunning(true);
+          setStartTs(parsed.startTs);
+          setDescription(parsed.description || '');
+          setClient(parsed.client || '');
+          setRate(parsed.rate || 250);
+        }
+        if (parsed.sessions) setSessions(parsed.sessions);
+      }
+    } catch { /* ignore */ }
+  }, []);
+
+  useEffect(() => {
+    if (running && startTs) {
+      intervalRef.current = setInterval(() => {
+        setElapsed(Math.floor((Date.now() - startTs) / 1000));
+      }, 1000);
+    } else {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    }
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+  }, [running, startTs]);
+
+  // Close on outside click
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  const handleStart = () => {
+    if (!description.trim() || !client.trim()) return;
+    const ts = Date.now();
+    setStartTs(ts);
+    setElapsed(0);
+    setRunning(true);
+    try {
+      localStorage.setItem('header_billing_state', JSON.stringify({ running: true, startTs: ts, description, client, rate, sessions }));
+    } catch { /* ignore */ }
+  };
+
+  const handleStop = () => {
+    const duration = elapsed;
+    const earned = (duration / 3600) * rate;
+    const newSessions = [{ desc: description, client, duration, earned }, ...sessions].slice(0, 5);
+    setSessions(newSessions);
+    setRunning(false);
+    setElapsed(0);
+    setStartTs(null);
+    try {
+      localStorage.setItem('header_billing_state', JSON.stringify({ running: false, startTs: null, description: '', client: '', rate, sessions: newSessions }));
+    } catch { /* ignore */ }
+    setDescription('');
+    setClient('');
+  };
+
+  const totalEarned = sessions.reduce((s, e) => s + e.earned, 0);
+
+  return (
+    <div className="relative" ref={popoverRef}>
+      {/* Counter Button */}
+      <button
+        onClick={() => setOpen(o => !o)}
+        aria-label="Open billing counter"
+        className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-[11px] font-semibold uppercase tracking-widest transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent border ${
+          running
+            ? 'border-green-400 bg-green-50 text-green-700 animate-pulse' :'border-amber-400/60 bg-amber-50/80 text-amber-700'
+        }`}
+      >
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10" />
+          <polyline points="12 6 12 12 16 14" />
+        </svg>
+        {running ? formatDuration(elapsed) : `$${totalEarned.toFixed(0)}`}
+        {running && <span className="w-1.5 h-1.5 rounded-full bg-green-500 ml-0.5" />}
+      </button>
+
+      {/* Popover */}
+      {open && (
+        <div className="absolute right-0 top-full mt-2 w-80 bg-white border border-border rounded-2xl shadow-2xl z-[200] overflow-hidden">
+          {/* Header */}
+          <div className="px-4 py-3 bg-gradient-to-r from-amber-50 to-green-50 border-b border-border flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-base">⏱️</span>
+              <div>
+                <p className="text-xs font-bold text-foreground">Billing Counter</p>
+                <p className="text-[10px] text-muted-foreground">Track billable time</p>
+              </div>
+            </div>
+            <div className="text-right">
+              <p className="text-[10px] text-muted-foreground">Total Earned</p>
+              <p className="text-sm font-bold text-green-700">${totalEarned.toFixed(2)}</p>
+            </div>
+          </div>
+
+          {/* Clock display */}
+          <div className={`mx-4 mt-3 rounded-xl p-3 text-center border-2 transition-all ${running ? 'border-green-400 bg-green-50' : 'border-border bg-secondary/30'}`}>
+            <div className={`text-3xl font-mono font-bold tracking-wider ${running ? 'text-green-700' : 'text-foreground'}`}>
+              {formatDuration(running ? elapsed : 0)}
+            </div>
+            {running && (
+              <p className="text-[10px] text-green-600 mt-1">
+                {client} · ${((elapsed / 3600) * rate).toFixed(2)} earned
+              </p>
+            )}
+          </div>
+
+          {/* Form */}
+          <div className="px-4 py-3 space-y-2">
+            {!running ? (
+              <>
+                <input
+                  type="text"
+                  value={description}
+                  onChange={e => setDescription(e.target.value)}
+                  placeholder="Task description *"
+                  className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    type="text"
+                    value={client}
+                    onChange={e => setClient(e.target.value)}
+                    placeholder="Client name *"
+                    className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  />
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs text-muted-foreground">$</span>
+                    <input
+                      type="number"
+                      value={rate}
+                      onChange={e => setRate(Number(e.target.value))}
+                      placeholder="Rate/hr"
+                      className="w-full px-2 py-2 bg-secondary border border-border rounded-lg text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    />
+                    <span className="text-[10px] text-muted-foreground whitespace-nowrap">/hr</span>
+                  </div>
+                </div>
+                <button
+                  onClick={handleStart}
+                  disabled={!description.trim() || !client.trim()}
+                  className="w-full py-2 rounded-xl text-xs font-bold uppercase tracking-widest bg-green-600 text-white hover:bg-green-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  ▶ Start Timer
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={handleStop}
+                className="w-full py-2 rounded-xl text-xs font-bold uppercase tracking-widest bg-red-500 text-white hover:bg-red-600 transition-colors"
+              >
+                ■ Stop &amp; Save
+              </button>
+            )}
+          </div>
+
+          {/* Recent sessions */}
+          {sessions.length > 0 && (
+            <div className="px-4 pb-3 border-t border-border mt-1 pt-2">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Recent Sessions</p>
+              <div className="space-y-1 max-h-28 overflow-y-auto">
+                {sessions.map((s, i) => (
+                  <div key={i} className="flex items-center justify-between text-[10px] py-1 border-b border-border/40 last:border-0">
+                    <div className="truncate flex-1 mr-2">
+                      <span className="font-medium text-foreground">{s.client}</span>
+                      <span className="text-muted-foreground"> · {s.desc}</span>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <span className="text-green-700 font-semibold">${s.earned.toFixed(2)}</span>
+                      <span className="text-muted-foreground ml-1">{formatDuration(s.duration)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Link to full billing */}
+          <div className="px-4 pb-3">
+            <Link
+              href="/admin"
+              onClick={() => setOpen(false)}
+              className="flex items-center justify-center gap-1.5 w-full py-2 rounded-xl text-[10px] font-semibold uppercase tracking-widest border border-border text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+            >
+              View Full Billing Dashboard →
+            </Link>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Main Header ───────────────────────────────────────────────────────────────
 
 interface HeaderProps {
   initialClaims?: Record<string, unknown> | null;
@@ -174,20 +402,23 @@ export default function Header({ initialClaims }: HeaderProps) {
         suppressHydrationWarning
       >
         <div className="max-w-7xl mx-auto px-4 md:px-10 flex items-center justify-between gap-4">
-          {/* Logo */}
+          {/* Logo — business card image */}
           <div className="flex items-center gap-3 group shrink-0">
-            <div className="relative">
-              <Link
-                href="/admin"
-                className="focus:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-full"
-                aria-label="Go to Admin"
-              >
-                <AppLogo
-                  size={36}
-                  className="transition-transform duration-300 group-hover:scale-105 cursor-pointer"
+            <Link
+              href="/admin"
+              className="focus:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-lg"
+              aria-label="Go to Admin"
+            >
+              <div className="relative w-10 h-10 rounded-lg overflow-hidden border border-border/40 shadow-sm transition-transform duration-300 group-hover:scale-105">
+                <Image
+                  src="/assets/images/Gemini_Generated_Image_c0brnc0brnc0brnc-1784431758558.png"
+                  alt="Broussard Legal Services business card logo"
+                  fill
+                  className="object-cover"
+                  priority
                 />
-              </Link>
-            </div>
+              </div>
+            </Link>
 
             <Link href="/" className="flex items-center gap-2.5" aria-label="Broussard Legal Services — Home">
               <span
@@ -223,6 +454,9 @@ export default function Header({ initialClaims }: HeaderProps) {
 
           {/* Desktop CTAs */}
           <div className="hidden lg:flex items-center gap-2 shrink-0">
+            {/* Billing Counter */}
+            <BillingCounter />
+
             <Link
               href="/contact"
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-[11px] font-semibold uppercase tracking-widest transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent bg-accent text-accent-foreground hover:opacity-90"
@@ -284,6 +518,7 @@ export default function Header({ initialClaims }: HeaderProps) {
 
           {/* Tablet Nav (md only) — simplified */}
           <div className="hidden md:flex lg:hidden items-center gap-2">
+            <BillingCounter />
             <Link
               href="/contact"
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-[11px] font-semibold uppercase tracking-widest transition-all duration-300 bg-accent text-accent-foreground hover:opacity-90"
@@ -374,7 +609,14 @@ export default function Header({ initialClaims }: HeaderProps) {
         {/* Drawer header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">
           <Link href="/" onClick={() => setMenuOpen(false)} className="flex items-center gap-2.5">
-            <AppLogo size={28} />
+            <div className="relative w-7 h-7 rounded-md overflow-hidden border border-border/40">
+              <Image
+                src="/assets/images/Gemini_Generated_Image_c0brnc0brnc0brnc-1784431758558.png"
+                alt="Broussard Legal Services logo"
+                fill
+                className="object-cover"
+              />
+            </div>
             <span className="font-serif text-[14px] tracking-tight" style={{ color: '#355E3B' }}>
               Broussard Legal
             </span>

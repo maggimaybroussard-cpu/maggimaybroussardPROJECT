@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { billingStore, caseFoldersStore, audioStore, pinnedFilesStore } from '@/lib/localPersistence';
+import TimeManagementWidget from '@/components/TimeManagementWidget';
+import DocumentStorageWidget from '@/components/DocumentStorageWidget';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -317,6 +319,18 @@ export default function LexiDashboard() {
               </button>
             ))}
           </div>
+        </div>
+
+        {/* Time Management — Lexi integrated */}
+        <div>
+          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-2">Time Management</p>
+          <TimeManagementWidget lexiMode={true} className="max-h-72" />
+        </div>
+
+        {/* Document Storage — Lexi integrated */}
+        <div>
+          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-2">Document Storage</p>
+          <DocumentStorageWidget lexiMode={true} className="max-h-72" />
         </div>
 
         {/* Recent activity */}

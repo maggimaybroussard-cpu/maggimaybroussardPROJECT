@@ -9,6 +9,8 @@ import CookieBanner from '@/components/CookieBanner';
 import { AuthProvider } from '@/contexts/AuthContext';
 import PWAInstallPrompt from '@/components/PWAInstallPrompt';
 import { Toaster } from 'react-hot-toast';
+import TimeManagementWidget from '@/components/TimeManagementWidget';
+import DocumentStorageWidget from '@/components/DocumentStorageWidget';
 
 const playfairDisplay = Playfair_Display({
   subsets: ['latin'],
@@ -284,24 +286,31 @@ export default function RootLayout({
 
         <script type="module" async src="https://static.rocket.new/rocket-web.js?_cfg=https%3A%2F%2Fmaggimaybr6854back.builtwithrocket.new&_be=https%3A%2F%2Fappanalytics.rocket.new&_v=0.1.19" />
         <script type="module" defer src="https://static.rocket.new/rocket-shot.js?v=0.0.2" /></head>
-      <body className={raleway.className}>
-        {/* Skip to main content — keyboard navigation / accessibility */}
-        <a
-          href="#main-content"
-          className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[9999] focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-lg focus:text-sm focus:font-semibold focus:shadow-lg"
-        >
-          Skip to main content
-        </a>
-        <Suspense fallback={null}>
-          <GoogleAnalytics />
-        </Suspense>
+      <body suppressHydrationWarning className={`${playfairDisplay.className} ${raleway.className} antialiased`}>
         <AuthProvider>
+          <Suspense fallback={null}>
+            <GoogleAnalytics />
+          </Suspense>
           {children}
+          <LexiFloatingChat />
+          <TimeManagementWidget floating={true} />
+          <DocumentStorageWidget floating={true} />
+          <CookieBanner />
+          <PWAInstallPrompt />
+          <Toaster
+            position="bottom-right"
+            toastOptions={{
+              duration: 3500,
+              style: {
+                background: 'var(--background)',
+                color: 'var(--foreground)',
+                border: '1px solid var(--border)',
+                borderRadius: '12px',
+                fontSize: '13px',
+              },
+            }}
+          />
         </AuthProvider>
-        <Toaster position="top-right" toastOptions={{ duration: 4000 }} />
-        <CookieBanner />
-        <LexiFloatingChat />
-        <PWAInstallPrompt />
       </body>
     </html>
   );
