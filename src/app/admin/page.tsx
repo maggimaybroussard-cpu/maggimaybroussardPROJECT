@@ -7907,6 +7907,13 @@ id: 'retainer_renewal_notifications' as const,
           {/* Top row: breadcrumb + actions */}
           <div className="flex items-center justify-between py-3 gap-2">
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground min-w-0">
+              <img
+                src="/assets/images/Gemini_Generated_Image_c0brnc0brnc0brnc-1784429782766.png"
+                alt="Broussard Legal Services logo"
+                width={32}
+                height={32}
+                className="object-contain rounded shrink-0 hidden sm:block"
+              />
               <span className="font-semibold text-foreground hidden sm:inline truncate">Maggi May Broussard</span>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-40 hidden sm:block shrink-0">
                 <polyline points="9 18 15 12 9 6"/>
