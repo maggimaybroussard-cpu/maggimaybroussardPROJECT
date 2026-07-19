@@ -9,6 +9,7 @@ import AppLogo from '@/components/ui/AppLogo';
 import CaseTimeline from './components/CaseTimeline';
 import InvoiceBillingDashboard from '@/app/portal/billing/InvoiceBillingDashboard';
 import { trackPortalDashboardView } from '@/lib/analytics';
+import CaseUpdatePushEnabler from '@/components/CaseUpdatePushEnabler';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -599,6 +600,9 @@ export default function ClientHomePage() {
           <p className="text-sm text-muted-foreground font-light mt-1">
             Here&apos;s a summary of your active matters and pending items.
           </p>
+          <div className="mt-4">
+            <CaseUpdatePushEnabler userId={user?.id} />
+          </div>
         </div>
 
         {/* ── Bento grid ── */}
