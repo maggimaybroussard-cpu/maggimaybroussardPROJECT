@@ -1,5 +1,3 @@
-'use client';
-
 export type ConsentRegion = 'gdpr' | 'ccpa' | 'none';
 
 export interface ConsentRecord {
