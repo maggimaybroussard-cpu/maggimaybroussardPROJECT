@@ -16,7 +16,6 @@ import EmailOptInModal from './components/EmailOptInModal';
 import HomepageTracker from './components/HomepageTracker';
 import MobileAppSection from './components/MobileAppSection';
 import BrandVideoSection from './components/BrandVideoSection';
-import LexiPublicChatWrapper from '@/components/LexiPublicChatWrapper';
 
 export const metadata: Metadata = {
   title: 'Contract Paralegal Services New Orleans — Broussard Legal Services',
@@ -105,7 +104,6 @@ export default function HomePage() {
       </main>
       <Footer />
       <EmailOptInModal />
-      <LexiPublicChatWrapper />
     </>
   );
 }
