@@ -8,7 +8,7 @@ import LexiFloatingChat from '@/components/LexiFloatingChat';
 import CookieBanner from '@/components/CookieBanner';
 import { AuthProvider } from '@/contexts/AuthContext';
 import PWAInstallPrompt from '@/components/PWAInstallPrompt';
-import ToasterProvider from '@/components/ToasterProvider';
+import { Toaster } from 'react-hot-toast';
 
 const playfairDisplay = Playfair_Display({
   subsets: ['latin'],
@@ -298,7 +298,7 @@ export default function RootLayout({
         <AuthProvider>
           {children}
         </AuthProvider>
-        <ToasterProvider />
+        <Toaster position="top-right" toastOptions={{ duration: 4000 }} />
         <CookieBanner />
         <LexiFloatingChat />
         <PWAInstallPrompt />
