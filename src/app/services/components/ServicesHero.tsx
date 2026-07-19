@@ -89,12 +89,12 @@ export default function ServicesHero() {
         </div>
       </div>
 
-      {bookingModalOpen && (
-        <BookConsultationModal
-          isOpen={bookingModalOpen}
-          onClose={() => setBookingModalOpen(false)}
-        />
-      )}
-    </>
-  );
+      {bookingModalOpen &&
+      <BookConsultationModal
+        isOpen={bookingModalOpen}
+        onClose={() => setBookingModalOpen(false)} />
+
+      }
+    </>);
+
 }
