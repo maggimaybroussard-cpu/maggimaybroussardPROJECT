@@ -7908,7 +7908,7 @@ id: 'retainer_renewal_notifications' as const,
           <div className="flex items-center justify-between py-3 gap-2">
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground min-w-0">
               <img
-                src="/assets/images/Gemini_Generated_Image_c0brnc0brnc0brnc-1784429782766.png"
+                src="/assets/images/Gemini_Generated_Image_c0brnc0brnc0brnc-1784430153618.png"
                 alt="Broussard Legal Services logo"
                 width={32}
                 height={32}

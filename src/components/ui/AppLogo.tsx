@@ -14,7 +14,7 @@ interface AppLogoProps {
 }
 
 const AppLogo = memo(function AppLogo({
-  src = '/assets/images/Gemini_Generated_Image_c0brnc0brnc0brnc-1784429782766.png',
+  src = '/assets/images/Gemini_Generated_Image_c0brnc0brnc0brnc-1784430153618.png',
   iconName = 'SparklesIcon',
   size = 64,
   className = '',
