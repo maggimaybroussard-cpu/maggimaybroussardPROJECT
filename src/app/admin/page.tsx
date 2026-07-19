@@ -8828,10 +8828,9 @@ id: 'retainer_renewal_notifications' as const,
                 </div>
               )}
             </div>
-          })}
-        </div>
-      </>
-      )}
+          </>
+        )}
+      </div>
     </div>
   );
 }

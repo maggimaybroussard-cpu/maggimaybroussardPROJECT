@@ -1,5 +1,6 @@
 import React from 'react';
 import type { Metadata } from 'next';
+
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import HeroSection from './components/HeroSection';
@@ -15,7 +16,7 @@ import EmailOptInModal from './components/EmailOptInModal';
 import HomepageTracker from './components/HomepageTracker';
 import MobileAppSection from './components/MobileAppSection';
 import BrandVideoSection from './components/BrandVideoSection';
-import LexiPublicChat from '@/components/LexiPublicChat';
+import LexiPublicChatWrapper from '@/components/LexiPublicChatWrapper';
 
 export const metadata: Metadata = {
   title: 'Contract Paralegal Services New Orleans — Broussard Legal Services',
@@ -104,7 +105,7 @@ export default function HomePage() {
       </main>
       <Footer />
       <EmailOptInModal />
-      <LexiPublicChat />
+      <LexiPublicChatWrapper />
     </>
   );
 }
