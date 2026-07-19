@@ -15,8 +15,6 @@ import EmailOptInModal from './components/EmailOptInModal';
 import HomepageTracker from './components/HomepageTracker';
 import MobileAppSection from './components/MobileAppSection';
 import BrandVideoSection from './components/BrandVideoSection';
-import LexiPublicWidget from '@/components/LexiPublicWidget';
-import { paralegalFaqs } from '@/data/faqs';
 
 export const metadata: Metadata = {
   title: 'Contract Paralegal Services New Orleans — Broussard Legal Services',
@@ -48,7 +46,6 @@ export const metadata: Metadata = {
 
 export default function HomePage() {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
-  const calendlyUrl = process.env.NEXT_PUBLIC_CALENDLY_URL || '/availability';
 
   return (
     <>
@@ -89,24 +86,6 @@ export default function HomePage() {
           }),
         }}
       />
-      {/* FAQ Schema — 20+ paralegal questions */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            '@context': 'https://schema.org',
-            '@type': 'FAQPage',
-            mainEntity: paralegalFaqs.map((faq) => ({
-              '@type': 'Question',
-              name: faq.question,
-              acceptedAnswer: {
-                '@type': 'Answer',
-                text: `${faq.answer} Book a free consultation at ${calendlyUrl}`,
-              },
-            })),
-          }),
-        }}
-      />
       <Header />
       <main id="main-content" suppressHydrationWarning>
         <HomepageTracker />
@@ -124,7 +103,6 @@ export default function HomePage() {
       </main>
       <Footer />
       <EmailOptInModal />
-      <LexiPublicWidget />
     </>
   );
 }

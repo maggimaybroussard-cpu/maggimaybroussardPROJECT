@@ -546,7 +546,6 @@ export async function POST(req: NextRequest) {
         inquiry_id: inquiryId || null,
         status: 'confirmed',
         meeting_location: meetingLink,
-        meet_link: meetingLink,
         confirmation_sent: false,
         ...(googleEventId ? { gcal_event_id: googleEventId } : {}),
       })

@@ -48,7 +48,6 @@ const InvoiceTrackingDashboard = dynamic(() => import('./components/InvoiceTrack
 const RetainerInvoiceScheduler = dynamic(() => import('./components/RetainerInvoiceScheduler'), { ssr: false });
 const StripePaymentReconciliationDashboard = dynamic(() => import('./components/StripePaymentReconciliationDashboard'), { ssr: false });
 const AdminBillingOpsHub = dynamic(() => import('./components/AdminBillingOpsHub'), { ssr: false });
-const AdminOperationsHub = dynamic(() => import('./components/AdminOperationsHub'), { ssr: false });
 const ContactInquiriesAdminDashboard = dynamic(() => import('./components/ContactInquiriesAdminDashboard'), { ssr: false });
 const CaseManagementDashboard = dynamic(() => import('./components/CaseManagementDashboard'), { ssr: false });
 const ClientInvoicesDashboard = dynamic(() => import('./components/ClientInvoicesDashboard'), { ssr: false });
@@ -849,7 +848,7 @@ function SequencesDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
+  const [toast, setToast] = useState<{ msg: string; type: 'success\' | \'error' } | null>(null);
 
   const fetchSequences = useCallback(async () => {
     setLoading(true);
@@ -1234,7 +1233,7 @@ function PaymentRemindersDashboard() {
   const [invoiceFilter, setInvoiceFilter] = useState<string>('all');
   const [reminderFilter, setReminderFilter] = useState<string>('all');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
+  const [toast, setToast] = useState<{ msg: string; type: 'success\' | \'error' } | null>(null);
   const [rescheduleId, setRescheduleId] = useState<string | null>(null);
   const [rescheduleDate, setRescheduleDate] = useState('');
   const [rescheduleTime, setRescheduleTime] = useState('09:00');
@@ -7881,7 +7880,6 @@ id: 'retainer_renewal_notifications' as const,
         </svg>
       ),
     },
-    // Ops Hub tab rendered via practice_management_suite tab override below
   ];
 
   const activeTabConfig = TAB_CONFIG.find((t) => t.id === activeTab);
@@ -8194,11 +8192,7 @@ id: 'retainer_renewal_notifications' as const,
         {activeTab === 'roster' && <ParalegalRosterDashboard />}
 
         {/* ── Billing Ops Hub Tab ── */}
-        {activeTab === ('admin_ops_hub' as string) && (
-          <div className="p-6">
-            <AdminOperationsHub />
-          </div>
-        )}
+        {activeTab === 'billing_ops_hub' && <AdminBillingOpsHub />}
 
         {/* ── Billing Tab ── */}
         {activeTab === 'billing' && (
@@ -8455,13 +8449,6 @@ id: 'retainer_renewal_notifications' as const,
         {activeTab === 'team_admin' && (
           <div className="p-6">
             <TeamPermissionsDashboard />
-          </div>
-        )}
-
-        {/* ── Admin Ops Hub Tab ── */}
-        {activeTab === ('admin_ops_hub' as string) && (
-          <div className="p-6">
-            <AdminOperationsHub />
           </div>
         )}
 
@@ -8829,9 +8816,9 @@ id: 'retainer_renewal_notifications' as const,
                         onChange={(e) => { const f = e.target.files?.[0]; if (f) handleDocUpload(f); }}
                       />
                       <button
-                        onClick={() => !uploadingDoc && docFileInputRef.current?.click()}
+                        onClick={() => docFileInputRef.current?.click()}
                         disabled={uploadingDoc}
-                        className="w-full py-2.5 rounded-xl border-2 border-dashed border-border text-xs font-semibold text-muted-foreground hover:border-accent/50 hover:text-foreground transition-all disabled:opacity-60 flex items-center justify-center gap-2"
+                        className="w-full py-2.5 border border-dashed border-border rounded-xl text-xs text-muted-foreground hover:border-accent/50 hover:text-foreground transition-all disabled:opacity-60 flex items-center justify-center gap-2"
                       >
                         {uploadingDoc ? (
                           <>
@@ -8842,10 +8829,10 @@ id: 'retainer_renewal_notifications' as const,
                           </>
                         ) : (
                           <>
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
                             </svg>
-                            Choose File to Upload
+                            Choose file to upload
                           </>
                         )}
                       </button>
@@ -8853,8 +8840,9 @@ id: 'retainer_renewal_notifications' as const,
                         <p className="mt-2 text-xs text-red-600">{uploadDocError}</p>
                       )}
                       {uploadDocSuccess && (
-                        <p className="mt-2 text-xs text-green-700">{uploadDocSuccess}</p>
+                        <p className="mt-2 text-xs text-green-600">{uploadDocSuccess}</p>
                       )}
+                      <p className="mt-1.5 text-xs text-muted-foreground/60">PDF, DOC, DOCX, XLS, XLSX, JPG, PNG, GIF, TXT · Max 10 MB</p>
                     </div>
                   </div>
                 </div>
