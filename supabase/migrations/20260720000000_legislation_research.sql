@@ -44,16 +44,26 @@ END $$;
 -- RLS for legislation_saved_bills
 ALTER TABLE public.legislation_saved_bills ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Admin can manage saved bills"
-  ON public.legislation_saved_bills
-  FOR ALL
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.user_profiles
-      WHERE user_profiles.id = auth.uid()
-      AND user_profiles.role IN ('admin', 'attorney', 'paralegal')
-    )
-  );
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'legislation_saved_bills'
+      AND policyname = 'Admin can manage saved bills'
+  ) THEN
+    CREATE POLICY "Admin can manage saved bills"
+      ON public.legislation_saved_bills
+      FOR ALL
+      USING (
+        EXISTS (
+          SELECT 1 FROM public.user_profiles
+          WHERE user_profiles.id = auth.uid()
+          AND user_profiles.role IN ('admin', 'attorney', 'paralegal')
+        )
+      );
+  END IF;
+END $$;
 
 -- Index for performance
 CREATE INDEX IF NOT EXISTS idx_legislation_saved_bills_created_at ON public.legislation_saved_bills(created_at DESC);
