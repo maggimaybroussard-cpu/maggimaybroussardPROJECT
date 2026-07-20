@@ -2,10 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  Legend, AreaChart, Area, PieChart, Pie, Cell, LineChart, Line,
-} from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, AreaChart, Area, PieChart, Pie, Cell, LineChart, Line,  } from 'recharts';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -221,7 +218,16 @@ export default function AdminAnalyticsDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
   const [range, setRange] = useState<7 | 14 | 30>(30);
-  const [activeTab, setActiveTab] = useState<'overview' | 'bookings' | 'revenue' | 'email' | 'leads'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'bookings' | 'revenue' | 'email' | 'leads' | 'legislation'>('overview');
+  const [legislationStats, setLegislationStats] = useState<{
+    totalSaved: number;
+    highPriority: number;
+    withSummaries: number;
+    researchSessions: number;
+    byPracticeArea: { name: string; value: number }[];
+    byUrgency: { name: string; value: number }[];
+    recentSaved: { title: string; urgency: string; relevance_score: number; created_at: string }[];
+  } | null>(null);
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
@@ -251,6 +257,31 @@ export default function AdminAnalyticsDashboard() {
       setProspectEmails((prRes.data as ProspectEmail[]) ?? []);
       setIntakeNurture((inRes.data as IntakeNurture[]) ?? []);
       setLeads((lRes.data as ContactInquiry[]) ?? []);
+
+      // Fetch legislation stats
+      const [legSavedRes, legHistoryRes] = await Promise.all([
+        supabase.from('legislation_saved_bills').select('title, urgency, relevance_score, practice_areas, ai_summary, created_at').order('created_at', { ascending: false }).limit(50),
+        supabase.from('lexi_research_history').select('id').limit(100),
+      ]);
+      const legSaved = (legSavedRes.data as { title: string; urgency: string; relevance_score: number; practice_areas: string[]; ai_summary: string; created_at: string }[]) ?? [];
+      const practiceAreaMap: Record<string, number> = {};
+      legSaved.forEach((b) => {
+        (b.practice_areas || []).forEach((area: string) => {
+          practiceAreaMap[area] = (practiceAreaMap[area] ?? 0) + 1;
+        });
+      });
+      const urgencyMap: Record<string, number> = { high: 0, medium: 0, low: 0 };
+      legSaved.forEach((b) => { if (b.urgency) urgencyMap[b.urgency] = (urgencyMap[b.urgency] ?? 0) + 1; });
+      setLegislationStats({
+        totalSaved: legSaved.length,
+        highPriority: legSaved.filter((b) => b.urgency === 'high').length,
+        withSummaries: legSaved.filter((b) => b.ai_summary).length,
+        researchSessions: (legHistoryRes.data ?? []).length,
+        byPracticeArea: Object.entries(practiceAreaMap).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value).slice(0, 6),
+        byUrgency: Object.entries(urgencyMap).filter(([, v]) => v > 0).map(([name, value]) => ({ name, value })),
+        recentSaved: legSaved.slice(0, 5),
+      });
+
       setLastRefreshed(new Date());
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load analytics data');
@@ -457,6 +488,7 @@ export default function AdminAnalyticsDashboard() {
     { key: 'revenue', label: 'Revenue' },
     { key: 'email', label: 'Email' },
     { key: 'leads', label: 'Leads' },
+    { key: 'legislation', label: '⚖️ Legislation' },
   ] as const;
 
   return (
@@ -1041,6 +1073,152 @@ export default function AdminAnalyticsDashboard() {
                 <p className={`text-2xl font-bold ${item.color}`}>{item.value}</p>
                 <p className="text-xs text-muted-foreground mt-1">{item.label}</p>
               </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── LEGISLATION TAB ── */}
+      {activeTab === 'legislation' && (
+        <div className="space-y-6">
+          {/* KPI Cards */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              { label: 'Saved Bills', value: legislationStats?.totalSaved ?? 0, color: 'text-[#1B2A4A]', bg: 'bg-[#1B2A4A]/5 border-[#1B2A4A]/20', icon: '📌' },
+              { label: 'High Priority', value: legislationStats?.highPriority ?? 0, color: 'text-red-600', bg: 'bg-red-50 border-red-200', icon: '🔴' },
+              { label: 'AI Summaries', value: legislationStats?.withSummaries ?? 0, color: 'text-[#B76E79]', bg: 'bg-[#B76E79]/5 border-[#B76E79]/20', icon: '🤖' },
+              { label: 'Research Sessions', value: legislationStats?.researchSessions ?? 0, color: 'text-emerald-600', bg: 'bg-emerald-50 border-emerald-200', icon: '🔍' },
+            ].map((item) => (
+              <div key={item.label} className={`border rounded-2xl p-5 ${item.bg}`}>
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">{item.label}</p>
+                  <span className="text-xl">{item.icon}</span>
+                </div>
+                <p className={`text-3xl font-bold ${item.color}`}>{item.value}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Charts row */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* By Practice Area */}
+            <div className="bg-card border border-border rounded-2xl p-6">
+              <h3 className="font-serif text-lg text-foreground mb-1">Bills by Practice Area</h3>
+              <p className="text-xs text-muted-foreground mb-5">Saved legislation tagged by practice area</p>
+              {!legislationStats?.byPracticeArea?.length ? (
+                <div className="py-10 text-center text-sm text-muted-foreground">
+                  No bills saved yet. <a href="/legislation" className="text-[#B76E79] hover:underline">Research legislation →</a>
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height={200}>
+                  <BarChart data={legislationStats.byPracticeArea} layout="vertical" margin={{ top: 0, right: 8, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" horizontal={false} />
+                    <XAxis type="number" tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }} tickLine={false} axisLine={false} allowDecimals={false} />
+                    <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }} tickLine={false} axisLine={false} width={110} />
+                    <Tooltip contentStyle={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '12px', fontSize: '12px' }} />
+                    <Bar dataKey="value" name="Bills" fill="#1B2A4A" radius={[0, 4, 4, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+
+            {/* By Urgency */}
+            <div className="bg-card border border-border rounded-2xl p-6">
+              <h3 className="font-serif text-lg text-foreground mb-1">Bills by Urgency</h3>
+              <p className="text-xs text-muted-foreground mb-5">Priority distribution of saved legislation</p>
+              {!legislationStats?.byUrgency?.length ? (
+                <div className="py-10 text-center text-sm text-muted-foreground">No urgency data yet.</div>
+              ) : (
+                <div className="space-y-4">
+                  {legislationStats.byUrgency.map((item) => {
+                    const total = legislationStats.byUrgency.reduce((s, i) => s + i.value, 0);
+                    const pctVal = total > 0 ? Math.round((item.value / total) * 100) : 0;
+                    const color = item.name === 'high' ? 'bg-red-500' : item.name === 'medium' ? 'bg-amber-500' : 'bg-emerald-500';
+                    const textColor = item.name === 'high' ? 'text-red-600' : item.name === 'medium' ? 'text-amber-600' : 'text-emerald-600';
+                    return (
+                      <div key={item.name} className="flex items-center gap-3">
+                        <span className={`text-xs font-semibold capitalize w-16 ${textColor}`}>{item.name}</span>
+                        <div className="flex-1 h-6 bg-secondary/30 rounded-xl overflow-hidden">
+                          <div className={`h-full ${color} rounded-xl flex items-center justify-end pr-2`} style={{ width: `${Math.max(pctVal, 8)}%` }}>
+                            <span className="text-white text-xs font-bold">{item.value}</span>
+                          </div>
+                        </div>
+                        <span className="text-xs text-muted-foreground w-8 text-right">{pctVal}%</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Recent Saved Bills */}
+          <div className="bg-card border border-border rounded-2xl p-6">
+            <div className="flex items-center justify-between mb-5">
+              <div>
+                <h3 className="font-serif text-lg text-foreground">Recently Saved Bills</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">Latest legislation saved from research</p>
+              </div>
+              <a
+                href="/legislation"
+                className="text-xs font-semibold text-[#B76E79] hover:text-[#B76E79]/80 transition-colors"
+              >
+                Open Research Hub →
+              </a>
+            </div>
+            {!legislationStats?.recentSaved?.length ? (
+              <div className="py-8 text-center text-sm text-muted-foreground">
+                No bills saved yet. <a href="/legislation" className="text-[#B76E79] hover:underline">Start researching →</a>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {legislationStats.recentSaved.map((bill, i) => (
+                  <div key={i} className="flex items-start justify-between gap-4 py-3 border-b border-border last:border-0">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate">{bill.title}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {new Date(bill.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {bill.relevance_score && (
+                        <span className="px-2 py-0.5 bg-[#B76E79]/10 text-[#B76E79] rounded-full text-xs font-semibold">
+                          {bill.relevance_score}/10
+                        </span>
+                      )}
+                      {bill.urgency && (
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+                          bill.urgency === 'high' ? 'bg-red-100 text-red-700' :
+                          bill.urgency === 'medium' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'
+                        }`}>
+                          {bill.urgency}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Quick Actions */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {[
+              { label: 'Open Legislation Hub', desc: 'Search and research bills', href: '/legislation', icon: '🏛️', color: 'bg-[#1B2A4A] text-white' },
+              { label: 'View Saved Bills', desc: 'Review tagged legislation', href: '/legislation', icon: '📌', color: 'bg-white border border-border text-foreground' },
+              { label: 'Research History', desc: 'Past Lexi research sessions', href: '/legislation', icon: '📋', color: 'bg-white border border-border text-foreground' },
+            ].map((action) => (
+              <a
+                key={action.label}
+                href={action.href}
+                className={`rounded-2xl p-5 flex items-start gap-3 hover:shadow-md transition-all ${action.color}`}
+              >
+                <span className="text-2xl">{action.icon}</span>
+                <div>
+                  <p className="font-semibold text-sm">{action.label}</p>
+                  <p className={`text-xs mt-0.5 ${action.color.includes('text-white') ? 'text-white/70' : 'text-muted-foreground'}`}>{action.desc}</p>
+                </div>
+              </a>
             ))}
           </div>
         </div>

@@ -139,7 +139,7 @@ export default function AdminAnalyticsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [range, setRange] = useState<7 | 30 | 90>(30);
-  const [activeTab, setActiveTab] = useState<'overview' | 'submissions' | 'bookings' | 'ga4'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'submissions' | 'bookings' | 'ga4' | 'legislation'>('overview');
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
 
   const fetchData = useCallback(async () => {
@@ -303,6 +303,7 @@ export default function AdminAnalyticsPage() {
     { key: 'submissions' as const, label: 'Form Submissions' },
     { key: 'bookings' as const, label: 'Booking Conversion' },
     { key: 'ga4' as const, label: 'GA4 Performance' },
+    { key: 'legislation' as const, label: '⚖️ Legislation' },
   ];
 
   return (
@@ -762,6 +763,91 @@ export default function AdminAnalyticsPage() {
                     </div>
                   ))}
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Legislation Tab ── */}
+        {activeTab === 'legislation' && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-foreground">Legislation Research Analytics</h2>
+                <p className="text-xs text-muted-foreground mt-0.5">Bills saved, AI summaries, and research activity</p>
+              </div>
+              <Link
+                href="/legislation"
+                className="px-4 py-2 bg-[#1B2A4A] text-white rounded-xl text-xs font-semibold hover:bg-[#1B2A4A]/90 transition-all"
+              >
+                Open Research Hub →
+              </Link>
+            </div>
+
+            {/* Quick stats */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              {[
+                { label: 'Research Hub', desc: 'Search Congress.gov bills with AI', icon: '🏛️', href: '/legislation', color: 'bg-[#1B2A4A] text-white' },
+                { label: 'AI Summaries', desc: 'Get Lexi to summarize any bill', icon: '🤖', href: '/legislation', color: 'bg-[#B76E79]/10 border border-[#B76E79]/20 text-foreground' },
+                { label: 'Case Relevance', desc: 'Tag bills to practice areas', icon: '📊', href: '/legislation', color: 'bg-emerald-50 border border-emerald-200 text-foreground' },
+                { label: 'Conflict Detection', desc: 'Find federal-state conflicts', icon: '⚡', href: '/legislation', color: 'bg-amber-50 border border-amber-200 text-foreground' },
+              ].map((item) => (
+                <Link
+                  key={item.label}
+                  href={item.href}
+                  className={`rounded-2xl p-5 flex flex-col gap-2 hover:shadow-md transition-all ${item.color}`}
+                >
+                  <span className="text-2xl">{item.icon}</span>
+                  <p className="font-semibold text-sm">{item.label}</p>
+                  <p className={`text-xs ${item.color.includes('text-white') ? 'text-white/70' : 'text-muted-foreground'}`}>{item.desc}</p>
+                </Link>
+              ))}
+            </div>
+
+            {/* Feature overview */}
+            <div className="bg-card border border-border rounded-2xl p-6">
+              <h3 className="font-serif text-lg text-foreground mb-4">Legislation Research Features</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {[
+                  { icon: '🔍', title: 'Congress.gov Search', desc: 'Search all federal bills by keyword, category, or state. Results powered by Perplexity AI with real-time legislative data.' },
+                  { icon: '🤖', title: 'AI-Powered Summaries', desc: 'Get instant AI summaries of any bill via Supabase edge functions. Summaries include key provisions, who is affected, and effective dates.' },
+                  { icon: '📊', title: 'Case Relevance Tagging', desc: 'Automatically tag legislation with practice areas, case types, relevance scores (1-10), and urgency levels for client matters.' },
+                  { icon: '⚡', title: 'Federal-State Conflict Detection', desc: 'Identify preemption issues and conflicts between federal and state law for any topic or jurisdiction.' },
+                  { icon: '📌', title: 'Save Bills to Database', desc: 'Save researched bills to Supabase with AI summaries and relevance data for future reference and client matters.' },
+                  { icon: '📋', title: 'Research History', desc: 'All Lexi research sessions are saved to Supabase for audit trails and future reference.' },
+                ].map((feature) => (
+                  <div key={feature.title} className="flex items-start gap-3 p-4 bg-secondary/20 rounded-xl">
+                    <span className="text-xl shrink-0">{feature.icon}</span>
+                    <div>
+                      <p className="font-semibold text-sm text-foreground">{feature.title}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{feature.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Edge function status */}
+            <div className="bg-card border border-border rounded-2xl p-6">
+              <h3 className="font-serif text-lg text-foreground mb-4">Supabase Edge Functions — Legislation</h3>
+              <div className="space-y-3">
+                {[
+                  { name: 'legislation-research', desc: 'AI-powered bill search, summaries, relevance tagging, and conflict detection', status: 'active' },
+                  { name: 'process-sequences', desc: 'Email automation sequences for client communications', status: 'active' },
+                  { name: 'send-weekly-digest', desc: 'Weekly digest emails with case and legislation updates', status: 'active' },
+                  { name: 'flag-overdue-invoices', desc: 'Automated overdue invoice detection and alerting', status: 'active' },
+                ].map((fn) => (
+                  <div key={fn.name} className="flex items-center justify-between gap-4 py-3 border-b border-border last:border-0">
+                    <div>
+                      <p className="text-sm font-mono font-medium text-foreground">{fn.name}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{fn.desc}</p>
+                    </div>
+                    <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      {fn.status}
+                    </span>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
