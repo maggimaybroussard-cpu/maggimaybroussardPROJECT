@@ -5,7 +5,6 @@ import { Suspense } from 'react';
 import '../styles/tailwind.css';
 import GoogleAnalytics from '@/components/GoogleAnalytics';
 import ChatbotWidget from '@/components/ChatbotWidget';
-import CookieBanner from '@/components/CookieBanner';
 import { AuthProvider } from '@/contexts/AuthContext';
 import PWAInstallPrompt from '@/components/PWAInstallPrompt';
 import { Toaster } from 'react-hot-toast';
@@ -252,7 +251,6 @@ export default function RootLayout({
           {children}
         </AuthProvider>
         <Toaster position="top-right" toastOptions={{ duration: 4000 }} />
-        <CookieBanner />
         <ChatbotWidget />
         <PWAInstallPrompt />
       </body>
