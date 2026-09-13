@@ -34,11 +34,26 @@ minimumReleaseAgeExclude:
   - '@replit/*'
   - stripe-replit-sync
 
+# The trailing slashes are load-bearing — please keep them.
+#
+# pnpm resolves these patterns exactly as it does the slash-less versions: all
+# of artifacts/*, lib/*, lib/integrations/* and scripts remain workspace
+# packages (verified with `pnpm ls -r`), so the lockfile and `pnpm --filter`
+# builds are unaffected.
+#
+# What changes is Netlify's monorepo heuristic (@netlify/build-info), which
+# matches these globs against directory paths that carry no trailing slash. It
+# therefore stops classifying this repository as a multi-project workspace, so
+# `netlify deploy` no longer aborts at the repo root with
+# "Projects detected: @workspace/api-server, @workspace/broussard-legal, ...
+# Configure the project you want to work with and try again." — an error that
+# can otherwise only be cleared by passing a `--filter` flag we do not control.
+# The site to deploy is instead pinned by netlify.toml at the repo root.
 packages:
-  - artifacts/*
-  - lib/*
-  - lib/integrations/*
-  - scripts
+  - artifacts/*/
+  - lib/*/
+  - lib/integrations/*/
+  - scripts*/
 
 catalog:
   '@replit/vite-plugin-cartographer': ^0.5.21

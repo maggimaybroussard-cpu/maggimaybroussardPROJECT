@@ -1,0 +1,26 @@
+# Root config for the pnpm workspace. It pins the one package this site serves
+# (the broussard-legal Vite app) so that the build and the deploy always run
+# from the repository root, independent of the other workspace packages.
+# See pnpm-workspace.yaml for why the workspace globs are written the way
+# they are.
+[build]
+  # The project's stored build settings have a URL where the base directory
+  # should be, which makes config resolution fail with
+  # "Base directory does not exist: <repo>/https:/broussardlegalservices.netlify.app".
+  # Declaring the base here overrides those stored settings and pins the build
+  # to the repository root.
+  base = "."
+  command = "pnpm --filter @workspace/broussard-legal run build"
+  publish = "artifacts/broussard-legal/dist/public"
+
+[build.environment]
+  NODE_VERSION = "22"
+  # vite.config.ts throws unless both of these are provided.
+  PORT = "5173"
+  BASE_PATH = "/"
+
+# Client-side routing (wouter) needs every path served by index.html.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
